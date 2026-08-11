@@ -18,7 +18,7 @@ class Profile(Base):
     )
 
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"),
+        ForeignKey("users.id", ondelete="CASCADE"),
         unique=True,
         nullable=False,
     )
@@ -71,7 +71,7 @@ class Profile(Base):
         onupdate=func.now(),
         nullable=False,
     )
-    
+
     user: Mapped["User"] = relationship(
         "User",
         back_populates="profile"

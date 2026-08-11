@@ -1,16 +1,14 @@
-
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy.orm import Mapped, relationship
+from sqlalchemy import ForeignKey, String, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
-from datetime import datetime
-from sqlalchemy import ForeignKey, String, func
-from sqlalchemy.orm import Mapped, mapped_column
-
 if TYPE_CHECKING:
     from app.models.scheme import Scheme
+
 
 class EligibilityRule(Base):
     __tablename__ = "eligibility_rules"
@@ -18,32 +16,37 @@ class EligibilityRule(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
 
     scheme_id: Mapped[int] = mapped_column(
-        ForeignKey("schemes.id"),
-        index=True
+        ForeignKey("schemes.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
     )
 
     field_name: Mapped[str] = mapped_column(
-        String(100)
+        String(100),
+        nullable=False,
     )
 
     operator: Mapped[str] = mapped_column(
-        String(20)
+        String(20),
+        nullable=False,
     )
 
     rule_value: Mapped[str] = mapped_column(
-        String(255)
+        String(255),
+        nullable=False,
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        server_default=func.now()
+        server_default=func.now(),
+        nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         server_default=func.now(),
-        onupdate=func.now()
+        onupdate=func.now(),
+        nullable=False,
     )
 
-    # 1-to-many Relationship mapping to Scheme
     scheme: Mapped["Scheme"] = relationship(
         "Scheme",
         back_populates="eligibility_rules"

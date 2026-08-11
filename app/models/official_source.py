@@ -1,16 +1,14 @@
-
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy.orm import Mapped, relationship
+from sqlalchemy import ForeignKey, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
-from datetime import datetime
-from sqlalchemy import ForeignKey, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
-
 if TYPE_CHECKING:
     from app.models.scheme import Scheme
+
 
 class OfficialSource(Base):
     __tablename__ = "official_sources"
@@ -18,32 +16,37 @@ class OfficialSource(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
 
     scheme_id: Mapped[int] = mapped_column(
-        ForeignKey("schemes.id"),
-        index=True
+        ForeignKey("schemes.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
     )
 
     title: Mapped[str] = mapped_column(
-        String(255)
+        String(255),
+        nullable=False,
     )
 
     url: Mapped[str] = mapped_column(
-        String(500)
+        String(500),
+        nullable=False,
     )
 
     source_type: Mapped[str] = mapped_column(
-        String(50)
+        String(50),
+        nullable=False,
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        server_default=func.now()
+        server_default=func.now(),
+        nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         server_default=func.now(),
-        onupdate=func.now()
+        onupdate=func.now(),
+        nullable=False,
     )
 
-    # 1-to-many Relationship mapping to Scheme
     scheme: Mapped["Scheme"] = relationship(
         "Scheme",
         back_populates="official_sources"

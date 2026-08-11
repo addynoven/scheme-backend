@@ -16,28 +16,32 @@ class Benefit(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
 
     scheme_id: Mapped[int] = mapped_column(
-        ForeignKey("schemes.id"),
-        index=True
+        ForeignKey("schemes.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
     )
 
     title: Mapped[str] = mapped_column(
-        String(255)
+        String(255),
+        nullable=False,
     )
 
     description: Mapped[str] = mapped_column(
-        Text
+        Text,
+        nullable=False,
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        server_default=func.now()
+        server_default=func.now(),
+        nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         server_default=func.now(),
-        onupdate=func.now()
+        onupdate=func.now(),
+        nullable=False,
     )
 
-    # 1-to-many Relationship mapping to Scheme
     scheme: Mapped["Scheme"] = relationship(
         "Scheme",
         back_populates="benefits"
