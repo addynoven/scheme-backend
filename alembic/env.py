@@ -7,6 +7,12 @@ from alembic import context
 
 from app.database import Base
 from app.models.scheme import Scheme
+from app.models.user import User
+from app.models.profile import Profile
+from app.models.benefit import Benefit
+from app.models.eligibility_rule import EligibilityRule
+from app.models.required_document import RequiredDocument
+from app.models.official_source import OfficialSource
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
