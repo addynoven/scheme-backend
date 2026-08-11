@@ -1,16 +1,17 @@
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Date, DateTime, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import TYPE_CHECKING
 
 from app.database import Base
 
 if TYPE_CHECKING:
     from app.models.benefit import Benefit
     from app.models.eligibility_rule import EligibilityRule
-    from app.models.required_document import RequiredDocument
     from app.models.official_source import OfficialSource
+    from app.models.required_document import RequiredDocument
+
 
 class Scheme(Base):
     __tablename__ = "schemes"
@@ -29,6 +30,19 @@ class Scheme(Base):
         String(255),
         unique=True,
         nullable=False,
+    )
+
+    category: Mapped[str] = mapped_column(
+        String(100),
+        default="General",
+        server_default="General",
+        nullable=False,
+        index=True,
+    )
+
+    tags: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
     )
 
     ministry: Mapped[str] = mapped_column(
@@ -78,20 +92,20 @@ class Scheme(Base):
     benefits: Mapped[list["Benefit"]] = relationship(
         "Benefit",
         back_populates="scheme",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
     eligibility_rules: Mapped[list["EligibilityRule"]] = relationship(
         "EligibilityRule",
         back_populates="scheme",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
     required_documents: Mapped[list["RequiredDocument"]] = relationship(
         "RequiredDocument",
         back_populates="scheme",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
     official_sources: Mapped[list["OfficialSource"]] = relationship(
         "OfficialSource",
         back_populates="scheme",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
