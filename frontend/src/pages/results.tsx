@@ -65,10 +65,11 @@ export default function ResultsPage() {
           {profile && (
             <p className="text-xs text-zinc-400 flex flex-wrap items-center gap-2 mt-1">
               <span>Profile Context:</span>
-              <span className="text-zinc-200 font-medium capitalize">{profile.occupation}</span>·
-              <span className="text-zinc-200 font-medium">₹{profile.annual_income?.toLocaleString('en-IN')}/yr</span>·
-              <span className="text-zinc-200 font-medium">{profile.age} years old</span>·
-              <span className="text-zinc-200 font-medium">{profile.state}</span>
+              <span className="text-zinc-200 font-semibold capitalize">{profile.occupation}</span>·
+              <span className="text-zinc-200 font-semibold capitalize">{profile.gender}</span>·
+              <span className="text-zinc-200 font-semibold">₹{profile.annual_income?.toLocaleString('en-IN')}/yr</span>·
+              <span className="text-zinc-200 font-semibold">{profile.age} years old</span>·
+              <span className="text-zinc-200 font-semibold">{profile.state}</span>
             </p>
           )}
         </div>
