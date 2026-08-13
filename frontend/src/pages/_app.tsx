@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router'
 import { Link } from '@/router'
 import { ShieldCheck, Search, CheckCircle2 } from 'lucide-react'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function App() {
   return (
@@ -42,9 +43,11 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Main Content with Error Boundary */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </main>
 
       {/* Footer */}

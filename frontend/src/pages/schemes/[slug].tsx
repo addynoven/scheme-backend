@@ -75,6 +75,8 @@ export default function SchemeDetailPage() {
     )
   }
 
+  const applyUrl = scheme.application_url || scheme.official_website
+
   return (
     <div className="max-w-4xl mx-auto flex flex-col gap-8">
       {/* Back Navigation */}
@@ -87,9 +89,9 @@ export default function SchemeDetailPage() {
           <span>{savedReport ? 'Back to Results' : 'Back to All Schemes'}</span>
         </Link>
 
-        {scheme.application_url && (
+        {applyUrl && (
           <a
-            href={scheme.application_url}
+            href={applyUrl}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg shadow-blue-600/20 transition-all"
@@ -195,30 +197,35 @@ export default function SchemeDetailPage() {
             <span>Scheme Benefits</span>
           </div>
 
-          {scheme.benefits.length === 0 ? (
+          {!scheme.benefits || scheme.benefits.length === 0 ? (
             <p className="text-xs text-zinc-500">No benefits listed.</p>
           ) : (
             <div className="flex flex-col gap-3">
-              {scheme.benefits.map((benefit) => (
-                <div
-                  key={benefit.id}
-                  className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 flex flex-col gap-1 text-xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-emerald-400 capitalize">
-                      {benefit.benefit_type}
-                    </span>
-                    {benefit.amount && (
-                      <span className="font-bold text-zinc-100 bg-emerald-950/60 px-2 py-0.5 rounded text-[11px] border border-emerald-800/40">
-                        ₹{benefit.amount.toLocaleString('en-IN')}
+              {scheme.benefits.map((benefit) => {
+                const benefitTitle = benefit.title || benefit.benefit_type || 'Direct Benefit'
+                return (
+                  <div
+                    key={benefit.id}
+                    className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 flex flex-col gap-1 text-xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-emerald-400">
+                        {benefitTitle}
                       </span>
+                      {benefit.amount && (
+                        <span className="font-bold text-zinc-100 bg-emerald-950/60 px-2 py-0.5 rounded text-[11px] border border-emerald-800/40">
+                          ₹{benefit.amount.toLocaleString('en-IN')}
+                        </span>
+                      )}
+                    </div>
+                    {benefit.description && (
+                      <p className="text-zinc-300 text-xs mt-1 leading-relaxed">
+                        {benefit.description}
+                      </p>
                     )}
                   </div>
-                  <p className="text-zinc-300 text-xs mt-1 leading-relaxed">
-                    {benefit.description}
-                  </p>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
@@ -230,26 +237,42 @@ export default function SchemeDetailPage() {
             <span>Eligibility Requirements</span>
           </div>
 
-          {scheme.eligibility_rules.length === 0 ? (
+          {!scheme.eligibility_rules || scheme.eligibility_rules.length === 0 ? (
             <p className="text-xs text-zinc-500">Universal scheme with no restrictive rules.</p>
           ) : (
             <div className="flex flex-col gap-2.5">
-              {scheme.eligibility_rules.map((rule) => (
-                <div
-                  key={rule.id}
-                  className="p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 flex items-start gap-3 text-xs"
-                >
-                  <div className="h-2 w-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-semibold text-zinc-200 capitalize">
-                      {rule.field.replace(/_/g, ' ')}: {rule.operator} {rule.value}
-                    </span>
-                    {rule.description && (
-                      <p className="text-zinc-400 text-[11px]">{rule.description}</p>
-                    )}
+              {scheme.eligibility_rules.map((rule) => {
+                const rawField = rule.field_name || rule.field || 'Condition'
+                const fieldLabel = rawField.replace(/_/g, ' ')
+                const operatorLabel =
+                  rule.operator === 'eq'
+                    ? '='
+                    : rule.operator === 'lte'
+                    ? '≤'
+                    : rule.operator === 'gte'
+                    ? '≥'
+                    : rule.operator === 'between'
+                    ? 'between'
+                    : rule.operator
+                const ruleVal = rule.rule_value || rule.value || ''
+
+                return (
+                  <div
+                    key={rule.id}
+                    className="p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 flex items-start gap-3 text-xs"
+                  >
+                    <div className="h-2 w-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-semibold text-zinc-200 capitalize">
+                        {fieldLabel}: {operatorLabel} {ruleVal}
+                      </span>
+                      {rule.description && (
+                        <p className="text-zinc-400 text-[11px]">{rule.description}</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
@@ -263,11 +286,11 @@ export default function SchemeDetailPage() {
             <span>Required Documents to Apply</span>
           </div>
           <span className="text-xs text-zinc-500">
-            {scheme.required_documents.length} document(s) needed
+            {scheme.required_documents?.length || 0} document(s) needed
           </span>
         </div>
 
-        {scheme.required_documents.length === 0 ? (
+        {!scheme.required_documents || scheme.required_documents.length === 0 ? (
           <p className="text-xs text-zinc-500">No document requirements specified.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -317,9 +340,9 @@ export default function SchemeDetailPage() {
           </p>
         </div>
 
-        {scheme.application_url && (
+        {applyUrl && (
           <a
-            href={scheme.application_url}
+            href={applyUrl}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-sm shadow-xl shadow-blue-600/25 active:scale-95 transition-all"

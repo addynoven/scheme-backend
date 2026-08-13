@@ -54,7 +54,7 @@ NATIONAL_SCHEMES_DATA = [
         "ministry": "Ministry of Health and Family Welfare",
         "description": "World's largest health assurance scheme providing ₹5 Lakh cashless cover per family per year for secondary and tertiary care hospitalization.",
         "status": "active",
-        "application_url": "https://setu.pmjay.gov.in",
+        "application_url": "https://beneficiary.nha.gov.in",
         "official_website": "https://pmjay.gov.in",
         "benefits": [
             {

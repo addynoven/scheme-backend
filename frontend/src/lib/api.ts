@@ -1,29 +1,35 @@
 export interface Benefit {
   id: number
-  benefit_type: string
+  title?: string
+  benefit_type?: string
   description: string
-  amount: number | null
+  amount?: number | null
 }
 
 export interface EligibilityRule {
   id: number
-  field: string
+  field_name?: string
+  field?: string
   operator: string
-  value: string
-  description: string | null
+  rule_value?: string
+  value?: string
+  description?: string | null
 }
 
 export interface RequiredDocument {
   id: number
   document_name: string
   is_mandatory: boolean
-  description: string | null
+  description?: string | null
 }
 
 export interface OfficialSource {
   id: number
-  source_name: string
-  source_url: string
+  title?: string
+  source_name?: string
+  url?: string
+  source_url?: string
+  source_type?: string
 }
 
 export interface Scheme {
@@ -31,13 +37,13 @@ export interface Scheme {
   name: string
   slug: string
   category: string
-  tags: string | null
+  tags?: string | null
   ministry: string
   description: string
   status: string
-  application_url: string | null
-  official_website: string | null
-  launch_date: string | null
+  application_url?: string | null
+  official_website?: string | null
+  launch_date?: string | null
   benefits: Benefit[]
   eligibility_rules: EligibilityRule[]
   required_documents: RequiredDocument[]
@@ -68,7 +74,7 @@ export interface SchemeExplanation {
   passed_criteria: CriterionVerdict[]
   failed_criteria: CriterionVerdict[]
   benefits_summary: string[]
-  application_url: string | null
+  application_url?: string | null
 }
 
 export interface EligibilityReport {
