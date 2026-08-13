@@ -11,6 +11,7 @@ from app.schemas.document_vault import (
 from app.services.document_vault import (
     delete_user_document,
     evaluate_document_readiness,
+    get_user_document_content,
     list_user_documents,
     upload_user_document,
 )
@@ -59,6 +60,28 @@ def list_my_vault_documents_endpoint(
     db: Session = Depends(get_db),
 ):
     return list_user_documents(db=db, user_id=current_user.id)
+
+
+@router.get(
+    "/documents/{document_id}/download",
+    summary="Download or view a citizen vault document",
+    description="Streams the decrypted document directly from secure S3 storage with inline disposition for browser viewing.",
+)
+def download_vault_document_endpoint(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    from fastapi.responses import Response
+
+    body_bytes, content_type, filename = get_user_document_content(
+        db=db, user_id=current_user.id, document_id=document_id
+    )
+    return Response(
+        content=body_bytes,
+        media_type=content_type,
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
 
 
 @router.delete(

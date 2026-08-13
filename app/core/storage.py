@@ -27,6 +27,24 @@ class S3StorageService:
         return boto3.client(**kwargs)
 
     @property
+    def public_client(self):
+        config = Config(
+            signature_version="s3v4",
+            s3={"addressing_style": "path"},
+        )
+        kwargs = {
+            "service_name": "s3",
+            "region_name": settings.S3_REGION,
+            "aws_access_key_id": settings.S3_ACCESS_KEY,
+            "aws_secret_access_key": settings.S3_SECRET_KEY,
+            "config": config,
+        }
+        endpoint = settings.S3_PUBLIC_ENDPOINT_URL or settings.S3_ENDPOINT_URL
+        if endpoint:
+            kwargs["endpoint_url"] = endpoint
+        return boto3.client(**kwargs)
+
+    @property
     def bucket_name(self) -> str:
         return settings.S3_BUCKET_NAME
 
@@ -55,6 +73,12 @@ class S3StorageService:
         )
         return object_key
 
+    def get_object(self, object_key: str) -> tuple[bytes, str]:
+        response = self.client.get_object(Bucket=self.bucket_name, Key=object_key)
+        body = response["Body"].read()
+        content_type = response.get("ContentType", "application/octet-stream")
+        return body, content_type
+
     def generate_presigned_download_url(
         self,
         object_key: str,
@@ -62,7 +86,7 @@ class S3StorageService:
     ) -> str:
         expiry = expiry_seconds or settings.S3_PRESIGNED_EXPIRY_SECONDS
         try:
-            url = self.client.generate_presigned_url(
+            url = self.public_client.generate_presigned_url(
                 ClientMethod="get_object",
                 Params={"Bucket": self.bucket_name, "Key": object_key},
                 ExpiresIn=expiry,
@@ -70,8 +94,9 @@ class S3StorageService:
             return url
         except Exception as e:
             logger.error(f"Error generating presigned URL for {object_key}: {e}")
-            if settings.S3_ENDPOINT_URL:
-                return f"{settings.S3_ENDPOINT_URL}/{self.bucket_name}/{object_key}"
+            public_endpoint = settings.S3_PUBLIC_ENDPOINT_URL or settings.S3_ENDPOINT_URL
+            if public_endpoint:
+                return f"{public_endpoint}/{self.bucket_name}/{object_key}"
             return f"https://{self.bucket_name}.s3.amazonaws.com/{object_key}"
 
     def delete_object(self, object_key: str) -> bool:

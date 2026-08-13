@@ -505,7 +505,7 @@ export default function DocumentVaultPage() {
                       <div className="flex items-center gap-2">
                         {doc.download_url && (
                           <a
-                            href={doc.download_url}
+                            href={doc.download_url.replace('http://minio:9000', 'http://localhost:9000')}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] font-medium transition-colors"

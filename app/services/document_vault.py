@@ -131,6 +131,21 @@ def list_user_documents(db: Session, user_id: int) -> list[UserDocumentResponse]
     return results
 
 
+def get_user_document_content(
+    db: Session, user_id: int, document_id: int
+) -> tuple[bytes, str, str]:
+    doc = db.scalar(
+        select(UserDocument).where(
+            UserDocument.id == document_id, UserDocument.user_id == user_id
+        )
+    )
+    if not doc:
+        raise EntityNotFoundError("UserDocument", document_id)
+
+    body_bytes, content_type = storage_service.get_object(doc.file_key)
+    return body_bytes, doc.mime_type or content_type, doc.file_name
+
+
 def delete_user_document(db: Session, user_id: int, document_id: int) -> bool:
     doc = db.scalar(
         select(UserDocument).where(
