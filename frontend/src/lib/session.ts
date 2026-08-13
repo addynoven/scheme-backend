@@ -4,6 +4,8 @@ const PROFILE_KEY = 'scheme_citizen_profile'
 const REPORT_KEY = 'scheme_eligibility_report'
 const ADMIN_TOKEN_KEY = 'scheme_admin_jwt'
 const ADMIN_USER_KEY = 'scheme_admin_user'
+const CITIZEN_TOKEN_KEY = 'scheme_citizen_jwt'
+const CITIZEN_USER_KEY = 'scheme_citizen_user'
 
 export function saveCitizenProfile(profile: EligibilityCheckPayload) {
   sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile))
@@ -33,6 +35,7 @@ export function getSavedEligibilityReport(): EligibilityReport | null {
   }
 }
 
+// Admin Auth Session
 export function saveAdminToken(token: string) {
   localStorage.setItem(ADMIN_TOKEN_KEY, token)
 }
@@ -52,6 +55,34 @@ export function saveAdminUser(user: any) {
 
 export function getAdminUser(): any | null {
   const data = localStorage.getItem(ADMIN_USER_KEY)
+  if (!data) return null
+  try {
+    return JSON.parse(data)
+  } catch {
+    return null
+  }
+}
+
+// Citizen Auth Session
+export function saveCitizenToken(token: string) {
+  localStorage.setItem(CITIZEN_TOKEN_KEY, token)
+}
+
+export function getCitizenToken(): string | null {
+  return localStorage.getItem(CITIZEN_TOKEN_KEY)
+}
+
+export function removeCitizenToken() {
+  localStorage.removeItem(CITIZEN_TOKEN_KEY)
+  localStorage.removeItem(CITIZEN_USER_KEY)
+}
+
+export function saveCitizenUser(user: any) {
+  localStorage.setItem(CITIZEN_USER_KEY, JSON.stringify(user))
+}
+
+export function getCitizenUser(): any | null {
+  const data = localStorage.getItem(CITIZEN_USER_KEY)
   if (!data) return null
   try {
     return JSON.parse(data)

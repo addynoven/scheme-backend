@@ -28,6 +28,7 @@ def _is_doc_match(required_name: str, user_doc_type: str) -> bool:
     # Common Indian welfare document aliases
     synonyms = [
         {"aadhaar", "aadhaar card", "uidai", "parent aadhaar card"},
+        {"pan", "pan card", "pen card", "permanent account number", "pan proof"},
         {"bank passbook", "bank account", "bank statement", "passbook"},
         {"income certificate", "bpl certificate", "bpl card", "income proof"},
         {"ration card", "family ration card", "bpl card"},
@@ -35,6 +36,7 @@ def _is_doc_match(required_name: str, user_doc_type: str) -> bool:
         {"birth certificate", "age proof", "age proof certificate"},
         {"caste certificate", "community certificate"},
         {"marksheet", "academic marksheet", "10th marksheet", "qualification certificate"},
+        {"business address proof", "udyam registration", "business proof", "msme registration"},
     ]
 
     for group in synonyms:

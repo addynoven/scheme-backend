@@ -23,8 +23,8 @@ MCP exposes capabilities to agents.
 | **V1.0** | **The Deterministic Core** | 4-Screen Flow, Rule Engine, Explainability, 12 National Schemes, Docker Stack | ✅ **Completed** |
 | **V1.1** | **State Schemes Expansion** | Flagship state benefits (Madhya Pradesh, Maharashtra, Karnataka) & Location Matching | ✅ **Completed** |
 | **V1.2** | **Admin Management Portal** | Web UI to create, edit, and toggle schemes without SQL, Visual Rule Builder | ✅ **Completed** |
-| **V1.3** | **Document Vault & Readiness** | S3 Document storage & live Scheme Application Readiness Meter | 🎯 **Next** |
-| **V1.5** | **Government Ingestion Pipeline** | Two-Phase Semantic CDC + Circuit Breaker + MinIO Staging + Triage Queue | 📋 Planned |
+| **V1.3** | **Document Vault & Readiness** | S3 Document storage & live Scheme Application Readiness Meter | ✅ **Completed** |
+| **V1.5** | **Government Ingestion Pipeline** | Two-Phase Semantic CDC + Circuit Breaker + MinIO Staging + Triage Queue | 🎯 **Next** |
 | **V2.0** | **OCR & Fact Extraction** | Auto-extract facts from Aadhaar/Certificates with human verification | 📋 Planned |
 | **V2.5** | **OKF Canonical Knowledge** | Structured agent-readable knowledge layer & Query Router | 📋 Planned |
 | **V3.0** | **Hybrid RAG & Provenance** | BM25 + Vector + Cross-Encoder Reranker + Mandatory Citations | 📋 Planned |
@@ -132,7 +132,7 @@ Admin Portal (/admin)
 
 ---
 
-## 🎯 V1.3 — Document Vault & Live Readiness Meter *(Next Milestone)*
+## 🟢 V1.3 — Document Vault & Live Readiness Meter *(Completed & Live)*
 
 ### Objective
 Enable citizens to store documents securely in MinIO S3 and view real-time application readiness scores before applying.

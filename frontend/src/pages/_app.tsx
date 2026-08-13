@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router'
 import { Link } from '@/router'
-import { ShieldCheck, Search, CheckCircle2, ShieldAlert } from 'lucide-react'
+import { ShieldCheck, Search, CheckCircle2, ShieldAlert, FolderLock } from 'lucide-react'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function App() {
@@ -30,6 +30,14 @@ export default function App() {
             >
               <Search className="h-3.5 w-3.5 text-zinc-400" />
               <span>Explore</span>
+            </Link>
+
+            <Link
+              to="/vault"
+              className="text-xs sm:text-sm text-zinc-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-zinc-900 transition-colors flex items-center gap-1.5"
+            >
+              <FolderLock className="h-3.5 w-3.5 text-blue-400" />
+              <span>Document Vault</span>
             </Link>
 
             <Link
@@ -63,9 +71,12 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Government Welfare Scheme Navigator · V1.2 Admin Ready</span>
+            <span>Government Welfare Scheme Navigator · V1.3 Document Vault Ready</span>
           </div>
           <div className="flex items-center gap-4">
+            <Link to="/vault" className="text-zinc-500 hover:text-zinc-300">
+              Document Vault
+            </Link>
             <Link to="/admin" className="text-zinc-500 hover:text-zinc-300">
               Admin Portal
             </Link>

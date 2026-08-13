@@ -12,15 +12,24 @@ import {
   Calendar,
   Layers,
   MapPin,
+  FolderLock,
+  FolderCheck,
 } from 'lucide-react'
-import { getSchemeBySlug, type Scheme, type SchemeExplanation } from '@/lib/api'
-import { getSavedEligibilityReport } from '@/lib/session'
+import {
+  getSchemeBySlug,
+  getSchemeDocumentReadiness,
+  type Scheme,
+  type SchemeExplanation,
+  type SchemeDocumentReadiness,
+} from '@/lib/api'
+import { getSavedEligibilityReport, getCitizenToken } from '@/lib/session'
 
 export default function SchemeDetailPage() {
   const { slug } = useParams('/schemes/:slug' as any)
   const [scheme, setScheme] = useState<Scheme | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [docReadiness, setDocReadiness] = useState<SchemeDocumentReadiness | null>(null)
 
   useEffect(() => {
     if (!slug) return
@@ -29,6 +38,12 @@ export default function SchemeDetailPage() {
       .then((data) => {
         setScheme(data)
         setLoading(false)
+        const token = getCitizenToken()
+        if (token) {
+          getSchemeDocumentReadiness(data.id)
+            .then((readiness) => setDocReadiness(readiness))
+            .catch(() => {})
+        }
       })
       .catch((err) => {
         setError(err.message || 'Scheme not found')
@@ -291,6 +306,55 @@ export default function SchemeDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Live Document Readiness Meter Card (if authenticated) */}
+      {docReadiness && (
+        <div className="p-6 sm:p-8 rounded-3xl border border-indigo-900/60 bg-gradient-to-r from-indigo-950/40 via-zinc-900/60 to-purple-950/40 shadow-xl flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FolderLock className="h-5 w-5 text-indigo-400" />
+              <h2 className="text-base font-bold text-zinc-100">
+                Your Application Document Readiness
+              </h2>
+            </div>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-bold font-mono ${
+                docReadiness.readiness_percentage === 100
+                  ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/60'
+                  : docReadiness.readiness_percentage > 0
+                  ? 'bg-amber-950/80 text-amber-400 border border-amber-800/60'
+                  : 'bg-rose-950/80 text-rose-400 border border-rose-800/60'
+              }`}
+            >
+              {docReadiness.readiness_percentage}% Ready
+            </span>
+          </div>
+
+          <div className="w-full h-2.5 rounded-full bg-zinc-800 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                docReadiness.readiness_percentage === 100
+                  ? 'bg-emerald-500'
+                  : docReadiness.readiness_percentage >= 50
+                  ? 'bg-amber-500'
+                  : 'bg-rose-500'
+              }`}
+              style={{ width: `${docReadiness.readiness_percentage}%` }}
+            />
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-zinc-950/60 p-3.5 rounded-2xl border border-zinc-800">
+            <p className="text-xs text-zinc-300">{docReadiness.summary}</p>
+            <Link
+              to="/vault"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shrink-0 transition-colors"
+            >
+              <FolderCheck className="h-3.5 w-3.5" />
+              <span>Open Vault & Upload</span>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Required Documents Section */}
       <div className="p-6 sm:p-8 rounded-3xl border border-zinc-800/90 bg-zinc-900/60 shadow-xl flex flex-col gap-4">

@@ -9,6 +9,7 @@ export type Path =
   | `/check`
   | `/results`
   | `/schemes/:slug`
+  | `/vault`
 
 export type Params = {
   '/schemes/:slug': { slug: string }

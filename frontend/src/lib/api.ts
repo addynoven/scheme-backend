@@ -1,4 +1,4 @@
-import { getAdminToken } from './session'
+import { getAdminToken, getCitizenToken } from './session'
 
 export interface Benefit {
   id: number
@@ -103,6 +103,43 @@ export interface EligibilityCheckPayload {
   occupation?: string
 }
 
+export interface UserDocument {
+  id: number
+  user_id: number
+  document_type: string
+  document_number_masked?: string | null
+  file_name: string
+  file_size_bytes: number
+  mime_type: string
+  is_verified: boolean
+  download_url?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+export interface DocumentReadinessItem {
+  document_name: string
+  description?: string | null
+  is_mandatory: boolean
+  status: 'available' | 'missing'
+  matched_vault_document_id?: number | null
+  matched_vault_document_name?: string | null
+}
+
+export interface SchemeDocumentReadiness {
+  scheme_id: number
+  scheme_name: string
+  scheme_slug: string
+  is_ready_to_apply: boolean
+  readiness_percentage: number
+  mandatory_total: number
+  mandatory_available: number
+  optional_total: number
+  optional_available: number
+  checklist: DocumentReadinessItem[]
+  summary: string
+}
+
 export interface PaginatedResult<T> {
   items: T[]
   total: number
@@ -112,7 +149,7 @@ export interface PaginatedResult<T> {
 
 const API_BASE = '/api'
 
-function getAuthHeaders(): Record<string, string> {
+function getAdminAuthHeaders(): Record<string, string> {
   const token = getAdminToken()
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -123,8 +160,17 @@ function getAuthHeaders(): Record<string, string> {
   return headers
 }
 
+function getCitizenAuthHeaders(): Record<string, string> {
+  const token = getCitizenToken()
+  const headers: Record<string, string> = {}
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  return headers
+}
+
 // ============================================================================
-// CITIZEN PUBLIC APIS
+// CITIZEN PUBLIC & ELIGIBILITY APIS
 // ============================================================================
 
 export async function fetchPopularSchemes(limit = 8, state?: string): Promise<Scheme[]> {
@@ -170,6 +216,106 @@ export async function checkEligibility(payload: EligibilityCheckPayload): Promis
 }
 
 // ============================================================================
+// CITIZEN AUTH APIS
+// ============================================================================
+
+export async function citizenRegister(payload: { email: string; phone: string; password: string }) {
+  const res = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || 'Registration failed')
+  }
+  return res.json()
+}
+
+export async function citizenLogin(email: string, password: string) {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || 'Invalid credentials')
+  }
+  return res.json()
+}
+
+export async function citizenGetMe() {
+  const headers = getCitizenAuthHeaders()
+  headers['Content-Type'] = 'application/json'
+  const res = await fetch(`${API_BASE}/auth/me`, { headers })
+  if (!res.ok) throw new Error('Failed to load user profile')
+  return res.json()
+}
+
+// ============================================================================
+// DOCUMENT VAULT & READINESS APIS
+// ============================================================================
+
+export async function uploadVaultDocument(
+  file: File,
+  documentType: string,
+  maskedNumber?: string
+): Promise<UserDocument> {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('document_type', documentType)
+  if (maskedNumber) {
+    formData.append('document_number_masked', maskedNumber)
+  }
+
+  const headers = getCitizenAuthHeaders()
+  const res = await fetch(`${API_BASE}/vault/documents/upload`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || 'Failed to upload document')
+  }
+  return res.json()
+}
+
+export async function listVaultDocuments(): Promise<UserDocument[]> {
+  const headers = getCitizenAuthHeaders()
+  headers['Content-Type'] = 'application/json'
+  const res = await fetch(`${API_BASE}/vault/documents`, { headers })
+  if (!res.ok) {
+    if (res.status === 401) throw new Error('UNAUTHORIZED')
+    throw new Error('Failed to list vault documents')
+  }
+  return res.json()
+}
+
+export async function deleteVaultDocument(id: number): Promise<void> {
+  const headers = getCitizenAuthHeaders()
+  headers['Content-Type'] = 'application/json'
+  const res = await fetch(`${API_BASE}/vault/documents/${id}`, {
+    method: 'DELETE',
+    headers,
+  })
+  if (!res.ok) throw new Error('Failed to delete document')
+}
+
+export async function getSchemeDocumentReadiness(schemeId: number): Promise<SchemeDocumentReadiness> {
+  const headers = getCitizenAuthHeaders()
+  headers['Content-Type'] = 'application/json'
+  const res = await fetch(`${API_BASE}/vault/readiness/schemes/${schemeId}`, { headers })
+  if (!res.ok) {
+    if (res.status === 401) throw new Error('UNAUTHORIZED')
+    throw new Error('Failed to evaluate scheme readiness')
+  }
+  return res.json()
+}
+
+// ============================================================================
 // ADMIN APIS
 // ============================================================================
 
@@ -188,7 +334,7 @@ export async function adminLogin(email: string, password: string) {
 
 export async function adminGetMe() {
   const res = await fetch(`${API_BASE}/auth/me`, {
-    headers: getAuthHeaders(),
+    headers: getAdminAuthHeaders(),
   })
   if (!res.ok) throw new Error('Failed to verify admin session')
   return res.json()
@@ -211,7 +357,7 @@ export async function adminListSchemes(params?: {
   if (params?.search) q.set('search', params.search)
 
   const res = await fetch(`${API_BASE}/admin/schemes?${q.toString()}`, {
-    headers: getAuthHeaders(),
+    headers: getAdminAuthHeaders(),
   })
   if (!res.ok) {
     if (res.status === 401 || res.status === 403) {
@@ -224,7 +370,7 @@ export async function adminListSchemes(params?: {
 
 export async function adminGetScheme(id: number): Promise<Scheme> {
   const res = await fetch(`${API_BASE}/admin/schemes/${id}`, {
-    headers: getAuthHeaders(),
+    headers: getAdminAuthHeaders(),
   })
   if (!res.ok) throw new Error('Scheme not found')
   return res.json()
@@ -233,7 +379,7 @@ export async function adminGetScheme(id: number): Promise<Scheme> {
 export async function adminCreateScheme(payload: any): Promise<Scheme> {
   const res = await fetch(`${API_BASE}/admin/schemes`, {
     method: 'POST',
-    headers: getAuthHeaders(),
+    headers: getAdminAuthHeaders(),
     body: JSON.stringify(payload),
   })
   if (!res.ok) {
@@ -246,7 +392,7 @@ export async function adminCreateScheme(payload: any): Promise<Scheme> {
 export async function adminUpdateScheme(id: number, payload: any): Promise<Scheme> {
   const res = await fetch(`${API_BASE}/admin/schemes/${id}`, {
     method: 'PATCH',
-    headers: getAuthHeaders(),
+    headers: getAdminAuthHeaders(),
     body: JSON.stringify(payload),
   })
   if (!res.ok) {
@@ -259,70 +405,7 @@ export async function adminUpdateScheme(id: number, payload: any): Promise<Schem
 export async function adminDeleteScheme(id: number): Promise<void> {
   const res = await fetch(`${API_BASE}/admin/schemes/${id}`, {
     method: 'DELETE',
-    headers: getAuthHeaders(),
+    headers: getAdminAuthHeaders(),
   })
   if (!res.ok) throw new Error('Failed to delete scheme')
-}
-
-export async function adminAddRule(schemeId: number, rule: any): Promise<EligibilityRule> {
-  const res = await fetch(`${API_BASE}/admin/schemes/${schemeId}/rules`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(rule),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message || 'Failed to add rule')
-  }
-  return res.json()
-}
-
-export async function adminDeleteRule(ruleId: number): Promise<void> {
-  const res = await fetch(`${API_BASE}/admin/rules/${ruleId}`, {
-    method: 'DELETE',
-    headers: getAuthHeaders(),
-  })
-  if (!res.ok) throw new Error('Failed to delete rule')
-}
-
-export async function adminAddDocument(schemeId: number, doc: any): Promise<RequiredDocument> {
-  const res = await fetch(`${API_BASE}/admin/schemes/${schemeId}/documents`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(doc),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message || 'Failed to add document')
-  }
-  return res.json()
-}
-
-export async function adminDeleteDocument(docId: number): Promise<void> {
-  const res = await fetch(`${API_BASE}/admin/documents/${docId}`, {
-    method: 'DELETE',
-    headers: getAuthHeaders(),
-  })
-  if (!res.ok) throw new Error('Failed to delete document')
-}
-
-export async function adminAddBenefit(schemeId: number, benefit: any): Promise<Benefit> {
-  const res = await fetch(`${API_BASE}/admin/schemes/${schemeId}/benefits`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(benefit),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message || 'Failed to add benefit')
-  }
-  return res.json()
-}
-
-export async function adminDeleteBenefit(benefitId: number): Promise<void> {
-  const res = await fetch(`${API_BASE}/admin/benefits/${benefitId}`, {
-    method: 'DELETE',
-    headers: getAuthHeaders(),
-  })
-  if (!res.ok) throw new Error('Failed to delete benefit')
 }
