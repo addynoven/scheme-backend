@@ -188,6 +188,15 @@ Adding a feature to this modular monolith is predictable:
 4. **Write Business Logic**: Create `service.py` with pure domain operations.
 5. **Expose Routes**: Create `router.py` with FastAPI endpoints and mount in `app/main.py` using `app.include_router(...)`.
 
+## 🔮 Future Roadmap: Universal Multi-Country Expansion
+
+Planned evolution to support any nation or municipality (UN / GovStack standard):
+
+- **ISO 3166-1 Country Code & Jurisdiction**: Add `country_code` (`"US"`, `"GB"`, `"CA"`, `"IN"`, `"DE"`) and `jurisdiction_level` (`"federal"`, `"state"`, `"municipal"`).
+- **Dynamic Multi-Currency**: Locale-aware formatting for `$`, `£`, `€`, `¥`, `₹`, `CAD`.
+- **Extensible Country Demographics**: Universal core fields (`income`, `age`, `household_size`) paired with flexible country-specific attributes (e.g. US: `veteran_status`, `medicaid_enrolled`; UK: `universal_credit_claimant`).
+- **Global Document Taxonomies**: Out-of-the-box readiness checklists for US (SSN, W-2, 1040), UK (NINO, P60), and Canada (SIN, CRA Notice of Assessment).
+
 ---
 
 ## 📄 License
