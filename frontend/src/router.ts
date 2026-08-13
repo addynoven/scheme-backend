@@ -5,9 +5,12 @@ import { components, hooks, utils } from '@generouted/react-router/client'
 
 export type Path =
   | `/`
+  | `/check`
+  | `/results`
+  | `/schemes/:slug`
 
 export type Params = {
-  
+  '/schemes/:slug': { slug: string }
 }
 
 export type ModalPath = never
