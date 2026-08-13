@@ -1,351 +1,165 @@
-# 🏛️ Government Benefits Navigator — Master Versioned Architecture Blueprint
+# 🏛️ Architecture Master Plan & Engineering Specification
 
-> **"A citizen gives the system their information once. The system continuously helps them discover, understand, verify, and access government benefits and services relevant to their life."**
+> **System Paradigm**: Feature-Driven Modular Monolith with Integration-First Testing  
+> **Target Standard**: UN GovStack / Open Welfare Engine  
+> **Status**: Production-Ready (V1.5) | 100% Tests Passing
+
+---
+
+## 1. Core Engineering Philosophy
+
+1. **Clarity over Cleverness**: If something breaks, find it in one self-contained feature directory—not across 15 global folders.
+2. **Control over Convention**: Group code **by business capability**, never by technical layer. No top-level `controllers/`, `services/`, `models/`, or `routers/`.
+3. **First-Principles over Patterns**: Ship what solves the real problem simply; avoid premature abstraction and over-engineering.
+4. **Integration-First Testing**: Black-box test complete citizen journeys via realistic APIs and database state.
+
+---
+
+## 2. Standard 4-File Feature Pattern
+
+Every domain feature in `app/modules/<feature>/` adheres strictly to this uniform 4-file structure:
 
 ```text
-LLM interprets.
-Database stores.
-Rules engine decides.
-OKF represents canonical knowledge.
-RAG retrieves uncertain/unstructured knowledge.
-Reranker prioritizes evidence.
-Citations prove claims.
-Human confirms personal information.
-MCP exposes capabilities to agents.
+app/modules/<feature>/
+├── models.py      # SQLAlchemy ORM database table definitions
+├── schemas.py     # Pydantic v2 DTOs (Request / Response validation)
+├── service.py     # Pure business logic, algorithms & DB queries
+└── router.py      # FastAPI HTTP route handlers & dependency injection
 ```
 
 ---
 
-## 🗺️ Master Release Roadmap at a Glance
-
-| Version | Milestone Name | Focus / Core Deliverable | Status |
-| :--- | :--- | :--- | :--- |
-| **V1.0** | **The Deterministic Core** | 4-Screen Flow, Rule Engine, Explainability, 12 National Schemes, Docker Stack | ✅ **Completed** |
-| **V1.1** | **State Schemes Expansion** | Flagship state benefits (Madhya Pradesh, Maharashtra, Karnataka) & Location Matching | ✅ **Completed** |
-| **V1.2** | **Admin Management Portal** | Web UI to create, edit, and toggle schemes without SQL, Visual Rule Builder | ✅ **Completed** |
-| **V1.3** | **Document Vault & Readiness** | S3 Document storage & live Scheme Application Readiness Meter | ✅ **Completed** |
-| **V1.5** | **Government Ingestion Pipeline** | Two-Phase Semantic CDC + Circuit Breaker + MinIO Staging + Triage Queue | ✅ **Completed** |
-| **V2.0** | **OCR & Fact Extraction** | Auto-extract facts from Aadhaar/Certificates with human verification | 🎯 **Next** |
-| **V2.5** | **OKF Canonical Knowledge** | Structured agent-readable knowledge layer & Query Router | 📋 Planned |
-| **V3.0** | **Hybrid RAG & Provenance** | BM25 + Vector + Cross-Encoder Reranker + Mandatory Citations | 📋 Planned |
-| **V3.5** | **MCP Agent Server** | Standard Model Context Protocol tools for autonomous AI agents | 📋 Planned |
-| **V4.0** | **Life-Event Intelligence** | Proactive triggers on life changes (College, 18+, 60+, Marriage) | 📋 Planned |
-
----
-
-# 📦 Detailed Version Specifications
-
----
-
-## 🟢 V1.0 — The Deterministic Core *(Completed & Live)*
-
-### Objective
-Provide a zero-friction, login-free 4-screen citizen web experience backed by a deterministic rules engine and 12 flagship national schemes.
+## 3. Module Directory Breakdown
 
 ```text
-Home (/)  ──▶  Eligibility Form (/check)  ──▶  Results (/results)  ──▶  Scheme Details (/schemes/:slug)
-```
-
-### Key Deliverables
-* **4-Screen Citizen Web App**:
-  * `Home (/)`: Need-based search (`"fertilizer"`, `"pension"`), persona pills (Farmer, Student, Women, Senior), popular schemes.
-  * `Eligibility Form (/check)`: 4-question form (Age, Gender, State, Occupation, Income INR). No login required.
-  * `Results Dashboard (/results)`: Categorized buckets (**Fully Eligible (100%)** vs **Nearly Eligible (50-99%)** with itemized passed/failed reasons).
-  * `Scheme Details (/schemes/:slug)`: Benefits breakdown, criteria checks (`✓`/`✗`), required documents, and official portal application link.
-* **Backend Rules Engine**:
-  * Dynamic relational operators: `=`, `lte`, `gte`, `between`, `in`.
-  * Explainability engine producing human-friendly natural language verdicts.
-* **Database & Infrastructure**:
-  * PostgreSQL 17 + Alembic versioned migrations + MinIO S3.
-  * 12 Seeded Flagship Schemes (PM-Kisan, Ayushman Bharat, PMAY-G, Mudra, Sukanya Samriddhi, Vishwakarma, etc.).
-  * 1-Command Docker Compose (`docker compose up -d`).
-
----
-
-## 🟢 V1.1 — State-Specific Scheme Expansion *(Completed & Live)*
-
-### Objective
-Expand coverage beyond national schemes into high-impact state-level welfare programs (Madhya Pradesh, Maharashtra, Karnataka) where >70% of citizen direct welfare transfers occur.
-
-```text
-Citizen Location (e.g. Madhya Pradesh)
-         │
-         ▼
-Evaluate National Schemes + MP State Schemes
-         │
-         ▼
-Display Unified Opportunities:
-  • PM-Kisan (National: ₹6,000/yr)
-  • MP Mukhya Mantri Kisan Kalyan (State: ₹6,000/yr Top-Up)
-  • Total Citizen Benefit = ₹12,000/year!
-```
-
-### Key Deliverables
-* **State Column & Models**:
-  * Added `state` indexed column (`ALL_INDIA` or specific State name) in `schemes` table via Alembic migration `b08d40047bc5`.
-* **State Flagship Dataset (19 Schemes Total)**:
-  * **Madhya Pradesh**:
-    * *Mukhya Mantri Ladli Behna Yojana* (₹1,250/mo direct DBT for women aged 21-60).
-    * *Mukhya Mantri Kisan Kalyan Yojana* (₹6,000/yr farmer state top-up).
-    * *Mukhyamantri Medhavi Vidyarthi Yojana (MMVY)* (100% Higher education tuition fee waiver).
-  * **Maharashtra**:
-    * *Mukhyamantri Majhi Ladki Bahin Yojana* (₹1,500/mo financial aid).
-    * *Namo Shetkari Mahasanman Nidhi Yojana* (₹6,000/yr farmer aid).
-  * **Karnataka**:
-    * *Gruha Lakshmi Scheme* (₹2,000/mo female head-of-household grant).
-    * *Yuva Nidhi Scheme* (₹3,000/mo unemployment stipend for graduates).
-* **Location-Aware Rules Engine**:
-  * Citizen state matching evaluates `ALL_INDIA` + resident state schemes with plain-English reasons.
-* **Frontend State Filters & Badging**:
-  * State filter bar on Home page and badges (`🇮🇳 National` vs `🏛️ Madhya Pradesh`, `🏛️ Maharashtra`, `🏛️ Karnataka`) across Home, Results, and Detail pages.
-* **Tests Passing**:
-  * 44/44 automated integration & unit tests passing (`uv run pytest -v`).
-
----
-
-## 🟢 V1.2 — Admin Scheme Management Portal *(Completed & Live)*
-
-### Objective
-Allow non-technical administrators to create, update, and toggle welfare schemes and eligibility rules via a secure web UI without touching code or SQL.
-
-```text
-Admin Portal (/admin)
-  ├── Secure JWT Auth (admin@gov.in)
-  ├── Scheme Metadata (Name, Ministry, State, Description, Portal URL)
-  ├── Visual Rule Builder (Field: Age/Income/State, Operator: =, <=, >=, between, Value)
-  ├── Benefits Manager (Type, Cash amount, Description)
-  └── Required Documents Checklist (Mandatory vs Optional)
-```
-
-### Key Deliverables
-* **Admin Dashboard UI (`/admin`)**:
-  * Scheme table with search, category & state filters, instant status toggle (`active` / `draft`), and edit triggers.
-* **Visual Rule Builder**:
-  * Dropdown UI to configure rules without writing code:
-    `[ State ] [ = ] [ Madhya Pradesh ]`
-    `[ Age ] [ >= ] [ 21 ]`
-    `[ Income ] [ <= ] [ 2,50,000 ]`
-* **RBAC Enforcement**:
-  * Restricts `/admin` endpoints to users with `role: "admin"` via JWT.
-* **Full CRUD Lifecycle**:
-  * Create, edit, toggle, and delete schemes + nested benefits, eligibility rules, and required documents.
-
----
-
-## 🟢 V1.3 — Document Vault & Live Readiness Meter *(Completed & Live)*
-
-### Objective
-Enable citizens to store documents securely in MinIO S3 and view real-time application readiness scores before applying.
-
-```text
-Citizen Document Vault
-  ├── Aadhaar Card (✓ Uploaded)
-  ├── Bank Passbook (✓ Uploaded)
-  └── Income Certificate (✗ Missing)
-         │
-         ▼
-Readiness Score: 66.7% Ready
-Action: "Upload Income Certificate to reach 100% Readiness"
-```
-
-### Key Deliverables
-* **MinIO S3 Vault Dropzone**:
-  * Secure presigned URL uploads with server-side mime-type & size validation.
-* **Live Readiness Evaluator**:
-  * Compares uploaded documents against scheme `required_documents`.
-  * Returns percentage score (e.g. 2 of 3 documents present $\to$ `66.7% Ready`).
-* **Document Checklist in UI**:
-  * Visual checklist showing which documents are ready and which need to be obtained.
-
----
-
-## 🟢 V1.5 — Automated Government Ingestion & Sync Pipeline *(Completed & Live)*
-
-### Objective
-High-efficiency background pipeline pulling official datasets from `data.gov.in` and state portals without putting load on production read databases.
-
-```text
-               SCHEDULED INGESTION WORKER
-                            │
-                            ▼
- ┌──────────────────────────────────────────────────────────┐
- │ GATE 1: ZERO-BANDWIDTH HTTP CHECK (RFC 7232)             │
- │ Send "If-None-Match: <ETag>" / "If-Modified-Since"       │
- └──────────────────────────┬───────────────────────────────┘
-                            │
-            ┌───────────────┴───────────────┐
-            ▼                               ▼
-    [ HTTP 304 Not Modified ]       [ HTTP 200 OK ]
-            │                               │
-     ✅ 0 Bytes Downloaded.                 ▼
-     Exit in 10ms.             ┌────────────────────────────┐
-                               │ 1. MINIO S3 RAW DUMP BLOB  │
-                               │ Audit snapshot saved to S3 │
-                               └────────────┬───────────────┘
-                                            │
-                                            ▼
-                               ┌────────────────────────────┐
-                               │ GATE 2: CIRCUIT BREAKER    │
-                               │ Rejects corrupted payloads │
-                               └────────────┬───────────────┘
-                                            │
-                                            ▼
-                               ┌────────────────────────────┐
-                               │ GATE 3: SEMANTIC HASH DIFF │
-                               │ Hashes only business rules │
-                               └────────────┬───────────────┘
-                                            │
-                     ┌──────────────────────┴──────────────────────┐
-                     ▼                                             ▼
-          [ NON-BREAKING CHANGE ]                        [ BREAKING CHANGE ]
-          (New scheme, new benefit)                      (Income limit lowered)
-                     │                                             │
-                     ▼                                             ▼
-          ┌─────────────────────┐                       ┌─────────────────────┐
-          │ STAGING BATCH WRITE │                       │ ADMIN TRIAGE QUEUE  │
-          │ (PostgreSQL Writer) │                       │ (1-Click Approval)  │
-          └─────────────────────┘                       └─────────────────────┘
+app/
+├── core/                  # Shared framework infrastructure
+│   ├── config.py          # Environment settings (Pydantic BaseSettings)
+│   ├── deps.py            # FastAPI dependency injection (get_db, get_current_user)
+│   ├── exceptions.py      # Domain exception hierarchy
+│   ├── error_handlers.py  # Centralized JSON error contract envelope
+│   ├── pagination.py      # Generic PaginatedResponse[T] container
+│   └── security.py        # Argon2id password hashing & JWT token issuing
+│
+├── database.py            # SQLAlchemy engine & SessionLocal factory
+├── main.py                # FastAPI entrypoint, mounts feature routers
+├── seeds/                 # Seed scripts (Admin creation + 4,160+ Scheme Catalog)
+│
+└── modules/               # Feature-Driven Domain Modules
+    ├── auth/              # JWT Auth, User lifecycle, and Citizen Demographics
+    ├── schemes/           # Welfare Scheme catalog, problem search, categories, CRUD
+    ├── eligibility/       # Rule evaluator & plain-English explanation engine
+    ├── vault/             # MinIO/S3 Document storage & Application Readiness Meter
+    ├── ingestion/         # 4-Gate Gov API ingestion, RFC 7232 Caching, Diff triage
+    └── admin/             # Administrative control plane & user role elevation
 ```
 
 ---
 
-## 📋 V2.0 — OCR Ingestion & Fact Extraction
+## 4. System Components & Data Flow
 
-### Objective
-Eliminate manual form-filling by auto-extracting citizen facts from uploaded identity cards and certificates with human-in-the-loop verification.
-
-```text
-Upload Document (Aadhaar / Ration Card / Income Certificate)
-  ↓
-OCR & Entity Extraction Pipeline
-  ↓
-Confidence Scoring & Normalization
-  ↓
-Citizen Confirmation Screen:
-  "We detected your Annual Income as ₹1,80,000 from Income Certificate."
-  [ Correct / Confirm ]    [ Edit ]
-  ↓
-Verified Fact Stored in Citizen Profile
+```mermaid
+graph TD
+    Client["Citizen / Admin Web & Mobile UI"] --> FastAPI["FastAPI Entrypoint (app/main.py)"]
+    
+    subgraph Modules ["app/modules/"]
+        Auth["auth/ (JWT Auth & Profile)"]
+        Schemes["schemes/ (Discovery & Search)"]
+        Elig["eligibility/ (Rule Engine & Reasoner)"]
+        Vault["vault/ (S3 Storage & Readiness)"]
+        Ingest["ingestion/ (4-Gate Pipeline)"]
+        Admin["admin/ (Role Elevation & Control)"]
+    end
+    
+    FastAPI --> Auth
+    FastAPI --> Schemes
+    FastAPI --> Elig
+    FastAPI --> Vault
+    FastAPI --> Ingest
+    FastAPI --> Admin
+    
+    Auth --> Postgres[("PostgreSQL 16")]
+    Schemes --> Postgres
+    Elig --> Postgres
+    Vault --> MinIO[("MinIO / S3 Vault")]
+    Ingest --> GovData["Data.gov.in / State Feeds"]
 ```
 
 ---
 
-## 📋 V2.5 — OKF (Open Knowledge Framework) & Canonical Representation
+## 5. Core Engine Specifications
 
-### Objective
-Create a structured, agent-readable knowledge layer preserving official hierarchy and establish a Query Router.
+### 5.1 Scheme Discovery & Search (`/schemes`)
+- **Faceted Problem Search**: Full-text searching on citizen problem statements (e.g. `?q=fertilizer`, `?q=scholarship`, `?q=pension`).
+- **Category Counts**: Instant categorization across Agriculture, Healthcare, Education, Social Welfare, Housing, and MSME/Business.
+- **State Filtering**: Distinguishes Central flagship schemes (`All-India`) from state-specific benefits (`Madhya Pradesh`, `Maharashtra`, `Karnataka`, `Tamil Nadu`).
 
-```text
-                      CITIZEN QUERY
-                            │
-                            ▼
-                     QUERY ROUTER
-                            │
-          ┌─────────────────┼─────────────────┐
-          ▼                 ▼                 ▼
-     STRUCTURED         CANONICAL          UNKNOWN /
-    RULE / SQL          KNOWLEDGE          AMBIGUOUS
-    (FastAPI)             (OKF)              (RAG)
+### 5.2 Deterministic Rule & Reasoner Engine (`/eligibility`)
+- **Evaluation Engine**: Compares citizen demographic context against rule criteria supporting `<, <=, >, >=, ==, !=, in, not_in, between, range`.
+- **Explainability Model**: Categorizes evaluation into 3 clear citizen tiers:
+  1. `eligible_schemes` (100% criteria met).
+  2. `nearly_eligible_schemes` (50%–99% met, providing plain-English explanations of the exact unmet criteria).
+  3. `ineligible_schemes` (< 50% met).
+
+### 5.3 Citizen Document Vault & Readiness Meter (`/vault`)
+- Encrypted upload of citizen identity documents to MinIO / S3 object storage.
+- Issues time-limited 1-hour presigned download URLs.
+- **Readiness Meter**: Compares uploaded vault documents against target scheme requirements to return percentage readiness and an actionable checklist of missing documents.
+
+### 5.4 4-Gate Automated Government Ingestion Pipeline (`/admin/ingestion`)
+- **Gate 1 (RFC 7232 Zero-Bandwidth Caching)**: Sends `If-None-Match` and `If-Modified-Since` headers to skip unchanged feeds in 0.05s.
+- **Gate 2 (Raw MinIO Archival)**: Saves unedited API payloads as raw JSON audit snapshots.
+- **Gate 3 (Circuit Breaker Quarantine)**: Stops ingestion if upstream API returns malformed schemas or >40% scheme dropouts.
+- **Gate 4 (Semantic Hash Diffing & Triage)**: Auto-applies non-breaking updates; routes breaking criteria modifications to the admin triage queue.
+
+---
+
+## 6. Standard Error Contract
+
+All endpoints guarantee predictable error responses conforming to this JSON schema:
+
+```json
+{
+  "error": "ENTITY_NOT_FOUND | DUPLICATE_ENTITY | AUTHENTICATION_FAILED | PERMISSION_DENIED | VALIDATION_ERROR",
+  "message": "Human-readable explanation of the failure",
+  "status_code": 404
+}
 ```
 
 ---
 
-## 📋 V3.0 — Hybrid RAG & Provenance Citations
+## 7. Upcoming Milestones
 
-### Objective
-Handle messy, unstructured circulars and FAQs using hybrid search, reranking, and mandatory source citations.
-
-```text
-Citizen Query
-  ↓
-Hybrid Retrieval (BM25 Keyword + Dense Vector Embeddings)
-  ↓
-Cross-Encoder Reranking (Prioritize highest-evidence passages)
-  ↓
-Dynamic Top-K Evidence Selection
-  ↓
-LLM Synthesis with Mandatory Citations:
-  "Claim: Eligible up to age 35. [Source: Gazette Notification 2024, Page 4, Section 2b]"
-```
+### V2.0 — Multimodal Vision LLM Fact Extraction & Citizen Verification Step
+- **OCR Fact Extractor** (`app/modules/vault/ocr_service.py`): Leverages Google Gemini 1.5 Flash (free tier: 1,500 req/day) to extract demographics (`name`, `dob`, `income`, `caste`, `state`) directly from uploaded PDFs and images.
+- **Citizen Confirmation Modal**: Protects citizens from OCR misread digit errors with a side-by-side editable confirmation dialog before saving to their profile.
 
 ---
 
-## 📋 V3.5 — MCP (Model Context Protocol) Server
+## 8. 🔮 Future Roadmap: Universal Multi-Country Global Expansion
 
-### Objective
-Expose the complete system capabilities through standard MCP tools so autonomous AI agents can operate the platform securely.
+To scale this platform into a **Universal Open-Source Welfare & Public Benefit Navigator (UN / GovStack standard)** usable by any nation or municipality on Earth:
 
-```text
-Autonomous AI Agent
-         │
-         ▼
-   [ MCP Server ]
-   ├── find_schemes(query, filters)
-   ├── check_eligibility(citizen_profile)
-   ├── get_required_documents(scheme_slug)
-   ├── calculate_readiness(user_id, scheme_slug)
-   └── get_official_sources(scheme_slug)
-         │
-         ▼
-Application Services & Database
-```
+### 8.1 ISO 3166-1 Country Code & Jurisdiction Hierarchy
+- Add `country_code: str` (ISO 3166-1 alpha-2 e.g. `"US"`, `"GB"`, `"CA"`, `"IN"`, `"DE"`, `"BRL"`, `"KEN"`) to `Scheme` and `Profile`.
+- Add `jurisdiction_level: str` (`"federal"`, `"state_province"`, `"county"`, `"municipal"`).
+- Generalize `state` $\to$ `state_province` (`"California"`, `"Ontario"`, `"Bavaria"`, `"Maharashtra"`).
 
----
+### 8.2 Dynamic Multi-Currency & Locale Engine
+- Add `currency: str` (ISO 4217 e.g. `"USD"`, `"GBP"`, `"EUR"`, `"INR"`, `"CAD"`).
+- Format rule explanations with local currency symbols (`$`, `£`, `€`, `¥`, `₹`, `CAD`) dynamically based on scheme locale.
 
-## 📋 V4.0 — Life-Event Intelligence Engine
+### 8.3 Universal Demographic Profile + Extensible Country Attributes
+- Core universal fields: `country_code`, `state_province`, `postal_code`, `date_of_birth`, `gender`, `annual_income`, `household_size`, `employment_status`.
+- Country-specific attributes dictionary (`country_attributes: dict[str, Any]`):
+  - **USA**: `veteran_status`, `medicaid_enrolled`, `snap_eligible`, `tax_filing_status`
+  - **UK**: `disability_living_allowance`, `universal_credit_claimant`
+  - **Canada**: `indigenous_status`, `permanent_resident`
+  - **India**: `caste_category`, `has_land`
 
-### Objective
-Transform the platform from reactive search into a proactive life assistant that notifies citizens as their life evolves.
-
-```text
-Life Event Detected
-  • Daughter turns 18 / enters College
-  • Citizen turns 60
-  • Moved from Bihar to Maharashtra
-  • Family income bracket changed
-         │
-         ▼
-Background Profile Re-evaluation
-         │
-         ▼
-Proactive Citizen Notification:
-  "Your daughter recently turned 18 and entered college. 
-   You now qualify for 3 new Higher Education Scholarships!"
-```
-
----
-
-# 🏗️ Architectural Summary: The Long-Term Stack
-
-```text
-                         CITIZEN
-                            │
-                            ▼
-                    MOBILE / WEB APP
-                            │
-          ┌─────────────────┼─────────────────┐
-          │                 │                 │
-          ▼                 ▼                 ▼
-     PROFILE (V1)     DOCUMENTS (V1.3)     CHAT (V2.5+)
-          │                 │                 │
-          │                 ▼                 ▼
-          │           OCR/PARSER (V2.0)  QUERY ROUTER (V2.5)
-          │                 │                 │
-          │                 ▼       ┌─────────┼─────────┐
-          │          VERIFIED FACTS  │         │         │
-          │                 │        ▼         ▼         ▼
-          │                 │       SQL       OKF       RAG
-          │                 │      (V1.0)    (V2.5)    (V3.0)
-          └─────────────────┼────────┴─────────┴─────────┘
-                            │
-                            ▼
-                   RECOMMENDATION ENGINE (V1.0 - V4.0)
-                            │
-              ┌─────────────┼──────────────┐
-              ▼             ▼              ▼
-          DASHBOARD      CITATIONS    LIFE EVENTS
-           (V1.0)         (V3.0)         (V4.0)
-                                            │
-                                            ▼
-                                   NEXT ACTION & APPLY
-```
+### 8.4 Global Document Taxonomies
+- Out-of-the-box readiness checklists for international jurisdictions:
+  - **USA**: SSN Card, Driver's License, Form W-2 / 1040, Proof of Residency.
+  - **UK**: National Insurance Number (NINO), P60 / Payslips, Council Tax Statement.
+  - **Canada**: Social Insurance Number (SIN), Notice of Assessment (CRA).
+  - **Global**: Passport, Birth Certificate, Bank Statement, Tax Return.
