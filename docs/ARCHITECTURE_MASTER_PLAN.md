@@ -24,8 +24,8 @@ MCP exposes capabilities to agents.
 | **V1.1** | **State Schemes Expansion** | Flagship state benefits (Madhya Pradesh, Maharashtra, Karnataka) & Location Matching | ✅ **Completed** |
 | **V1.2** | **Admin Management Portal** | Web UI to create, edit, and toggle schemes without SQL, Visual Rule Builder | ✅ **Completed** |
 | **V1.3** | **Document Vault & Readiness** | S3 Document storage & live Scheme Application Readiness Meter | ✅ **Completed** |
-| **V1.5** | **Government Ingestion Pipeline** | Two-Phase Semantic CDC + Circuit Breaker + MinIO Staging + Triage Queue | 🎯 **Next** |
-| **V2.0** | **OCR & Fact Extraction** | Auto-extract facts from Aadhaar/Certificates with human verification | 📋 Planned |
+| **V1.5** | **Government Ingestion Pipeline** | Two-Phase Semantic CDC + Circuit Breaker + MinIO Staging + Triage Queue | ✅ **Completed** |
+| **V2.0** | **OCR & Fact Extraction** | Auto-extract facts from Aadhaar/Certificates with human verification | 🎯 **Next** |
 | **V2.5** | **OKF Canonical Knowledge** | Structured agent-readable knowledge layer & Query Router | 📋 Planned |
 | **V3.0** | **Hybrid RAG & Provenance** | BM25 + Vector + Cross-Encoder Reranker + Mandatory Citations | 📋 Planned |
 | **V3.5** | **MCP Agent Server** | Standard Model Context Protocol tools for autonomous AI agents | 📋 Planned |
@@ -159,7 +159,7 @@ Action: "Upload Income Certificate to reach 100% Readiness"
 
 ---
 
-## 📋 V1.5 — Automated Government Ingestion & Sync Pipeline
+## 🟢 V1.5 — Automated Government Ingestion & Sync Pipeline *(Completed & Live)*
 
 ### Objective
 High-efficiency background pipeline pulling official datasets from `data.gov.in` and state portals without putting load on production read databases.
