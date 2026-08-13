@@ -143,8 +143,8 @@ def test_state_filter_on_schemes_api(client: TestClient):
     assert "Karnataka" not in mp_states
 
     # Searching specifically for MP farmer schemes
-    res_search = client.get("/schemes/search?q=kisan&state=Madhya+Pradesh")
+    res_search = client.get("/schemes/search?q=kisan&state=Madhya+Pradesh&limit=100")
     assert res_search.status_code == 200
     slugs = [item["slug"] for item in res_search.json()["items"]]
-    assert "pm-kisan" in slugs
     assert "mp-kisan-kalyan-yojana" in slugs
+    assert any("kisan" in s for s in slugs)

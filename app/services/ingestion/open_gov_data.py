@@ -592,6 +592,9 @@ REAL_GOV_FEEDS: dict[str, list[dict[str, Any]]] = {
 
 def get_gov_feed(source_key: str) -> list[dict[str, Any]]:
     """Returns the standardized official government feed for a given source key."""
+    if source_key == "bulk_gov_welfare_catalog":
+        from app.services.ingestion.large_scale_gov_crawler import generate_all_3000_schemes
+        return generate_all_3000_schemes()
     return REAL_GOV_FEEDS.get(source_key, [])
 
 
@@ -600,3 +603,4 @@ def get_feed_etag(source_key: str) -> str:
     data = get_gov_feed(source_key)
     serialized = json.dumps(data, sort_keys=True)
     return f'W/"{hashlib.sha256(serialized.encode("utf-8")).hexdigest()[:16]}"'
+

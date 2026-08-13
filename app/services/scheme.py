@@ -137,10 +137,16 @@ def list_schemes(
     count_stmt = select(func.count()).select_from(query.subquery())
     total = db.scalar(count_stmt) or 0
 
+    order_clauses = []
+    if state and state.upper() not in ("ALL_INDIA", "NATIONAL"):
+        from sqlalchemy import case
+        order_clauses.append(case((Scheme.state.ilike(f"%{state}%"), 0), else_=1))
+    order_clauses.append(Scheme.id.desc())
+
     stmt = (
         query.offset(skip)
         .limit(limit)
-        .order_by(Scheme.id.desc())
+        .order_by(*order_clauses)
         .options(
             selectinload(Scheme.benefits),
             selectinload(Scheme.eligibility_rules),

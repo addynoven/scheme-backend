@@ -104,6 +104,13 @@ def get_or_create_default_sources(db: Session) -> list[IngestionSource]:
             "source_type": "json_feed",
             "status": "active",
         },
+        {
+            "source_key": "bulk_gov_welfare_catalog",
+            "name": "MyScheme National & State 3000+ Welfare Catalog",
+            "endpoint_url": "http://127.0.0.1:8000/open-data/feeds/bulk_gov_welfare_catalog",
+            "source_type": "json_feed",
+            "status": "active",
+        },
     ]
 
     for d in defaults:
@@ -282,17 +289,15 @@ def _process_single_source(
         schemes_updated = 0
         breaking_changes_triaged = 0
 
+        # Preload all existing schemes into in-memory lookup map
+        existing_schemes = list(db.scalars(select(Scheme)).all())
+        existing_by_slug: dict[str, Scheme] = {s.slug: s for s in existing_schemes}
+        existing_by_name: dict[str, Scheme] = {s.name.lower(): s for s in existing_schemes}
+
         for incoming in incoming_schemes:
             slug = incoming.get("slug") or incoming.get("name", "").lower().replace(" ", "-")
-            name = incoming.get("name", "").strip()
-            existing = db.scalar(
-                select(Scheme).where(
-                    or_(
-                        Scheme.slug == slug,
-                        Scheme.name.ilike(name),
-                    )
-                )
-            )
+            name = incoming.get("name", "").strip().lower()
+            existing = existing_by_slug.get(slug) or existing_by_name.get(name)
 
             existing_dict = _scheme_to_dict(existing) if existing else None
             diff = classify_scheme_diff(existing_dict, incoming)
@@ -320,8 +325,12 @@ def _process_single_source(
             else:
                 # Non-breaking -> Auto-apply to database
                 if diff.is_new:
-                    _create_new_scheme_from_payload(db, incoming)
+                    new_scheme = _create_new_scheme_from_payload(db, incoming)
+                    existing_by_slug[slug] = new_scheme
+                    existing_by_name[name] = new_scheme
                     schemes_created += 1
+                    if schemes_created % 500 == 0:
+                        db.flush()
                 else:
                     _apply_non_breaking_scheme_update(db, existing, incoming)
                     schemes_updated += 1
@@ -405,20 +414,18 @@ def _create_new_scheme_from_payload(db: Session, data: dict[str, Any]) -> Scheme
         slug=slug,
         state=data.get("state", "ALL_INDIA"),
         category=data.get("category", "General"),
+        tags=data.get("tags"),
         ministry=data.get("ministry", "Government of India"),
         description=data.get("description", ""),
-        status=data.get("status", "Active"),
+        status=str(data.get("status", "active")).lower(),
         application_url=data.get("application_url"),
         official_website=data.get("official_website"),
     )
-    db.add(scheme)
-    db.flush()
 
     for r in data.get("eligibility_rules", []):
         rule_val = str(r.get("rule_value") or r.get("value_criteria") or "")
-        db.add(
+        scheme.eligibility_rules.append(
             EligibilityRule(
-                scheme_id=scheme.id,
                 field_name=r.get("field_name", "custom_field"),
                 operator=r.get("operator", "="),
                 rule_value=rule_val,
@@ -427,24 +434,26 @@ def _create_new_scheme_from_payload(db: Session, data: dict[str, Any]) -> Scheme
 
     for b in data.get("benefits", []):
         title = b.get("title") or b.get("benefit_type") or "Benefit"
-        db.add(
+        desc = b.get("description", "")
+        if b.get("amount"):
+            desc = f"{desc} (₹{b.get('amount'):,})" if desc else f"₹{b.get('amount'):,}"
+        scheme.benefits.append(
             Benefit(
-                scheme_id=scheme.id,
                 title=title,
-                description=b.get("description", ""),
+                description=desc,
             )
         )
 
     for d in data.get("required_documents", []):
-        db.add(
+        scheme.required_documents.append(
             RequiredDocument(
-                scheme_id=scheme.id,
                 document_name=d.get("document_name", "Required Document"),
                 is_mandatory=bool(d.get("is_mandatory", True)),
                 description=d.get("description", ""),
             )
         )
 
+    db.add(scheme)
     return scheme
 
 

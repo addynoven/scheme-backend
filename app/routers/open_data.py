@@ -25,7 +25,8 @@ def get_government_feed(
     Public open government welfare schemes feed endpoint.
     Complies with RFC 7232 Zero-Bandwidth caching (HTTP 304 on matching ETag).
     """
-    if source_key not in REAL_GOV_FEEDS:
+    data = get_gov_feed(source_key)
+    if not data:
         return JSONResponse(
             status_code=404,
             content={"error": "FEED_NOT_FOUND", "message": f"Source feed '{source_key}' not found"},
