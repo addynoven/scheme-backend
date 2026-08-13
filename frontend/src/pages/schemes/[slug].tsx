@@ -11,6 +11,7 @@ import {
   Building2,
   Calendar,
   Layers,
+  MapPin,
 } from 'lucide-react'
 import { getSchemeBySlug, type Scheme, type SchemeExplanation } from '@/lib/api'
 import { getSavedEligibilityReport } from '@/lib/session'
@@ -107,13 +108,26 @@ export default function SchemeDetailPage() {
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-blue-600/10 blur-3xl pointer-events-none" />
 
         <div className="flex flex-wrap items-center gap-2">
+          {scheme.state && scheme.state !== 'ALL_INDIA' ? (
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-950/80 text-amber-300 border border-amber-800/60 flex items-center gap-1">
+              <MapPin className="h-3 w-3" />
+              State: {scheme.state}
+            </span>
+          ) : (
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-zinc-800 text-zinc-200 border border-zinc-700">
+              🇮🇳 National Scheme
+            </span>
+          )}
+
           <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-950/80 text-blue-300 border border-blue-800/60">
             {scheme.category}
           </span>
+
           <span className="px-3 py-1 rounded-full text-xs font-medium bg-zinc-900 text-zinc-400 border border-zinc-800 flex items-center gap-1">
             <Building2 className="h-3 w-3" />
             {scheme.ministry}
           </span>
+
           {scheme.launch_date && (
             <span className="px-3 py-1 rounded-full text-xs font-medium bg-zinc-900 text-zinc-400 border border-zinc-800 flex items-center gap-1">
               <Calendar className="h-3 w-3" />

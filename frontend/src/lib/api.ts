@@ -36,6 +36,7 @@ export interface Scheme {
   id: number
   name: string
   slug: string
+  state?: string
   category: string
   tags?: string | null
   ministry: string
@@ -63,6 +64,7 @@ export interface SchemeExplanation {
   scheme_id: number
   scheme_name: string
   scheme_slug: string
+  state?: string
   ministry: string
   description: string
   status: 'eligible' | 'nearly_eligible' | 'ineligible'
@@ -99,17 +101,24 @@ export interface EligibilityCheckPayload {
 
 const API_BASE = '/api'
 
-export async function fetchPopularSchemes(limit = 6): Promise<Scheme[]> {
-  const res = await fetch(`${API_BASE}/schemes?limit=${limit}&status=active`)
+export async function fetchPopularSchemes(limit = 8, state?: string): Promise<Scheme[]> {
+  const params = new URLSearchParams()
+  params.set('limit', String(limit))
+  params.set('status', 'active')
+  if (state && state !== 'ALL_INDIA' && state !== 'All') {
+    params.set('state', state)
+  }
+  const res = await fetch(`${API_BASE}/schemes?${params.toString()}`)
   if (!res.ok) throw new Error('Failed to load popular schemes')
   const data = await res.json()
   return data.items || []
 }
 
-export async function searchSchemes(q?: string, category?: string): Promise<Scheme[]> {
+export async function searchSchemes(q?: string, category?: string, state?: string): Promise<Scheme[]> {
   const params = new URLSearchParams()
   if (q) params.set('q', q)
   if (category && category !== 'All') params.set('category', category)
+  if (state && state !== 'ALL_INDIA' && state !== 'All') params.set('state', state)
   params.set('status', 'active')
 
   const res = await fetch(`${API_BASE}/schemes/search?${params.toString()}`)

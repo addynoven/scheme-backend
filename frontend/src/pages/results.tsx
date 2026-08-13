@@ -57,7 +57,7 @@ export default function ResultsPage() {
         <div className="flex flex-col gap-1.5">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950/80 border border-emerald-800/60 text-emerald-300 w-fit">
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-            <span>Analysis Complete · 12 National Schemes Evaluated</span>
+            <span>Analysis Complete · {report.total_evaluated} Schemes Evaluated</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-100 tracking-tight">
             Your Welfare Scheme Matches
@@ -69,7 +69,7 @@ export default function ResultsPage() {
               <span className="text-zinc-200 font-semibold capitalize">{profile.gender}</span>·
               <span className="text-zinc-200 font-semibold">₹{profile.annual_income?.toLocaleString('en-IN')}/yr</span>·
               <span className="text-zinc-200 font-semibold">{profile.age} years old</span>·
-              <span className="text-zinc-200 font-semibold">{profile.state}</span>
+              <span className="text-amber-300 font-semibold">🏛️ {profile.state}</span>
             </p>
           )}
         </div>
@@ -142,22 +142,33 @@ export default function ResultsPage() {
                 <div className="flex flex-col gap-4">
                   {/* Top Badges */}
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs text-zinc-500 line-clamp-1">
-                      {scheme.ministry}
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {scheme.state && scheme.state !== 'ALL_INDIA' ? (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-800/60 shadow-sm">
+                          🏛️ {scheme.state}
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">
+                          🇮🇳 National
+                        </span>
+                      )}
+                      <span className="text-xs text-zinc-500 line-clamp-1">
+                        {scheme.ministry}
+                      </span>
+                    </div>
 
                     {is100 ? (
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 shadow-sm flex items-center gap-1.5">
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 shadow-sm flex items-center gap-1.5 shrink-0">
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         100% Eligible
                       </span>
                     ) : isNearly ? (
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-950/80 text-amber-400 border border-amber-800/60 shadow-sm flex items-center gap-1.5">
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-950/80 text-amber-400 border border-amber-800/60 shadow-sm flex items-center gap-1.5 shrink-0">
                         <AlertCircle className="h-3.5 w-3.5" />
                         {scheme.match_percentage}% Nearly Eligible
                       </span>
                     ) : (
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-zinc-950 text-zinc-500 border border-zinc-800">
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-zinc-950 text-zinc-500 border border-zinc-800 shrink-0">
                         Ineligible
                       </span>
                     )}

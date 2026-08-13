@@ -21,9 +21,10 @@ MCP exposes capabilities to agents.
 | Version | Milestone Name | Focus / Core Deliverable | Status |
 | :--- | :--- | :--- | :--- |
 | **V1.0** | **The Deterministic Core** | 4-Screen Flow, Rule Engine, Explainability, 12 National Schemes, Docker Stack | ✅ **Completed** |
-| **V1.1** | **State Schemes Expansion** | State-level benefits (Madhya Pradesh, Maharashtra, Karnataka) | 🎯 **Next** |
-| **V1.2** | **Admin Management Portal** | Web UI to create, edit, and toggle schemes without SQL | 📋 Planned |
+| **V1.1** | **State Schemes Expansion** | Flagship state benefits (Madhya Pradesh, Maharashtra, Karnataka) & Location Matching | ✅ **Completed** |
+| **V1.2** | **Admin Management Portal** | Web UI to create, edit, and toggle schemes without SQL | 🎯 **Next** |
 | **V1.3** | **Document Vault & Readiness** | S3 Document storage & live Scheme Application Readiness Meter | 📋 Planned |
+| **V1.5** | **Government Ingestion Pipeline** | Two-Phase Semantic CDC + Circuit Breaker + MinIO Staging + Triage Queue | 📋 Planned |
 | **V2.0** | **OCR & Fact Extraction** | Auto-extract facts from Aadhaar/Certificates with human verification | 📋 Planned |
 | **V2.5** | **OKF Canonical Knowledge** | Structured agent-readable knowledge layer & Query Router | 📋 Planned |
 | **V3.0** | **Hybrid RAG & Provenance** | BM25 + Vector + Cross-Encoder Reranker + Mandatory Citations | 📋 Planned |
@@ -58,57 +59,71 @@ Home (/)  ──▶  Eligibility Form (/check)  ──▶  Results (/results)  �
   * PostgreSQL 17 + Alembic versioned migrations + MinIO S3.
   * 12 Seeded Flagship Schemes (PM-Kisan, Ayushman Bharat, PMAY-G, Mudra, Sukanya Samriddhi, Vishwakarma, etc.).
   * 1-Command Docker Compose (`docker compose up -d`).
-  * 39/39 Automated Backend Tests passing.
 
 ---
 
-## 🎯 V1.1 — State-Specific Scheme Expansion *(Next Milestone)*
+## 🟢 V1.1 — State-Specific Scheme Expansion *(Completed & Live)*
 
 ### Objective
-Expand coverage beyond national schemes into high-impact state-level welfare programs where >70% of citizen funds reside.
+Expand coverage beyond national schemes into high-impact state-level welfare programs (Madhya Pradesh, Maharashtra, Karnataka) where >70% of citizen direct welfare transfers occur.
 
 ```text
 Citizen Location (e.g. Madhya Pradesh)
          │
          ▼
-Evaluate National Schemes + State-Specific Schemes
+Evaluate National Schemes + MP State Schemes
          │
          ▼
-Display Unified Opportunities (e.g. PM-Kisan + MP CM Kisan Kalyan)
+Display Unified Opportunities:
+  • PM-Kisan (National: ₹6,000/yr)
+  • MP Mukhya Mantri Kisan Kalyan (State: ₹6,000/yr Top-Up)
+  • Total Citizen Benefit = ₹12,000/year!
 ```
 
 ### Key Deliverables
-* **State Schemes Dataset**:
-  * **Madhya Pradesh**: *Ladli Behna Yojana* (₹1,250/mo), *Mukhya Mantri Kisan Kalyan Yojana* (₹6,000/mo state top-up to PM-Kisan).
-  * **Maharashtra**: *Majhi Ladki Bahin Yojana*, *Namo Shetkari Mahasanman Nidhi*.
-  * **Karnataka**: *Gruha Lakshmi*, *Yuva Nidhi* (Unemployment stipend for graduates).
-* **Multi-Tier Rule Evaluation**:
-  * Evaluate rules scoped by `state = 'Madhya Pradesh'` or `state = 'ALL_INDIA'`.
-* **State Filter & Badging in UI**:
-  * Visual badges indicating `National Scheme` vs `State Scheme (MP)`.
+* **State Column & Models**:
+  * Added `state` indexed column (`ALL_INDIA` or specific State name) in `schemes` table via Alembic migration `b08d40047bc5`.
+* **State Flagship Dataset (19 Schemes Total)**:
+  * **Madhya Pradesh**:
+    * *Mukhya Mantri Ladli Behna Yojana* (₹1,250/mo direct DBT for women aged 21-60).
+    * *Mukhya Mantri Kisan Kalyan Yojana* (₹6,000/yr farmer state top-up).
+    * *Mukhyamantri Medhavi Vidyarthi Yojana (MMVY)* (100% Higher education tuition fee waiver).
+  * **Maharashtra**:
+    * *Mukhyamantri Majhi Ladki Bahin Yojana* (₹1,500/mo financial aid).
+    * *Namo Shetkari Mahasanman Nidhi Yojana* (₹6,000/yr farmer aid).
+  * **Karnataka**:
+    * *Gruha Lakshmi Scheme* (₹2,000/mo female head-of-household grant).
+    * *Yuva Nidhi Scheme* (₹3,000/mo unemployment stipend for graduates).
+* **Location-Aware Rules Engine**:
+  * Citizen state matching evaluates `ALL_INDIA` + resident state schemes with plain-English reasons.
+* **Frontend State Filters & Badging**:
+  * State filter bar on Home page and badges (`🇮🇳 National` vs `🏛️ Madhya Pradesh`, `🏛️ Maharashtra`, `🏛️ Karnataka`) across Home, Results, and Detail pages.
+* **Tests Passing**:
+  * 44/44 automated integration & unit tests passing (`uv run pytest -v`).
 
 ---
 
-## 📋 V1.2 — Admin Scheme Management Portal
+## 🎯 V1.2 — Admin Scheme Management Portal *(Next Milestone)*
 
 ### Objective
 Allow non-technical administrators to create, update, and toggle welfare schemes and eligibility rules via a secure web UI without touching code or SQL.
 
 ```text
 Admin Portal (/admin)
-  ├── Scheme Metadata (Name, Ministry, Description, Portal URL)
-  ├── Rule Builder (Select field, operator: <=, >=, between, value)
+  ├── Scheme Metadata (Name, Ministry, State, Description, Portal URL)
+  ├── Visual Rule Builder (Select field, operator: <=, >=, between, value)
   ├── Benefits Manager (Type, Cash amount, Description)
   └── Required Documents Checklist (Mandatory vs Optional)
 ```
 
 ### Key Deliverables
 * **Admin Dashboard UI (`/admin`)**:
-  * Scheme table with search, status toggle (`active` / `inactive`), and edit triggers.
+  * Scheme table with search, category/state filters, status toggle (`active` / `inactive`), and edit triggers.
 * **Visual Rule Builder**:
   * Dropdown UI to configure rules without writing code:
-    `[ Age ] [ >= ] [ 60 ]`
-    `[ Income ] [ <= ] [ 1,50,000 ]`
+    `[ State ] [ = ] [ Madhya Pradesh ]`
+    `[ Age ] [ >= ] [ 21 ]`
+    `[ Income ] [ <= ] [ 2,50,000 ]`
 * **RBAC Enforcement**:
   * Restrict `/admin` endpoints to users with `role: "admin"` via JWT.
 
@@ -141,6 +156,56 @@ Action: "Upload Income Certificate to reach 100% Readiness"
 
 ---
 
+## 📋 V1.5 — Automated Government Ingestion & Sync Pipeline
+
+### Objective
+High-efficiency background pipeline pulling official datasets from `data.gov.in` and state portals without putting load on production read databases.
+
+```text
+               SCHEDULED INGESTION WORKER
+                            │
+                            ▼
+ ┌──────────────────────────────────────────────────────────┐
+ │ GATE 1: ZERO-BANDWIDTH HTTP CHECK (RFC 7232)             │
+ │ Send "If-None-Match: <ETag>" / "If-Modified-Since"       │
+ └──────────────────────────┬───────────────────────────────┘
+                            │
+            ┌───────────────┴───────────────┐
+            ▼                               ▼
+    [ HTTP 304 Not Modified ]       [ HTTP 200 OK ]
+            │                               │
+     ✅ 0 Bytes Downloaded.                 ▼
+     Exit in 10ms.             ┌────────────────────────────┐
+                               │ 1. MINIO S3 RAW DUMP BLOB  │
+                               │ Audit snapshot saved to S3 │
+                               └────────────┬───────────────┘
+                                            │
+                                            ▼
+                               ┌────────────────────────────┐
+                               │ GATE 2: CIRCUIT BREAKER    │
+                               │ Rejects corrupted payloads │
+                               └────────────┬───────────────┘
+                                            │
+                                            ▼
+                               ┌────────────────────────────┐
+                               │ GATE 3: SEMANTIC HASH DIFF │
+                               │ Hashes only business rules │
+                               └────────────┬───────────────┘
+                                            │
+                     ┌──────────────────────┴──────────────────────┐
+                     ▼                                             ▼
+          [ NON-BREAKING CHANGE ]                        [ BREAKING CHANGE ]
+          (New scheme, new benefit)                      (Income limit lowered)
+                     │                                             │
+                     ▼                                             ▼
+          ┌─────────────────────┐                       ┌─────────────────────┐
+          │ STAGING BATCH WRITE │                       │ ADMIN TRIAGE QUEUE  │
+          │ (PostgreSQL Writer) │                       │ (1-Click Approval)  │
+          └─────────────────────┘                       └─────────────────────┘
+```
+
+---
+
 ## 📋 V2.0 — OCR Ingestion & Fact Extraction
 
 ### Objective
@@ -159,15 +224,6 @@ Citizen Confirmation Screen:
   ↓
 Verified Fact Stored in Citizen Profile
 ```
-
-### Key Deliverables
-* **OCR Ingestion Engine**:
-  * Extract text and structured fields from images/PDFs.
-* **Traceable Fact Model**:
-  * Every profile fact maintains provenance:
-    `fact: "annual_income", value: 180000, source: "income_certificate.pdf", verified_at: timestamp`.
-* **Human-in-the-Loop UI**:
-  * Clean review modal for citizens to confirm or edit auto-extracted data.
 
 ---
 
@@ -189,14 +245,6 @@ Create a structured, agent-readable knowledge layer preserving official hierarch
     (FastAPI)             (OKF)              (RAG)
 ```
 
-### Key Deliverables
-* **Canonical OKF Repository (`knowledge/`)**:
-  * Structural Markdown representation of schemes, documents, ministries, and processes.
-* **Knowledge Versioning & Freshness**:
-  * Track official gazette amendment dates and revision history.
-* **Smart Query Router**:
-  * Directs questions to the right layer (Deterministic DB vs OKF vs RAG).
-
 ---
 
 ## 📋 V3.0 — Hybrid RAG & Provenance Citations
@@ -216,14 +264,6 @@ Dynamic Top-K Evidence Selection
 LLM Synthesis with Mandatory Citations:
   "Claim: Eligible up to age 35. [Source: Gazette Notification 2024, Page 4, Section 2b]"
 ```
-
-### Key Deliverables
-* **Hybrid Search Engine**:
-  * BM25 sparse lexical search + Dense vector embeddings.
-* **Cross-Encoder Reranker**:
-  * Filters out low-confidence hallucinations and prioritizes exact regulatory text.
-* **Verifiable Citation Links**:
-  * Every sentence in an AI response links to the specific official government page/section.
 
 ---
 
@@ -247,12 +287,6 @@ Autonomous AI Agent
 Application Services & Database
 ```
 
-### Key Deliverables
-* **FastAPI MCP Server**:
-  * Exposes typed tools adhering to the Model Context Protocol.
-* **Agent Sandboxing**:
-  * Strict permission boundaries ensuring agents read only authorized citizen facts.
-
 ---
 
 ## 📋 V4.0 — Life-Event Intelligence Engine
@@ -275,12 +309,6 @@ Proactive Citizen Notification:
   "Your daughter recently turned 18 and entered college. 
    You now qualify for 3 new Higher Education Scholarships!"
 ```
-
-### Key Deliverables
-* **Life-Event Trigger Service**:
-  * Background event listener monitoring demographic milestones and user updates.
-* **Proactive Notification Engine**:
-  * Auto-evaluates newly applicable schemes and alerts the citizen with immediate next actions.
 
 ---
 

@@ -15,7 +15,9 @@ import { checkEligibility, type EligibilityCheckPayload } from '@/lib/api'
 import { saveCitizenProfile, saveEligibilityReport, getSavedCitizenProfile } from '@/lib/session'
 
 const INDIAN_STATES = [
-  'All India',
+  'Madhya Pradesh',
+  'Maharashtra',
+  'Karnataka',
   'Andhra Pradesh',
   'Assam',
   'Bihar',
@@ -24,10 +26,7 @@ const INDIAN_STATES = [
   'Gujarat',
   'Haryana',
   'Jharkhand',
-  'Karnataka',
   'Kerala',
-  'Madhya Pradesh',
-  'Maharashtra',
   'Odisha',
   'Punjab',
   'Rajasthan',
@@ -109,13 +108,13 @@ export default function EligibilityCheckPage() {
         <div className="flex flex-col gap-2 mb-8">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-950/80 border border-blue-800/60 text-blue-300 w-fit">
             <Sparkles className="h-3.5 w-3.5 text-blue-400" />
-            <span>Instant Eligibility Evaluator</span>
+            <span>Instant Eligibility Evaluator · V1.1</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-zinc-100 tracking-tight">
             Check Your Scheme Eligibility
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400">
-            Provide your basic details below to find all government schemes you qualify for. No login required.
+            Provide your basic details below to evaluate National and State government schemes you qualify for.
           </p>
         </div>
 
@@ -248,7 +247,7 @@ export default function EligibilityCheckPage() {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-sm shadow-xl shadow-blue-600/25 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
             >
               {loading ? (
-                <span>Evaluating 12 National Schemes...</span>
+                <span>Evaluating National & State Schemes...</span>
               ) : (
                 <>
                   <CheckCircle2 className="h-4 w-4" />

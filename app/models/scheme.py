@@ -32,6 +32,14 @@ class Scheme(Base):
         nullable=False,
     )
 
+    state: Mapped[str] = mapped_column(
+        String(100),
+        default="ALL_INDIA",
+        server_default="ALL_INDIA",
+        nullable=False,
+        index=True,
+    )
+
     category: Mapped[str] = mapped_column(
         String(100),
         default="General",

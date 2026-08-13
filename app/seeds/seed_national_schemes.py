@@ -8,10 +8,14 @@ from app.models.official_source import OfficialSource
 from app.models.required_document import RequiredDocument
 from app.models.scheme import Scheme
 
-NATIONAL_SCHEMES_DATA = [
+NATIONAL_AND_STATE_SCHEMES_DATA = [
+    # =========================================================================
+    # 1. NATIONAL FLAGSHIP SCHEMES (ALL_INDIA)
+    # =========================================================================
     {
         "name": "Pradhan Mantri Kisan Samman Nidhi",
         "slug": "pm-kisan",
+        "state": "ALL_INDIA",
         "category": "Agriculture",
         "tags": "farmer, agriculture, crop, fertilizer, income support, rural, direct benefit transfer",
         "ministry": "Ministry of Agriculture and Farmers Welfare",
@@ -26,16 +30,8 @@ NATIONAL_SCHEMES_DATA = [
             }
         ],
         "eligibility_rules": [
-            {
-                "field_name": "occupation",
-                "operator": "eq",
-                "rule_value": "farmer",
-            },
-            {
-                "field_name": "annual_income",
-                "operator": "lte",
-                "rule_value": "200000",
-            },
+            {"field_name": "occupation", "operator": "eq", "rule_value": "farmer"},
+            {"field_name": "annual_income", "operator": "lte", "rule_value": "200000"},
         ],
         "required_documents": [
             {"document_name": "Aadhaar Card", "description": "Mandatory identity proof", "is_mandatory": True},
@@ -49,6 +45,7 @@ NATIONAL_SCHEMES_DATA = [
     {
         "name": "Ayushman Bharat PM-JAY",
         "slug": "ayushman-bharat-pmjay",
+        "state": "ALL_INDIA",
         "category": "Healthcare",
         "tags": "health, hospital, medical, insurance, surgery, treatment, bpl, free healthcare, golden card",
         "ministry": "Ministry of Health and Family Welfare",
@@ -63,11 +60,7 @@ NATIONAL_SCHEMES_DATA = [
             }
         ],
         "eligibility_rules": [
-            {
-                "field_name": "annual_income",
-                "operator": "lte",
-                "rule_value": "150000",
-            }
+            {"field_name": "annual_income", "operator": "lte", "rule_value": "150000"}
         ],
         "required_documents": [
             {"document_name": "Aadhaar Card", "description": "Identity proof", "is_mandatory": True},
@@ -80,6 +73,7 @@ NATIONAL_SCHEMES_DATA = [
     {
         "name": "Sukanya Samriddhi Yojana",
         "slug": "sukanya-samriddhi-yojana",
+        "state": "ALL_INDIA",
         "category": "Women & Child",
         "tags": "girl child, savings, education, marriage, high interest, tax exemption, daughter, post office",
         "ministry": "Ministry of Finance",
@@ -94,16 +88,8 @@ NATIONAL_SCHEMES_DATA = [
             }
         ],
         "eligibility_rules": [
-            {
-                "field_name": "gender",
-                "operator": "eq",
-                "rule_value": "female",
-            },
-            {
-                "field_name": "age",
-                "operator": "lte",
-                "rule_value": "10",
-            },
+            {"field_name": "gender", "operator": "eq", "rule_value": "female"},
+            {"field_name": "age", "operator": "lte", "rule_value": "10"},
         ],
         "required_documents": [
             {"document_name": "Birth Certificate", "description": "Birth certificate of the girl child", "is_mandatory": True},
@@ -116,6 +102,7 @@ NATIONAL_SCHEMES_DATA = [
     {
         "name": "Indira Gandhi National Old Age Pension Scheme",
         "slug": "ignoaps-old-age-pension",
+        "state": "ALL_INDIA",
         "category": "Social Welfare",
         "tags": "pension, elderly, senior citizen, monthly allowance, retirement, destitute, bpl",
         "ministry": "Ministry of Rural Development",
@@ -130,16 +117,8 @@ NATIONAL_SCHEMES_DATA = [
             }
         ],
         "eligibility_rules": [
-            {
-                "field_name": "age",
-                "operator": "gte",
-                "rule_value": "60",
-            },
-            {
-                "field_name": "annual_income",
-                "operator": "lte",
-                "rule_value": "100000",
-            },
+            {"field_name": "age", "operator": "gte", "rule_value": "60"},
+            {"field_name": "annual_income", "operator": "lte", "rule_value": "100000"},
         ],
         "required_documents": [
             {"document_name": "Aadhaar Card", "description": "Identity proof", "is_mandatory": True},
@@ -154,6 +133,7 @@ NATIONAL_SCHEMES_DATA = [
     {
         "name": "PM Vishwakarma Scheme",
         "slug": "pm-vishwakarma",
+        "state": "ALL_INDIA",
         "category": "Employment & Skills",
         "tags": "artisan, craftsman, carpenter, blacksmith, potter, goldsmith, sculptor, tool kit, loan, skill training",
         "ministry": "Ministry of Micro, Small and Medium Enterprises",
@@ -168,16 +148,8 @@ NATIONAL_SCHEMES_DATA = [
             }
         ],
         "eligibility_rules": [
-            {
-                "field_name": "age",
-                "operator": "gte",
-                "rule_value": "18",
-            },
-            {
-                "field_name": "occupation",
-                "operator": "in",
-                "rule_value": "carpenter, blacksmith, potter, goldsmith, sculptor, cobbler, mason, tailor, weaver, barber, washerman, artisan",
-            },
+            {"field_name": "age", "operator": "gte", "rule_value": "18"},
+            {"field_name": "occupation", "operator": "in", "rule_value": "carpenter, blacksmith, potter, goldsmith, sculptor, cobbler, mason, tailor, weaver, barber, washerman, artisan"},
         ],
         "required_documents": [
             {"document_name": "Aadhaar Card", "description": "Identity proof", "is_mandatory": True},
@@ -191,6 +163,7 @@ NATIONAL_SCHEMES_DATA = [
     {
         "name": "Pradhan Mantri Awas Yojana - Gramin",
         "slug": "pmay-gramin",
+        "state": "ALL_INDIA",
         "category": "Housing",
         "tags": "housing, home, pucca house, construction, rural housing, shelter, grant, sanitation",
         "ministry": "Ministry of Rural Development",
@@ -205,11 +178,7 @@ NATIONAL_SCHEMES_DATA = [
             }
         ],
         "eligibility_rules": [
-            {
-                "field_name": "annual_income",
-                "operator": "lte",
-                "rule_value": "180000",
-            }
+            {"field_name": "annual_income", "operator": "lte", "rule_value": "180000"}
         ],
         "required_documents": [
             {"document_name": "Aadhaar Card", "description": "Identity proof", "is_mandatory": True},
@@ -223,6 +192,7 @@ NATIONAL_SCHEMES_DATA = [
     {
         "name": "Pradhan Mantri Ujjwala Yojana 2.0",
         "slug": "pm-ujjwala-yojana",
+        "state": "ALL_INDIA",
         "category": "Social Welfare",
         "tags": "lpg, gas cylinder, clean cooking, fuel, women empowerment, bpl, subsidy, smoke free",
         "ministry": "Ministry of Petroleum and Natural Gas",
@@ -237,21 +207,9 @@ NATIONAL_SCHEMES_DATA = [
             }
         ],
         "eligibility_rules": [
-            {
-                "field_name": "gender",
-                "operator": "eq",
-                "rule_value": "female",
-            },
-            {
-                "field_name": "age",
-                "operator": "gte",
-                "rule_value": "18",
-            },
-            {
-                "field_name": "annual_income",
-                "operator": "lte",
-                "rule_value": "120000",
-            },
+            {"field_name": "gender", "operator": "eq", "rule_value": "female"},
+            {"field_name": "age", "operator": "gte", "rule_value": "18"},
+            {"field_name": "annual_income", "operator": "lte", "rule_value": "120000"},
         ],
         "required_documents": [
             {"document_name": "Aadhaar Card", "description": "Identity proof of woman applicant", "is_mandatory": True},
@@ -265,6 +223,7 @@ NATIONAL_SCHEMES_DATA = [
     {
         "name": "Pradhan Mantri Mudra Yojana",
         "slug": "pm-mudra-yojana",
+        "state": "ALL_INDIA",
         "category": "Business & Finance",
         "tags": "business loan, shopkeeper, small business, microfinance, shishu, kishore, tarun, collateral free, enterprise",
         "ministry": "Ministry of Finance",
@@ -279,11 +238,7 @@ NATIONAL_SCHEMES_DATA = [
             }
         ],
         "eligibility_rules": [
-            {
-                "field_name": "age",
-                "operator": "gte",
-                "rule_value": "18",
-            }
+            {"field_name": "age", "operator": "gte", "rule_value": "18"}
         ],
         "required_documents": [
             {"document_name": "Aadhaar Card", "description": "Identity proof", "is_mandatory": True},
@@ -298,6 +253,7 @@ NATIONAL_SCHEMES_DATA = [
     {
         "name": "Atal Pension Yojana",
         "slug": "atal-pension-yojana",
+        "state": "ALL_INDIA",
         "category": "Social Welfare",
         "tags": "pension, retirement, unorganized sector, monthly income, guaranteed pension, old age",
         "ministry": "Ministry of Finance",
@@ -312,11 +268,7 @@ NATIONAL_SCHEMES_DATA = [
             }
         ],
         "eligibility_rules": [
-            {
-                "field_name": "age",
-                "operator": "between",
-                "rule_value": "18-40",
-            }
+            {"field_name": "age", "operator": "between", "rule_value": "18-40"}
         ],
         "required_documents": [
             {"document_name": "Aadhaar Card", "description": "Identity proof", "is_mandatory": True},
@@ -329,6 +281,7 @@ NATIONAL_SCHEMES_DATA = [
     {
         "name": "Post-Matric Scholarship for Higher Education",
         "slug": "post-matric-scholarship",
+        "state": "ALL_INDIA",
         "category": "Education",
         "tags": "scholarship, student, college, higher education, tuition fee, reimbursement, maintenance allowance, degree",
         "ministry": "Ministry of Social Justice and Empowerment",
@@ -343,16 +296,8 @@ NATIONAL_SCHEMES_DATA = [
             }
         ],
         "eligibility_rules": [
-            {
-                "field_name": "age",
-                "operator": "between",
-                "rule_value": "15-30",
-            },
-            {
-                "field_name": "annual_income",
-                "operator": "lte",
-                "rule_value": "250000",
-            },
+            {"field_name": "age", "operator": "between", "rule_value": "15-30"},
+            {"field_name": "annual_income", "operator": "lte", "rule_value": "250000"},
         ],
         "required_documents": [
             {"document_name": "Aadhaar Card", "description": "Identity proof", "is_mandatory": True},
@@ -367,6 +312,7 @@ NATIONAL_SCHEMES_DATA = [
     {
         "name": "Pradhan Mantri Matru Vandana Yojana",
         "slug": "pm-matru-vandana-yojana",
+        "state": "ALL_INDIA",
         "category": "Women & Child",
         "tags": "pregnancy, maternity benefit, newborn, lactating mother, nutrition, cash incentive, mother",
         "ministry": "Ministry of Women and Child Development",
@@ -381,21 +327,9 @@ NATIONAL_SCHEMES_DATA = [
             }
         ],
         "eligibility_rules": [
-            {
-                "field_name": "gender",
-                "operator": "eq",
-                "rule_value": "female",
-            },
-            {
-                "field_name": "age",
-                "operator": "gte",
-                "rule_value": "19",
-            },
-            {
-                "field_name": "annual_income",
-                "operator": "lte",
-                "rule_value": "800000",
-            },
+            {"field_name": "gender", "operator": "eq", "rule_value": "female"},
+            {"field_name": "age", "operator": "gte", "rule_value": "19"},
+            {"field_name": "annual_income", "operator": "lte", "rule_value": "800000"},
         ],
         "required_documents": [
             {"document_name": "Aadhaar Card", "description": "Identity proof of mother", "is_mandatory": True},
@@ -409,6 +343,7 @@ NATIONAL_SCHEMES_DATA = [
     {
         "name": "Pradhan Mantri Fasal Bima Yojana",
         "slug": "pm-fasal-bima-yojana",
+        "state": "ALL_INDIA",
         "category": "Agriculture",
         "tags": "crop insurance, drought, flood, harvest loss, farmer, insurance claim, low premium, weather",
         "ministry": "Ministry of Agriculture and Farmers Welfare",
@@ -423,11 +358,7 @@ NATIONAL_SCHEMES_DATA = [
             }
         ],
         "eligibility_rules": [
-            {
-                "field_name": "occupation",
-                "operator": "eq",
-                "rule_value": "farmer",
-            }
+            {"field_name": "occupation", "operator": "eq", "rule_value": "farmer"}
         ],
         "required_documents": [
             {"document_name": "Aadhaar Card", "description": "Identity proof", "is_mandatory": True},
@@ -439,17 +370,258 @@ NATIONAL_SCHEMES_DATA = [
             {"title": "PMFBY Portal", "url": "https://pmfby.gov.in", "source_type": "website"}
         ],
     },
+
+    # =========================================================================
+    # 2. MADHYA PRADESH (MP) STATE FLAGSHIP SCHEMES
+    # =========================================================================
+    {
+        "name": "Mukhya Mantri Ladli Behna Yojana",
+        "slug": "mp-ladli-behna-yojana",
+        "state": "Madhya Pradesh",
+        "category": "Women & Child",
+        "tags": "women, monthly allowance, cash transfer, dbt, financial independence, samagra, madhya pradesh",
+        "ministry": "Department of Women and Child Development, Government of Madhya Pradesh",
+        "description": "Flagship scheme providing ₹1,250 per month (₹15,000/year) direct benefit transfer into bank accounts of resident women in Madhya Pradesh aged 21-60.",
+        "status": "active",
+        "application_url": "https://ladlibehna.mp.gov.in",
+        "official_website": "https://ladlibehna.mp.gov.in",
+        "benefits": [
+            {
+                "title": "₹1,250 Monthly Direct Cash Transfer",
+                "description": "₹15,000 annual direct cash transfer credited on the 10th of every month into Aadhaar-linked accounts.",
+            }
+        ],
+        "eligibility_rules": [
+            {"field_name": "state", "operator": "eq", "rule_value": "Madhya Pradesh"},
+            {"field_name": "gender", "operator": "eq", "rule_value": "female"},
+            {"field_name": "age", "operator": "between", "rule_value": "21-60"},
+            {"field_name": "annual_income", "operator": "lte", "rule_value": "250000"},
+        ],
+        "required_documents": [
+            {"document_name": "Samagra Family ID", "description": "MP Samagra Portal 9-digit member ID", "is_mandatory": True},
+            {"document_name": "Aadhaar Card", "description": "Mandatory identity proof linked with mobile", "is_mandatory": True},
+            {"document_name": "Aadhaar-Linked Bank Passbook", "description": "Bank account with active DBT enable status", "is_mandatory": True},
+        ],
+        "official_sources": [
+            {"title": "MP Ladli Behna Portal", "url": "https://ladlibehna.mp.gov.in", "source_type": "portal"},
+            {"title": "Samagra Social Security Mission", "url": "https://samagra.gov.in", "source_type": "registry"}
+        ],
+    },
+    {
+        "name": "Mukhya Mantri Kisan Kalyan Yojana",
+        "slug": "mp-kisan-kalyan-yojana",
+        "state": "Madhya Pradesh",
+        "category": "Agriculture",
+        "tags": "farmer, cash top-up, crop, saara portal, agriculture, dbt, madhya pradesh",
+        "ministry": "Department of Revenue, Government of Madhya Pradesh",
+        "description": "State financial assistance of ₹6,000 per year paid in three installments of ₹2,000, complementing PM-Kisan to provide a total ₹12,000 annual farmer support.",
+        "status": "active",
+        "application_url": "https://saara.mp.gov.in",
+        "official_website": "https://saara.mp.gov.in",
+        "benefits": [
+            {
+                "title": "₹6,000 Annual MP State Farmer Grant",
+                "description": "₹2,000 transferred in three installments directly to verified landholding farmers in MP.",
+            }
+        ],
+        "eligibility_rules": [
+            {"field_name": "state", "operator": "eq", "rule_value": "Madhya Pradesh"},
+            {"field_name": "occupation", "operator": "eq", "rule_value": "farmer"},
+            {"field_name": "annual_income", "operator": "lte", "rule_value": "300000"},
+        ],
+        "required_documents": [
+            {"document_name": "Khasra Land Ownership Record", "description": "Official agricultural land record from Patwari / SAARA", "is_mandatory": True},
+            {"document_name": "Aadhaar Card", "description": "Identity proof", "is_mandatory": True},
+            {"document_name": "Bank Passbook", "description": "Aadhaar-seeded bank account", "is_mandatory": True},
+            {"document_name": "PM Kisan Registration ID", "description": "Active PM-Kisan beneficiary registration number", "is_mandatory": True},
+        ],
+        "official_sources": [
+            {"title": "SAARA MP Portal", "url": "https://saara.mp.gov.in", "source_type": "portal"}
+        ],
+    },
+    {
+        "name": "Mukhyamantri Medhavi Vidyarthi Yojana (MMVY)",
+        "slug": "mp-medhavi-vidyarthi-yojana",
+        "state": "Madhya Pradesh",
+        "category": "Education",
+        "tags": "scholarship, higher education, engineering, medical, fee waiver, college, merit, madhya pradesh",
+        "ministry": "Department of Technical Education and Skill Development, Government of Madhya Pradesh",
+        "description": "Complete tuition fee sponsorship for meritorious MP students pursuing engineering (IIT/NIT/JEE), medical (NEET), law (CLAT), or degree courses.",
+        "status": "active",
+        "application_url": "http://scholarshipportal.mp.nic.in",
+        "official_website": "http://scholarshipportal.mp.nic.in",
+        "benefits": [
+            {
+                "title": "100% Higher Education Tuition Fee Waiver",
+                "description": "Direct payment of entire college and course tuition fee directly to the educational institution by MP Government.",
+            }
+        ],
+        "eligibility_rules": [
+            {"field_name": "state", "operator": "eq", "rule_value": "Madhya Pradesh"},
+            {"field_name": "age", "operator": "between", "rule_value": "16-25"},
+            {"field_name": "annual_income", "operator": "lte", "rule_value": "600000"},
+        ],
+        "required_documents": [
+            {"document_name": "12th Class Marksheet", "description": "70%+ in MP Board or 85%+ in CBSE/ICSE", "is_mandatory": True},
+            {"document_name": "MP Domicile Certificate", "description": "Mool Niwas Praman Patra", "is_mandatory": True},
+            {"document_name": "Income Certificate", "description": "Family income certificate issued by Tehsildar", "is_mandatory": True},
+            {"document_name": "College Admission Allotment Letter", "description": "Proof of active college enrollment", "is_mandatory": True},
+        ],
+        "official_sources": [
+            {"title": "MP State Scholarship Portal", "url": "http://scholarshipportal.mp.nic.in", "source_type": "portal"}
+        ],
+    },
+
+    # =========================================================================
+    # 3. MAHARASHTRA (MH) STATE FLAGSHIP SCHEMES
+    # =========================================================================
+    {
+        "name": "Mukhyamantri Majhi Ladki Bahin Yojana",
+        "slug": "mh-majhi-ladki-bahin",
+        "state": "Maharashtra",
+        "category": "Women & Child",
+        "tags": "women, cash transfer, monthly financial aid, dbt, maharashtra, mahadbt",
+        "ministry": "Department of Women and Child Development, Government of Maharashtra",
+        "description": "Direct financial assistance of ₹1,500 per month (₹18,000/year) deposited directly into bank accounts of eligible resident women in Maharashtra aged 21-65.",
+        "status": "active",
+        "application_url": "https://ladakibahin.maharashtra.gov.in",
+        "official_website": "https://ladakibahin.maharashtra.gov.in",
+        "benefits": [
+            {
+                "title": "₹1,500 Monthly Financial Assistance",
+                "description": "₹18,000 annual direct benefit transfer deposited into Aadhaar-linked bank accounts.",
+            }
+        ],
+        "eligibility_rules": [
+            {"field_name": "state", "operator": "eq", "rule_value": "Maharashtra"},
+            {"field_name": "gender", "operator": "eq", "rule_value": "female"},
+            {"field_name": "age", "operator": "between", "rule_value": "21-65"},
+            {"field_name": "annual_income", "operator": "lte", "rule_value": "250000"},
+        ],
+        "required_documents": [
+            {"document_name": "Aadhaar Card", "description": "Mandatory identity proof", "is_mandatory": True},
+            {"document_name": "Maharashtra Domicile Certificate", "description": "Domicile / Birth certificate proving 15+ years residency", "is_mandatory": True},
+            {"document_name": "Ration Card (Yellow/Orange)", "description": "Family income classification proof", "is_mandatory": True},
+            {"document_name": "Bank Passbook", "description": "Aadhaar-seeded bank account", "is_mandatory": True},
+        ],
+        "official_sources": [
+            {"title": "Majhi Ladki Bahin Portal", "url": "https://ladakibahin.maharashtra.gov.in", "source_type": "portal"},
+            {"title": "Aaple Sarkar Maharashtra", "url": "https://aaplesarkar.mahaonline.gov.in", "source_type": "portal"}
+        ],
+    },
+    {
+        "name": "Namo Shetkari Mahasanman Nidhi Yojana",
+        "slug": "mh-namo-shetkari-yojana",
+        "state": "Maharashtra",
+        "category": "Agriculture",
+        "tags": "farmer, agriculture, crop, cash top-up, dbt, maharashtra, mahadbt",
+        "ministry": "Department of Agriculture, Government of Maharashtra",
+        "description": "Maharashtra state cash grant of ₹6,000 per year in three installments of ₹2,000, complementing PM-Kisan for total ₹12,000 farmer income support.",
+        "status": "active",
+        "application_url": "https://mahadbt.maharashtra.gov.in",
+        "official_website": "https://mahadbt.maharashtra.gov.in",
+        "benefits": [
+            {
+                "title": "₹6,000 Annual Maharashtra Farmer Grant",
+                "description": "₹2,000 per installment transferred directly to verified landholding farmers in Maharashtra.",
+            }
+        ],
+        "eligibility_rules": [
+            {"field_name": "state", "operator": "eq", "rule_value": "Maharashtra"},
+            {"field_name": "occupation", "operator": "eq", "rule_value": "farmer"},
+        ],
+        "required_documents": [
+            {"document_name": "7/12 Land Extract", "description": "Official land ownership record from Maharashtra Revenue Department", "is_mandatory": True},
+            {"document_name": "8-A Holding Extract", "description": "Khata details of agricultural land", "is_mandatory": True},
+            {"document_name": "Aadhaar Card", "description": "Identity proof", "is_mandatory": True},
+            {"document_name": "Bank Passbook", "description": "Aadhaar-seeded bank account", "is_mandatory": True},
+        ],
+        "official_sources": [
+            {"title": "MahaDBT Portal", "url": "https://mahadbt.maharashtra.gov.in", "source_type": "portal"}
+        ],
+    },
+
+    # =========================================================================
+    # 4. KARNATAKA (KA) STATE FLAGSHIP SCHEMES
+    # =========================================================================
+    {
+        "name": "Gruha Lakshmi Scheme",
+        "slug": "ka-gruha-lakshmi-scheme",
+        "state": "Karnataka",
+        "category": "Women & Child",
+        "tags": "women, head of family, guarantee scheme, cash assistance, dbt, karnataka, seva sindhu",
+        "ministry": "Department of Women and Child Development, Government of Karnataka",
+        "description": "Monthly financial assistance of ₹2,000 (₹24,000/year) transferred directly into bank accounts of female heads of household in Karnataka.",
+        "status": "active",
+        "application_url": "https://sevasindhugs.karnataka.gov.in",
+        "official_website": "https://sevasindhugs.karnataka.gov.in",
+        "benefits": [
+            {
+                "title": "₹2,000 Monthly Head of Household Grant",
+                "description": "₹24,000 annual direct benefit transfer credited monthly into the woman head's bank account.",
+            }
+        ],
+        "eligibility_rules": [
+            {"field_name": "state", "operator": "eq", "rule_value": "Karnataka"},
+            {"field_name": "gender", "operator": "eq", "rule_value": "female"},
+            {"field_name": "age", "operator": "gte", "rule_value": "18"},
+        ],
+        "required_documents": [
+            {"document_name": "Ration Card (Antyodaya / BPL / APL)", "description": "Ration card naming applicant as woman head of household", "is_mandatory": True},
+            {"document_name": "Aadhaar Card of Woman Head", "description": "Identity proof", "is_mandatory": True},
+            {"document_name": "Aadhaar-Linked Bank Passbook", "description": "Bank account enabled with NPCI direct debit", "is_mandatory": True},
+        ],
+        "official_sources": [
+            {"title": "Seva Sindhu Guarantee Portal", "url": "https://sevasindhugs.karnataka.gov.in", "source_type": "portal"}
+        ],
+    },
+    {
+        "name": "Yuva Nidhi Scheme",
+        "slug": "ka-yuva-nidhi-scheme",
+        "state": "Karnataka",
+        "category": "Employment & Skills",
+        "tags": "unemployed, youth, graduate, diploma, stipend, allowance, karnataka, seva sindhu",
+        "ministry": "Department of Skill Development, Entrepreneurship and Livelihood, Government of Karnataka",
+        "description": "Monthly unemployment stipend of ₹3,000 for degree holders and ₹1,500 for diploma holders who completed education in the current academic year and remain unemployed.",
+        "status": "active",
+        "application_url": "https://sevasindhugs.karnataka.gov.in",
+        "official_website": "https://sevasindhugs.karnataka.gov.in",
+        "benefits": [
+            {
+                "title": "₹3,000 Monthly Unemployment Allowance",
+                "description": "Monthly financial allowance for up to 2 years while seeking employment or attending skill development training.",
+            }
+        ],
+        "eligibility_rules": [
+            {"field_name": "state", "operator": "eq", "rule_value": "Karnataka"},
+            {"field_name": "age", "operator": "between", "rule_value": "18-35"},
+            {"field_name": "occupation", "operator": "eq", "rule_value": "unemployed"},
+        ],
+        "required_documents": [
+            {"document_name": "Degree / Diploma Certificate & Marksheet", "description": "Proof of passing degree or diploma", "is_mandatory": True},
+            {"document_name": "Karnataka Domicile Certificate", "description": "Residency proof in Karnataka for at least 6 years", "is_mandatory": True},
+            {"document_name": "Aadhaar Card", "description": "Identity proof", "is_mandatory": True},
+            {"document_name": "Unemployment Self-Declaration", "description": "Declaration of not being employed or self-employed", "is_mandatory": True},
+        ],
+        "official_sources": [
+            {"title": "Seva Sindhu Yuva Nidhi Portal", "url": "https://sevasindhugs.karnataka.gov.in", "source_type": "portal"}
+        ],
+    },
 ]
+
+# Alias for backward compatibility with existing tests
+NATIONAL_SCHEMES_DATA = NATIONAL_AND_STATE_SCHEMES_DATA
 
 
 def seed_national_schemes(db: Session) -> int:
     seeded_count = 0
 
-    for item in NATIONAL_SCHEMES_DATA:
+    for item in NATIONAL_AND_STATE_SCHEMES_DATA:
         existing = db.scalar(select(Scheme).where(Scheme.slug == item["slug"]))
         if existing:
             # Update existing scheme attributes
             existing.name = item["name"]
+            existing.state = item["state"]
             existing.category = item["category"]
             existing.tags = item["tags"]
             existing.ministry = item["ministry"]
@@ -462,6 +634,7 @@ def seed_national_schemes(db: Session) -> int:
         scheme = Scheme(
             name=item["name"],
             slug=item["slug"],
+            state=item["state"],
             category=item["category"],
             tags=item["tags"],
             ministry=item["ministry"],
@@ -500,7 +673,7 @@ def main():
     db = SessionLocal()
     try:
         count = seed_national_schemes(db)
-        print(f"Successfully seeded/verified {len(NATIONAL_SCHEMES_DATA)} national schemes ({count} newly inserted).")
+        print(f"Successfully seeded/verified {len(NATIONAL_AND_STATE_SCHEMES_DATA)} national & state schemes ({count} newly inserted).")
     finally:
         db.close()
 

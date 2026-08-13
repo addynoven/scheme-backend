@@ -101,12 +101,12 @@ def evaluate_rule(rule: EligibilityRule, profile_context: dict[str, Any]) -> boo
     target_str = target.lower()
 
     if op in ("eq", "=="):
-        return actual_str == target_str or target_str == "all"
+        return actual_str == target_str or target_str in ("all", "all_india", "all india")
     if op in ("neq", "!="):
         return actual_str != target_str
     if op == "in":
         allowed = [x.strip().lower() for x in target.split(",")]
-        return actual_str in allowed or "all" in allowed
+        return actual_str in allowed or "all" in allowed or "all_india" in allowed
     if op in ("not_in", "nin"):
         disallowed = [x.strip().lower() for x in target.split(",")]
         return actual_str not in disallowed
@@ -190,8 +190,8 @@ def _build_required_condition(rule: EligibilityRule) -> str:
         return f"Must be one of: {formatted}"
 
     if op in ("eq", "=="):
-        if target.lower() == "all":
-            return "Open to all"
+        if target.lower() in ("all", "all_india", "all india"):
+            return "Open to all residents across India"
         return f"Must be {target.title()}"
 
     return f"{op.upper()} {target}"
@@ -230,6 +230,8 @@ def explain_rule_verdict(
             reason = f"Your occupation ({your_val_str}) matches the required criteria."
         elif field == "gender":
             reason = f"Your gender ({your_val_str}) meets the scheme criteria."
+        elif field == "state":
+            reason = f"Your state of residence ({your_val_str}) meets the state residency criteria ({req_cond})."
         else:
             reason = f"Your {title} ({your_val_str}) meets the requirement ({req_cond})."
         status_str = "passed"
@@ -253,6 +255,8 @@ def explain_rule_verdict(
             reason = f"Your occupation ({your_val_str}) is not eligible for this scheme ({req_cond})."
         elif field == "gender":
             reason = f"This scheme is exclusively for {rule.rule_value.title()} applicants."
+        elif field == "state":
+            reason = f"This scheme is exclusively for residents of {rule.rule_value.title()} (your state: {your_val_str})."
         else:
             reason = f"Your {title} ({your_val_str}) does not meet the requirement ({req_cond})."
 

@@ -43,7 +43,7 @@ def create_scheme_endpoint(
     "",
     response_model=PaginatedResponse[SchemeDetailResponse],
     summary="List government schemes",
-    description="Returns a paginated list of schemes with optional filtering by ministry, category, status, or search query.",
+    description="Returns a paginated list of schemes with optional filtering by ministry, category, state, status, or search query.",
     response_description="Paginated list of schemes with child collections",
 )
 def list_schemes_endpoint(
@@ -51,6 +51,7 @@ def list_schemes_endpoint(
     limit: int = Query(20, ge=1, le=100, description="Maximum number of items to return"),
     ministry: str | None = Query(None, description="Filter by ministry name"),
     category: str | None = Query(None, description="Filter by sector category (e.g. 'Agriculture', 'Healthcare')"),
+    state: str | None = Query(None, description="Filter by state (e.g. 'Madhya Pradesh', 'Maharashtra', 'Karnataka', 'ALL_INDIA')"),
     status_filter: str | None = Query(None, alias="status", description="Filter by status ('active', 'draft', 'archived')"),
     search: str | None = Query(None, description="Search across scheme name, description, category, and tags"),
     db: Session = Depends(get_db),
@@ -61,6 +62,7 @@ def list_schemes_endpoint(
         limit=limit,
         ministry=ministry,
         category=category,
+        state=state,
         status=status_filter,
         search=search,
     )
@@ -82,6 +84,7 @@ def list_schemes_endpoint(
 def search_schemes_endpoint(
     q: str | None = Query(None, description="Problem or keyword search e.g. 'farmer', 'pension', 'scholarship'"),
     category: str | None = Query(None, description="Sector category filter e.g. 'Agriculture', 'Healthcare'"),
+    state: str | None = Query(None, description="Filter by state jurisdiction e.g. 'Madhya Pradesh'"),
     status_filter: str = Query("active", alias="status", description="Scheme status filter"),
     skip: int = Query(0, ge=0, description="Offset for pagination"),
     limit: int = Query(20, ge=1, le=100, description="Page size"),
@@ -91,6 +94,7 @@ def search_schemes_endpoint(
         db=db,
         q=q,
         category=category,
+        state=state,
         status=status_filter,
         skip=skip,
         limit=limit,

@@ -14,6 +14,7 @@ import {
   Home as HomeIcon,
   Briefcase,
   Users,
+  MapPin,
 } from 'lucide-react'
 import { searchSchemes, type Scheme } from '@/lib/api'
 
@@ -27,16 +28,24 @@ const PERSONA_FILTERS = [
   { label: 'Artisan & Skills', category: 'Employment & Skills', icon: Briefcase },
 ]
 
+const STATE_FILTERS = [
+  { label: 'All India', value: 'All' },
+  { label: 'Madhya Pradesh', value: 'Madhya Pradesh' },
+  { label: 'Maharashtra', value: 'Maharashtra' },
+  { label: 'Karnataka', value: 'Karnataka' },
+]
+
 export default function HomePage() {
   const [schemes, setSchemes] = useState<Scheme[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
+  const [selectedState, setSelectedState] = useState('All')
 
   useEffect(() => {
     setLoading(true)
     const timer = setTimeout(() => {
-      searchSchemes(searchQuery, selectedCategory)
+      searchSchemes(searchQuery, selectedCategory, selectedState)
         .then((data) => {
           setSchemes(data)
           setLoading(false)
@@ -45,7 +54,7 @@ export default function HomePage() {
     }, 200)
 
     return () => clearTimeout(timer)
-  }, [searchQuery, selectedCategory])
+  }, [searchQuery, selectedCategory, selectedState])
 
   return (
     <div className="flex flex-col gap-10">
@@ -57,7 +66,7 @@ export default function HomePage() {
         <div className="relative z-10 max-w-3xl flex flex-col items-start gap-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-950/80 border border-blue-800/60 text-blue-300 shadow-sm">
             <Sparkles className="h-3.5 w-3.5 text-blue-400" />
-            <span>Government Welfare Scheme Navigator · V1</span>
+            <span>Government Welfare Scheme Navigator · V1.1</span>
           </div>
 
           <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-zinc-100 leading-[1.1]">
@@ -68,7 +77,7 @@ export default function HomePage() {
           </h1>
 
           <p className="text-zinc-400 text-base sm:text-lg leading-relaxed max-w-2xl">
-            Answer a few simple questions or search by your need to discover official welfare schemes, receive plain-English eligibility explanations, and apply directly.
+            Answer a few simple questions or search by your need to discover National and State welfare schemes, receive plain-English eligibility explanations, and apply directly.
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -99,7 +108,7 @@ export default function HomePage() {
               Explore Government Schemes
             </h2>
             <p className="text-sm text-zinc-400">
-              Filter by citizen category or search by keywords (e.g. fertilizer, pension, hospital, scholarship).
+              Filter by category, search by keywords, or browse state-specific programs (MP, Maharashtra, Karnataka).
             </p>
           </div>
 
@@ -114,6 +123,30 @@ export default function HomePage() {
               className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-zinc-900/90 border border-zinc-800 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/80 transition-all shadow-inner"
             />
           </div>
+        </div>
+
+        {/* State Quick Filters */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <span className="text-xs font-semibold text-zinc-400 mr-1 flex items-center gap-1">
+            <MapPin className="h-3.5 w-3.5 text-blue-400" />
+            Region:
+          </span>
+          {STATE_FILTERS.map((st) => {
+            const isSelected = selectedState === st.value
+            return (
+              <button
+                key={st.value}
+                onClick={() => setSelectedState(st.value)}
+                className={`text-xs px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 border border-zinc-800'
+                }`}
+              >
+                {st.label}
+              </button>
+            )
+          })}
         </div>
 
         {/* Persona Quick Filter Pills */}
@@ -153,7 +186,7 @@ export default function HomePage() {
             <ShieldCheck className="h-10 w-10 text-zinc-600 mb-3" />
             <h3 className="text-lg font-semibold text-zinc-200 mb-1">No matching schemes found</h3>
             <p className="text-sm text-zinc-500 max-w-sm">
-              Try searching with another keyword like &quot;pension&quot;, &quot;farmer&quot;, &quot;housing&quot;, or select &quot;All Schemes&quot;.
+              Try searching with another keyword or select &quot;All India&quot; region.
             </p>
           </div>
         ) : (
@@ -164,11 +197,22 @@ export default function HomePage() {
                 className="group rounded-2xl border border-zinc-800/90 bg-zinc-900/60 hover:bg-zinc-900/90 hover:border-zinc-700/80 transition-all p-6 flex flex-col justify-between shadow-lg shadow-black/40 relative overflow-hidden"
               >
                 <div className="flex flex-col gap-3">
-                  {/* Category & Status Badge */}
+                  {/* Category & State Badges */}
                   <div className="flex items-center justify-between gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-950/60 text-blue-400 border border-blue-800/40">
-                      {scheme.category || 'General'}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-950/60 text-blue-400 border border-blue-800/40">
+                        {scheme.category || 'General'}
+                      </span>
+                      {scheme.state && scheme.state !== 'ALL_INDIA' ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/70 text-amber-300 border border-amber-800/60">
+                          🏛️ {scheme.state}
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">
+                          🇮🇳 National
+                        </span>
+                      )}
+                    </div>
                     {scheme.official_website && (
                       <span className="text-[11px] text-zinc-500 flex items-center gap-1">
                         Official <ExternalLink className="h-3 w-3" />

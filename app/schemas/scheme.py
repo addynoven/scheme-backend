@@ -27,6 +27,11 @@ class SchemeBase(BaseModel):
         examples=["pm-kisan"],
         description="Unique URL-friendly slug",
     )
+    state: str = Field(
+        "ALL_INDIA",
+        examples=["ALL_INDIA", "Madhya Pradesh", "Maharashtra", "Karnataka"],
+        description="Geographic jurisdiction ('ALL_INDIA' for national schemes, or State name)",
+    )
     category: str = Field(
         "General",
         examples=["Agriculture"],
@@ -44,7 +49,7 @@ class SchemeBase(BaseModel):
     )
     description: str = Field(
         ...,
-        examples=["Direct income support of ₹6,000 per year paid in three equal installments."],
+        examples=["Direct income support of ₹6,00,0 per year paid in three equal installments."],
         description="Comprehensive summary of scheme objective and scope",
     )
     status: str = Field(
@@ -79,6 +84,7 @@ class SchemeCreate(SchemeBase):
 class SchemeUpdate(BaseModel):
     name: str | None = Field(None, examples=["PM Kisan Samman Nidhi"])
     slug: str | None = Field(None, examples=["pm-kisan"])
+    state: str | None = Field(None, examples=["Madhya Pradesh"])
     category: str | None = Field(None, examples=["Agriculture"])
     tags: str | None = Field(None, examples=["farmer, crop, fertilizer"])
     ministry: str | None = Field(None, examples=["Ministry of Agriculture"])

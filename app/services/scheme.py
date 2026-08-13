@@ -106,6 +106,7 @@ def list_schemes(
     limit: int = 20,
     ministry: str | None = None,
     category: str | None = None,
+    state: str | None = None,
     status: str | None = None,
     search: str | None = None,
 ) -> tuple[list[Scheme], int]:
@@ -115,6 +116,11 @@ def list_schemes(
         query = query.where(Scheme.ministry.ilike(f"%{ministry}%"))
     if category:
         query = query.where(Scheme.category.ilike(f"%{category}%"))
+    if state:
+        if state.upper() in ("ALL_INDIA", "NATIONAL"):
+            query = query.where(Scheme.state == "ALL_INDIA")
+        else:
+            query = query.where((Scheme.state == "ALL_INDIA") | (Scheme.state.ilike(f"%{state}%")))
     if status:
         query = query.where(Scheme.status == status)
     if search:
@@ -150,6 +156,7 @@ def search_schemes(
     db: Session,
     q: str | None = None,
     category: str | None = None,
+    state: str | None = None,
     status: str = "active",
     skip: int = 0,
     limit: int = 20,
@@ -159,6 +166,7 @@ def search_schemes(
         skip=skip,
         limit=limit,
         category=category,
+        state=state,
         status=status,
         search=q,
     )
