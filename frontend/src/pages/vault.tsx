@@ -606,60 +606,84 @@ export default function DocumentVaultPage() {
                 </div>
 
                 {/* Document Requirement Checklist */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-xs font-bold text-zinc-300">Document Checklist</span>
-                  <div className="space-y-2">
-                    {readiness.checklist.map((item, idx) => {
-                      const isAvailable = item.status === 'available'
-                      return (
-                        <div
-                          key={idx}
-                          className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 ${
-                            isAvailable
-                              ? 'bg-emerald-950/30 border-emerald-800/40 text-emerald-200'
-                              : 'bg-zinc-950/60 border-zinc-800/80 text-zinc-300'
-                          }`}
-                        >
-                          {isAvailable ? (
-                            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                          ) : (
-                            <AlertCircle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
-                          )}
-
-                          <div className="flex flex-col flex-1">
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="font-bold text-zinc-100">{item.document_name}</span>
-                              <span
-                                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                                  item.is_mandatory
-                                    ? 'bg-rose-950/70 text-rose-300 border border-rose-800/50'
-                                    : 'bg-zinc-800 text-zinc-400'
-                                }`}
-                              >
-                                {item.is_mandatory ? 'Mandatory' : 'Optional'}
-                              </span>
+                <div className="flex flex-col gap-4">
+                  {/* Ready in Vault Section */}
+                  {readiness.checklist.some((item) => item.status === 'available') && (
+                    <div className="flex flex-col gap-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                        <span>Ready in Vault ({readiness.checklist.filter((i) => i.status === 'available').length})</span>
+                      </span>
+                      <div className="space-y-2">
+                        {readiness.checklist
+                          .filter((item) => item.status === 'available')
+                          .map((item, idx) => (
+                            <div
+                              key={idx}
+                              className="p-3 rounded-xl border bg-emerald-950/30 border-emerald-800/50 text-xs flex items-start gap-2.5 shadow-sm"
+                            >
+                              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                              <div className="flex flex-col flex-1 gap-0.5">
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="font-bold text-emerald-200">{item.document_name}</span>
+                                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-400 border border-emerald-700/60">
+                                    ✓ Ready
+                                  </span>
+                                </div>
+                                {item.description && (
+                                  <span className="text-[11px] text-zinc-400">{item.description}</span>
+                                )}
+                                <span className="text-[10px] text-emerald-400 font-mono mt-1">
+                                  📎 {item.matched_vault_document_name}
+                                </span>
+                              </div>
                             </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
 
-                            {item.description && (
-                              <span className="text-[11px] text-zinc-400 mt-0.5">
-                                {item.description}
-                              </span>
-                            )}
-
-                            {isAvailable ? (
-                              <span className="text-[10px] text-emerald-400 mt-1 font-medium flex items-center gap-1">
-                                ✓ Available in Vault ({item.matched_vault_document_name})
-                              </span>
-                            ) : (
-                              <span className="text-[10px] text-rose-400 mt-1 font-medium">
-                                ✗ Missing in your vault
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
+                  {/* Missing Documents Section */}
+                  {readiness.checklist.some((item) => item.status === 'missing') && (
+                    <div className="flex flex-col gap-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-rose-400 animate-pulse" />
+                        <span>Missing Documents ({readiness.checklist.filter((i) => i.status === 'missing').length})</span>
+                      </span>
+                      <div className="space-y-2">
+                        {readiness.checklist
+                          .filter((item) => item.status === 'missing')
+                          .map((item, idx) => (
+                            <div
+                              key={idx}
+                              className="p-3 rounded-xl border bg-zinc-950/80 border-zinc-800 text-xs flex items-start gap-2.5"
+                            >
+                              <AlertCircle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
+                              <div className="flex flex-col flex-1 gap-0.5">
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="font-bold text-zinc-100">{item.document_name}</span>
+                                  <span
+                                    className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                                      item.is_mandatory
+                                        ? 'bg-rose-950/70 text-rose-300 border border-rose-800/50'
+                                        : 'bg-zinc-800 text-zinc-400'
+                                    }`}
+                                  >
+                                    {item.is_mandatory ? 'Mandatory' : 'Optional'}
+                                  </span>
+                                </div>
+                                {item.description && (
+                                  <span className="text-[11px] text-zinc-400">{item.description}</span>
+                                )}
+                                <span className="text-[10px] text-rose-400 mt-1 font-medium">
+                                  Action: Upload this document to dropzone
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Direct Link to Scheme Detail */}

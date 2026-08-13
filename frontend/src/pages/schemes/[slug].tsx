@@ -6,14 +6,12 @@ import {
   ShieldCheck,
   CheckCircle2,
   AlertCircle,
-  FileText,
   Sparkles,
   Building2,
   Calendar,
   Layers,
   MapPin,
   FolderLock,
-  FolderCheck,
 } from 'lucide-react'
 import {
   getSchemeBySlug,
@@ -307,72 +305,203 @@ export default function SchemeDetailPage() {
         </div>
       </div>
 
-      {/* Live Document Readiness Meter Card (if authenticated) */}
-      {docReadiness && (
-        <div className="p-6 sm:p-8 rounded-3xl border border-indigo-900/60 bg-gradient-to-r from-indigo-950/40 via-zinc-900/60 to-purple-950/40 shadow-xl flex flex-col gap-4">
-          <div className="flex items-center justify-between">
+      {/* =====================================================================
+          UNIFIED DOCUMENT READINESS & APPLICATION TRACKER
+          ===================================================================== */}
+      <div className="p-6 sm:p-8 rounded-3xl border border-zinc-800/90 bg-zinc-900/60 shadow-xl flex flex-col gap-6">
+        {/* Header & Score */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-zinc-800/80">
+          <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-              <FolderLock className="h-5 w-5 text-indigo-400" />
-              <h2 className="text-base font-bold text-zinc-100">
-                Your Application Document Readiness
+              <FolderLock className="h-5 w-5 text-blue-400" />
+              <h2 className="text-lg font-bold text-zinc-100">
+                Required Application Documents
               </h2>
             </div>
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-bold font-mono ${
-                docReadiness.readiness_percentage === 100
-                  ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/60'
-                  : docReadiness.readiness_percentage > 0
-                  ? 'bg-amber-950/80 text-amber-400 border border-amber-800/60'
-                  : 'bg-rose-950/80 text-rose-400 border border-rose-800/60'
-              }`}
-            >
-              {docReadiness.readiness_percentage}% Ready
-            </span>
+            <p className="text-xs text-zinc-400">
+              {docReadiness
+                ? docReadiness.summary
+                : `${scheme.required_documents?.length || 0} document(s) required to verify eligibility and apply.`}
+            </p>
           </div>
 
-          <div className="w-full h-2.5 rounded-full bg-zinc-800 overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                docReadiness.readiness_percentage === 100
-                  ? 'bg-emerald-500'
-                  : docReadiness.readiness_percentage >= 50
-                  ? 'bg-amber-500'
-                  : 'bg-rose-500'
-              }`}
-              style={{ width: `${docReadiness.readiness_percentage}%` }}
-            />
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-zinc-950/60 p-3.5 rounded-2xl border border-zinc-800">
-            <p className="text-xs text-zinc-300">{docReadiness.summary}</p>
+          {docReadiness ? (
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="flex flex-col items-end gap-1">
+                <span className="text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">
+                  Readiness Score
+                </span>
+                <span
+                  className={`text-lg font-black font-mono px-3 py-1 rounded-xl border ${
+                    docReadiness.readiness_percentage === 100
+                      ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800/60 shadow-lg shadow-emerald-950/50'
+                      : docReadiness.readiness_percentage > 0
+                      ? 'bg-amber-950/80 text-amber-300 border-amber-800/60 shadow-lg shadow-amber-950/50'
+                      : 'bg-rose-950/80 text-rose-300 border-rose-800/60 shadow-lg shadow-rose-950/50'
+                  }`}
+                >
+                  {docReadiness.readiness_percentage}% Ready
+                </span>
+              </div>
+            </div>
+          ) : (
             <Link
               to="/vault"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shrink-0 transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors"
             >
-              <FolderCheck className="h-3.5 w-3.5" />
-              <span>Open Vault & Upload</span>
+              <FolderLock className="h-4 w-4 text-blue-400" />
+              <span>Verify with Vault</span>
             </Link>
-          </div>
-        </div>
-      )}
-
-      {/* Required Documents Section */}
-      <div className="p-6 sm:p-8 rounded-3xl border border-zinc-800/90 bg-zinc-900/60 shadow-xl flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-zinc-100 font-bold text-base">
-            <FileText className="h-4 w-4 text-purple-400" />
-            <span>Required Documents to Apply</span>
-          </div>
-          <span className="text-xs text-zinc-500">
-            {scheme.required_documents?.length || 0} document(s) needed
-          </span>
+          )}
         </div>
 
-        {!scheme.required_documents || scheme.required_documents.length === 0 ? (
-          <p className="text-xs text-zinc-500">No document requirements specified.</p>
+        {/* Dynamic Progress Bar (if authenticated) */}
+        {docReadiness && (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-zinc-300 font-medium">
+                {docReadiness.mandatory_available} of {docReadiness.mandatory_total} Mandatory Documents Ready
+              </span>
+              <span className="font-mono text-zinc-400">
+                {docReadiness.mandatory_total - docReadiness.mandatory_available} Missing
+              </span>
+            </div>
+            <div className="w-full h-3 rounded-full bg-zinc-950 border border-zinc-800 p-0.5 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-700 ease-out ${
+                  docReadiness.readiness_percentage === 100
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                    : docReadiness.readiness_percentage >= 50
+                    ? 'bg-gradient-to-r from-amber-500 to-yellow-400'
+                    : 'bg-gradient-to-r from-rose-500 to-amber-500'
+                }`}
+                style={{ width: `${Math.max(docReadiness.readiness_percentage, 5)}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* SEGREGATED ROWS */}
+        {docReadiness ? (
+          <div className="flex flex-col gap-6">
+            {/* 1. GREEN ROW: Ready in Vault */}
+            {docReadiness.checklist.some((item) => item.status === 'available') && (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                    Ready in Your Vault ({docReadiness.checklist.filter((i) => i.status === 'available').length})
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {docReadiness.checklist
+                    .filter((item) => item.status === 'available')
+                    .map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="p-4 rounded-2xl bg-gradient-to-b from-emerald-950/40 via-zinc-950/80 to-zinc-950/90 border border-emerald-700/60 shadow-lg shadow-emerald-950/30 flex flex-col justify-between gap-3 text-xs"
+                      >
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-emerald-200 text-sm flex items-center gap-1.5">
+                              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                              {item.document_name}
+                            </span>
+                            <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-emerald-950 text-emerald-400 border border-emerald-700/60">
+                              ✓ Verified & Ready
+                            </span>
+                          </div>
+                          {item.description && (
+                            <p className="text-zinc-400 text-[11px] leading-relaxed">
+                              {item.description}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="pt-2 border-t border-emerald-900/40 flex items-center justify-between text-[11px]">
+                          <span className="text-zinc-300 font-mono flex items-center gap-1 truncate max-w-[200px]">
+                            📎 {item.matched_vault_document_name}
+                          </span>
+                          <Link
+                            to="/vault"
+                            className="text-emerald-400 hover:text-emerald-300 font-semibold shrink-0"
+                          >
+                            View in Vault →
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* 2. ACTION REQUIRED ROW: Missing Documents */}
+            {docReadiness.checklist.some((item) => item.status === 'missing') && (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-rose-400 animate-pulse" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-rose-400">
+                      Missing Documents Needed to Apply ({docReadiness.checklist.filter((i) => i.status === 'missing').length})
+                    </h3>
+                  </div>
+                  <Link
+                    to="/vault"
+                    className="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1"
+                  >
+                    <span>Open Vault Dropzone</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {docReadiness.checklist
+                    .filter((item) => item.status === 'missing')
+                    .map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800/90 hover:border-zinc-700 shadow-md flex flex-col justify-between gap-3 text-xs transition-all"
+                      >
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-zinc-100 text-sm flex items-center gap-1.5">
+                              <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
+                              {item.document_name}
+                            </span>
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                                item.is_mandatory
+                                  ? 'bg-rose-950/90 text-rose-300 border border-rose-800/80'
+                                  : 'bg-zinc-800 text-zinc-400'
+                              }`}
+                            >
+                              {item.is_mandatory ? 'Mandatory' : 'Optional'}
+                            </span>
+                          </div>
+                          {item.description && (
+                            <p className="text-zinc-400 text-[11px] leading-relaxed">
+                              {item.description}
+                            </p>
+                          )}
+                        </div>
+
+                        <Link
+                          to="/vault"
+                          className="w-full py-1.5 rounded-xl bg-zinc-900 hover:bg-blue-950/60 text-zinc-300 hover:text-blue-300 border border-zinc-800 hover:border-blue-800/60 font-semibold text-center text-[11px] transition-all flex items-center justify-center gap-1"
+                        >
+                          <span>+ Upload Document</span>
+                        </Link>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
         ) : (
+          /* Static View when not signed in */
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {scheme.required_documents.map((doc) => (
+            {scheme.required_documents?.map((doc) => (
               <div
                 key={doc.id}
                 className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 flex flex-col justify-between gap-2 text-xs"
