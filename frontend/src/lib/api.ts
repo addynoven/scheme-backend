@@ -409,3 +409,113 @@ export async function adminDeleteScheme(id: number): Promise<void> {
   })
   if (!res.ok) throw new Error('Failed to delete scheme')
 }
+
+// ============================================================================
+// V1.5 INGESTION & TRIAGE APIS
+// ============================================================================
+
+export interface IngestionSource {
+  id: number
+  source_key: string
+  name: string
+  endpoint_url: string
+  source_type: string
+  etag: string | null
+  last_modified_header: string | null
+  content_hash: string | null
+  status: string
+  failure_count: number
+  last_checked_at: string | null
+  last_synced_at: string | null
+}
+
+export interface IngestionTriageItem {
+  id: number
+  source_id: number
+  scheme_slug: string
+  scheme_name: string
+  change_type: string
+  impact_level: string
+  diff_summary: string
+  diff_payload: {
+    before_state?: any
+    after_state?: any
+  }
+  status: string
+  reviewed_by: string | null
+  reviewed_at: string | null
+  created_at: string
+}
+
+export interface IngestionSyncRunResult {
+  source_key: string
+  status: string
+  http_status: number | null
+  bytes_downloaded: number
+  raw_s3_key: string | null
+  semantic_hash: string | null
+  schemes_created: number
+  schemes_updated: number
+  breaking_changes_triaged: number
+  message: string
+  duration_ms: number
+}
+
+export async function adminListIngestionSources(): Promise<IngestionSource[]> {
+  const res = await fetch(`${API_BASE}/admin/ingestion/sources`, {
+    headers: getAdminAuthHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to load ingestion sources')
+  return res.json()
+}
+
+export async function adminRunIngestionSync(sourceKey?: string): Promise<IngestionSyncRunResult[]> {
+  const url = sourceKey
+    ? `${API_BASE}/admin/ingestion/run?source_key=${encodeURIComponent(sourceKey)}`
+    : `${API_BASE}/admin/ingestion/run`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || 'Ingestion sync failed')
+  }
+  return res.json()
+}
+
+export async function adminListTriageItems(statusFilter: string = 'pending_review'): Promise<IngestionTriageItem[]> {
+  const url = statusFilter
+    ? `${API_BASE}/admin/ingestion/triage?status_filter=${encodeURIComponent(statusFilter)}`
+    : `${API_BASE}/admin/ingestion/triage`
+  const res = await fetch(url, {
+    headers: getAdminAuthHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to load triage items')
+  return res.json()
+}
+
+export async function adminApproveTriageItem(id: number): Promise<IngestionTriageItem> {
+  const res = await fetch(`${API_BASE}/admin/ingestion/triage/${id}/approve`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || 'Failed to approve triage item')
+  }
+  return res.json()
+}
+
+export async function adminRejectTriageItem(id: number): Promise<IngestionTriageItem> {
+  const res = await fetch(`${API_BASE}/admin/ingestion/triage/${id}/reject`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || 'Failed to reject triage item')
+  }
+  return res.json()
+}
+
