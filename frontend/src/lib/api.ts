@@ -101,6 +101,11 @@ export interface EligibilityCheckPayload {
   district?: string
   annual_income?: number
   occupation?: string
+  caste_category?: string
+  is_differently_abled?: boolean
+  marital_status?: string
+  residence_area?: string
+  has_land?: boolean
 }
 
 export interface UserDocument {

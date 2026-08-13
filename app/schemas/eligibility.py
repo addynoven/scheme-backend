@@ -42,6 +42,31 @@ class EligibilityCheckRequest(BaseModel):
         examples=["farmer"],
         description="Primary occupation or trade",
     )
+    caste_category: str | None = Field(
+        None,
+        examples=["General", "OBC", "SC", "ST", "EWS"],
+        description="Social / caste reservation category",
+    )
+    is_differently_abled: bool | None = Field(
+        None,
+        examples=[False],
+        description="Whether applicant is a person with disability (Divyangjan)",
+    )
+    marital_status: str | None = Field(
+        None,
+        examples=["Single", "Married", "Widowed / Single Mother"],
+        description="Marital status of applicant",
+    )
+    residence_area: str | None = Field(
+        None,
+        examples=["Rural", "Urban"],
+        description="Area of residence (Rural / Gramin vs Urban / Nagar)",
+    )
+    has_land: bool | None = Field(
+        None,
+        examples=[True],
+        description="Whether applicant or household owns agricultural land",
+    )
 
 
 class CriterionVerdict(BaseModel):
