@@ -1,5 +1,6 @@
-import { Outlet, Link } from 'react-router-dom'
+import { Outlet } from 'react-router'
 import { Sparkles, ShieldCheck } from 'lucide-react'
+import { Link } from '@/router'
 
 export default function App() {
   return (
