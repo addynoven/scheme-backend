@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router'
 import { Link } from '@/router'
-import { ShieldCheck, Search, CheckCircle2 } from 'lucide-react'
+import { ShieldCheck, Search, CheckCircle2, ShieldAlert } from 'lucide-react'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function App() {
@@ -23,13 +23,21 @@ export default function App() {
             </div>
           </Link>
 
-          <nav className="flex items-center gap-2 sm:gap-4">
+          <nav className="flex items-center gap-2 sm:gap-3">
             <Link
               to="/"
               className="text-xs sm:text-sm text-zinc-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-zinc-900 transition-colors flex items-center gap-1.5"
             >
               <Search className="h-3.5 w-3.5 text-zinc-400" />
-              Explore
+              <span>Explore</span>
+            </Link>
+
+            <Link
+              to="/admin"
+              className="text-xs sm:text-sm text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded-lg hover:bg-zinc-900 transition-colors flex items-center gap-1.5"
+            >
+              <ShieldAlert className="h-3.5 w-3.5 text-indigo-400" />
+              <span>Admin</span>
             </Link>
 
             <Link
@@ -55,11 +63,16 @@ export default function App() {
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Government Welfare Scheme Navigator · Website V1</span>
+            <span>Government Welfare Scheme Navigator · V1.2 Admin Ready</span>
           </div>
-          <p className="text-zinc-500 text-[11px]">
-            Official government scheme eligibility and official portal gateway.
-          </p>
+          <div className="flex items-center gap-4">
+            <Link to="/admin" className="text-zinc-500 hover:text-zinc-300">
+              Admin Portal
+            </Link>
+            <p className="text-zinc-500 text-[11px]">
+              Official government scheme eligibility and official portal gateway.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

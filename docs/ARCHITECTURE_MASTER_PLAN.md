@@ -22,8 +22,8 @@ MCP exposes capabilities to agents.
 | :--- | :--- | :--- | :--- |
 | **V1.0** | **The Deterministic Core** | 4-Screen Flow, Rule Engine, Explainability, 12 National Schemes, Docker Stack | ✅ **Completed** |
 | **V1.1** | **State Schemes Expansion** | Flagship state benefits (Madhya Pradesh, Maharashtra, Karnataka) & Location Matching | ✅ **Completed** |
-| **V1.2** | **Admin Management Portal** | Web UI to create, edit, and toggle schemes without SQL | 🎯 **Next** |
-| **V1.3** | **Document Vault & Readiness** | S3 Document storage & live Scheme Application Readiness Meter | 📋 Planned |
+| **V1.2** | **Admin Management Portal** | Web UI to create, edit, and toggle schemes without SQL, Visual Rule Builder | ✅ **Completed** |
+| **V1.3** | **Document Vault & Readiness** | S3 Document storage & live Scheme Application Readiness Meter | 🎯 **Next** |
 | **V1.5** | **Government Ingestion Pipeline** | Two-Phase Semantic CDC + Circuit Breaker + MinIO Staging + Triage Queue | 📋 Planned |
 | **V2.0** | **OCR & Fact Extraction** | Auto-extract facts from Aadhaar/Certificates with human verification | 📋 Planned |
 | **V2.5** | **OKF Canonical Knowledge** | Structured agent-readable knowledge layer & Query Router | 📋 Planned |
@@ -103,33 +103,36 @@ Display Unified Opportunities:
 
 ---
 
-## 🎯 V1.2 — Admin Scheme Management Portal *(Next Milestone)*
+## 🟢 V1.2 — Admin Scheme Management Portal *(Completed & Live)*
 
 ### Objective
 Allow non-technical administrators to create, update, and toggle welfare schemes and eligibility rules via a secure web UI without touching code or SQL.
 
 ```text
 Admin Portal (/admin)
+  ├── Secure JWT Auth (admin@gov.in)
   ├── Scheme Metadata (Name, Ministry, State, Description, Portal URL)
-  ├── Visual Rule Builder (Select field, operator: <=, >=, between, value)
+  ├── Visual Rule Builder (Field: Age/Income/State, Operator: =, <=, >=, between, Value)
   ├── Benefits Manager (Type, Cash amount, Description)
   └── Required Documents Checklist (Mandatory vs Optional)
 ```
 
 ### Key Deliverables
 * **Admin Dashboard UI (`/admin`)**:
-  * Scheme table with search, category/state filters, status toggle (`active` / `inactive`), and edit triggers.
+  * Scheme table with search, category & state filters, instant status toggle (`active` / `draft`), and edit triggers.
 * **Visual Rule Builder**:
   * Dropdown UI to configure rules without writing code:
     `[ State ] [ = ] [ Madhya Pradesh ]`
     `[ Age ] [ >= ] [ 21 ]`
     `[ Income ] [ <= ] [ 2,50,000 ]`
 * **RBAC Enforcement**:
-  * Restrict `/admin` endpoints to users with `role: "admin"` via JWT.
+  * Restricts `/admin` endpoints to users with `role: "admin"` via JWT.
+* **Full CRUD Lifecycle**:
+  * Create, edit, toggle, and delete schemes + nested benefits, eligibility rules, and required documents.
 
 ---
 
-## 📋 V1.3 — Document Vault & Live Readiness Meter
+## 🎯 V1.3 — Document Vault & Live Readiness Meter *(Next Milestone)*
 
 ### Objective
 Enable citizens to store documents securely in MinIO S3 and view real-time application readiness scores before applying.
