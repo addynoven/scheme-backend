@@ -357,14 +357,21 @@ def generate_eligibility_report(
         else:
             ineligible.append(explanation)
 
+    eligible_count = len(eligible)
+    nearly_eligible_count = len(nearly_eligible)
+    ineligible_count = len(ineligible)
+
+    # Sort nearly eligible by match percentage descending
+    nearly_eligible.sort(key=lambda x: x.match_percentage, reverse=True)
+
     return EligibilityReportResponse(
         total_evaluated=len(schemes),
-        eligible_count=len(eligible),
-        nearly_eligible_count=len(nearly_eligible),
-        ineligible_count=len(ineligible),
-        eligible_schemes=eligible,
-        nearly_eligible_schemes=nearly_eligible,
-        ineligible_schemes=ineligible,
+        eligible_count=eligible_count,
+        nearly_eligible_count=nearly_eligible_count,
+        ineligible_count=ineligible_count,
+        eligible_schemes=eligible[:150],
+        nearly_eligible_schemes=nearly_eligible[:60],
+        ineligible_schemes=ineligible[:20],
     )
 
 

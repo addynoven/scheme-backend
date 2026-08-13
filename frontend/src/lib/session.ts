@@ -7,29 +7,56 @@ const ADMIN_USER_KEY = 'scheme_admin_user'
 const CITIZEN_TOKEN_KEY = 'scheme_citizen_jwt'
 const CITIZEN_USER_KEY = 'scheme_citizen_user'
 
+let inMemoryReport: EligibilityReport | null = null
+let inMemoryProfile: EligibilityCheckPayload | null = null
+
 export function saveCitizenProfile(profile: EligibilityCheckPayload) {
-  sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile))
+  inMemoryProfile = profile
+  try {
+    sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile))
+  } catch (e) {
+    console.warn('SessionStorage quota exceeded, using in-memory profile store.', e)
+  }
 }
 
 export function getSavedCitizenProfile(): EligibilityCheckPayload | null {
+  if (inMemoryProfile) return inMemoryProfile
   const data = sessionStorage.getItem(PROFILE_KEY)
   if (!data) return null
   try {
-    return JSON.parse(data)
+    inMemoryProfile = JSON.parse(data)
+    return inMemoryProfile
   } catch {
     return null
   }
 }
 
 export function saveEligibilityReport(report: EligibilityReport) {
-  sessionStorage.setItem(REPORT_KEY, JSON.stringify(report))
+  inMemoryReport = report
+  try {
+    sessionStorage.setItem(REPORT_KEY, JSON.stringify(report))
+  } catch (e) {
+    console.warn('SessionStorage quota exceeded, using in-memory report store.', e)
+    // Attempt saving compact version without large descriptions if possible
+    try {
+      const compact = {
+        ...report,
+        ineligible_schemes: [],
+      }
+      sessionStorage.setItem(REPORT_KEY, JSON.stringify(compact))
+    } catch {
+      // Keep in memory
+    }
+  }
 }
 
 export function getSavedEligibilityReport(): EligibilityReport | null {
+  if (inMemoryReport) return inMemoryReport
   const data = sessionStorage.getItem(REPORT_KEY)
   if (!data) return null
   try {
-    return JSON.parse(data)
+    inMemoryReport = JSON.parse(data)
+    return inMemoryReport
   } catch {
     return null
   }
