@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from app.core.exceptions import AuthenticationError, PermissionDeniedError
 from app.core.security import decode_token
 from app.database import get_db
-from app.models.user import User
-from app.services.user import get_user_by_id
+from app.modules.auth.models import User
+from app.modules.auth.service import get_user_by_id
 
 security = HTTPBearer()
 
