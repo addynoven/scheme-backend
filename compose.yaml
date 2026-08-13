@@ -78,6 +78,7 @@ services:
       - "8000:8000"
     volumes:
       - ./app:/app/app
+      - ./alembic:/app/alembic
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
