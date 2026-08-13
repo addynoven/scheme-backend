@@ -32,7 +32,7 @@ from app.modules.auth.service import (
     update_profile,
     update_user,
 )
-from app.schemas.pagination import PaginatedResponse
+from app.core.pagination import PaginatedResponse
 
 router = APIRouter(tags=["Auth & Users"])
 

@@ -2,11 +2,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
-from app.models.benefit import Benefit
-from app.models.eligibility_rule import EligibilityRule
-from app.models.official_source import OfficialSource
-from app.models.required_document import RequiredDocument
-from app.models.scheme import Scheme
+from app.modules.schemes.models import (
+    Benefit,
+    EligibilityRule,
+    OfficialSource,
+    RequiredDocument,
+    Scheme,
+)
 
 NATIONAL_AND_STATE_SCHEMES_DATA = [
     # =========================================================================

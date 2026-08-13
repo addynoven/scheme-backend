@@ -1,13 +1,13 @@
 from datetime import date
 
-from app.models.eligibility_rule import EligibilityRule
-from app.services.eligibility import (
+from app.modules.eligibility.service import (
     calculate_age,
     check_scheme_eligibility,
     evaluate_rule,
     explain_rule_verdict,
     explain_scheme_eligibility,
 )
+from app.modules.schemes.models import EligibilityRule
 
 
 def test_calculate_age():

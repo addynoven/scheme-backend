@@ -8,15 +8,13 @@ from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
 from app.main import app
-from app.models.eligibility_rule import EligibilityRule
-from app.models.ingestion_source import IngestionSource
-from app.models.ingestion_triage import IngestionTriageItem
-from app.models.scheme import Scheme
-from app.models.user import User
-from app.services.ingestion.ingestion_service import (
+from app.modules.auth.models import User
+from app.modules.ingestion.models import IngestionSource, IngestionTriageItem
+from app.modules.ingestion.service import (
     get_or_create_default_sources,
     run_ingestion_pipeline,
 )
+from app.modules.schemes.models import EligibilityRule, Scheme
 
 
 @pytest.fixture

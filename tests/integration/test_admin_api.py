@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
-from app.models.user import User
+from app.modules.auth.models import User
 
 
 def create_admin_user(db: Session) -> dict[str, str]:

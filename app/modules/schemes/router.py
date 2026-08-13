@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import SchemeNotFoundError
 from app.database import get_db
-from app.schemas.pagination import PaginatedResponse
+from app.core.pagination import PaginatedResponse
 from app.modules.schemes.schemas import (
     CategoryListResponse,
     SchemeCreate,

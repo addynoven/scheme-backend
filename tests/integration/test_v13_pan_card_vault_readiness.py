@@ -3,7 +3,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.models.scheme import Scheme
+from app.modules.schemes.models import Scheme
 from app.seeds.seed_national_schemes import seed_national_schemes
 
 

@@ -1,11 +1,11 @@
 from sqlalchemy import select, func
 
 from app.database import SessionLocal
-from app.models.scheme import Scheme
-from app.models.user import User
+from app.modules.auth.models import User
+from app.modules.ingestion.service import run_ingestion_pipeline
+from app.modules.schemes.models import Scheme
 from app.seeds.create_admin import create_or_promote_admin
 from app.seeds.seed_national_schemes import seed_national_schemes
-from app.services.ingestion.ingestion_service import run_ingestion_pipeline
 
 
 def main():

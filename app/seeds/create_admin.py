@@ -3,7 +3,7 @@ from sqlalchemy import select
 
 from app.core.security import hash_password
 from app.database import SessionLocal
-from app.models.user import User
+from app.modules.auth.models import User
 
 
 def create_or_promote_admin(email: str, phone: str, password: str | None = None) -> User:

@@ -19,7 +19,7 @@ from app.modules.ingestion.schemas import (
     IngestionTriageItemResponse,
 )
 from app.modules.schemes.schemas import OfficialSourceCreate, OfficialSourceResponse
-from app.schemas.pagination import PaginatedResponse
+from app.core.pagination import PaginatedResponse
 from app.modules.schemes.schemas import RequiredDocumentCreate, RequiredDocumentResponse
 from app.modules.schemes.schemas import (
     SchemeCreate,
