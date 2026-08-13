@@ -15,39 +15,90 @@ import {
   Briefcase,
   Users,
   MapPin,
+  Building2,
+  FileText,
+  Coins,
+  Loader2,
 } from 'lucide-react'
-import { searchSchemes, type Scheme } from '@/lib/api'
+import { searchSchemesPaginated, type Scheme } from '@/lib/api'
 
 const PERSONA_FILTERS = [
   { label: 'All Schemes', category: 'All', icon: Users },
-  { label: 'Farmer', category: 'Agriculture', icon: Tractor },
-  { label: 'Student', category: 'Education', icon: GraduationCap },
-  { label: 'Healthcare', category: 'Healthcare', icon: HeartPulse },
+  { label: 'Farmer & Agriculture', category: 'Agriculture', icon: Tractor },
+  { label: 'Student & Education', category: 'Education', icon: GraduationCap },
+  { label: 'Healthcare & Wellness', category: 'Healthcare', icon: HeartPulse },
   { label: 'Women & Child', category: 'Women & Child', icon: HeartHandshake },
-  { label: 'Housing', category: 'Housing', icon: HomeIcon },
+  { label: 'Housing & Shelter', category: 'Housing', icon: HomeIcon },
   { label: 'Artisan & Skills', category: 'Employment & Skills', icon: Briefcase },
+  { label: 'Business & MSME', category: 'Business & Finance', icon: Coins },
+  { label: 'Social Welfare', category: 'Social Welfare', icon: ShieldCheck },
 ]
 
-const STATE_FILTERS = [
-  { label: 'All India', value: 'All' },
-  { label: 'Madhya Pradesh', value: 'Madhya Pradesh' },
-  { label: 'Maharashtra', value: 'Maharashtra' },
-  { label: 'Karnataka', value: 'Karnataka' },
+const ALL_INDIAN_STATES = [
+  'All India',
+  'Andhra Pradesh',
+  'Arunachal Pradesh',
+  'Assam',
+  'Bihar',
+  'Chhattisgarh',
+  'Goa',
+  'Gujarat',
+  'Haryana',
+  'Himachal Pradesh',
+  'Jharkhand',
+  'Karnataka',
+  'Kerala',
+  'Madhya Pradesh',
+  'Maharashtra',
+  'Manipur',
+  'Meghalaya',
+  'Mizoram',
+  'Nagaland',
+  'Odisha',
+  'Punjab',
+  'Rajasthan',
+  'Sikkim',
+  'Tamil Nadu',
+  'Telangana',
+  'Tripura',
+  'Uttar Pradesh',
+  'Uttarakhand',
+  'West Bengal',
+  'Andaman and Nicobar Islands',
+  'Chandigarh',
+  'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi',
+  'Jammu and Kashmir',
+  'Ladakh',
+  'Lakshadweep',
+  'Puducherry',
 ]
 
 export default function HomePage() {
   const [schemes, setSchemes] = useState<Scheme[]>([])
+  const [totalCount, setTotalCount] = useState<number>(4160)
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
-  const [selectedState, setSelectedState] = useState('All')
+  const [selectedState, setSelectedState] = useState('All India')
+  const [page, setPage] = useState(0)
+  const pageSize = 24
 
   useEffect(() => {
     setLoading(true)
+    setPage(0)
     const timer = setTimeout(() => {
-      searchSchemes(searchQuery, selectedCategory, selectedState)
-        .then((data) => {
-          setSchemes(data)
+      searchSchemesPaginated(
+        searchQuery,
+        selectedCategory,
+        selectedState === 'All India' ? undefined : selectedState,
+        0,
+        pageSize
+      )
+        .then((res) => {
+          setSchemes(res.items || [])
+          setTotalCount(res.total || 0)
           setLoading(false)
         })
         .catch(() => setLoading(false))
@@ -55,6 +106,24 @@ export default function HomePage() {
 
     return () => clearTimeout(timer)
   }, [searchQuery, selectedCategory, selectedState])
+
+  const handleLoadMore = async () => {
+    const nextPage = page + 1
+    setLoadingMore(true)
+    try {
+      const res = await searchSchemesPaginated(
+        searchQuery,
+        selectedCategory,
+        selectedState === 'All India' ? undefined : selectedState,
+        nextPage * pageSize,
+        pageSize
+      )
+      setSchemes((prev) => [...prev, ...(res.items || [])])
+      setPage(nextPage)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   return (
     <div className="flex flex-col gap-10">
@@ -66,7 +135,7 @@ export default function HomePage() {
         <div className="relative z-10 max-w-3xl flex flex-col items-start gap-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-950/80 border border-blue-800/60 text-blue-300 shadow-sm">
             <Sparkles className="h-3.5 w-3.5 text-blue-400" />
-            <span>Government Welfare Scheme Navigator · V1.1</span>
+            <span>National Welfare Navigator · 4,160+ Schemes Indexed</span>
           </div>
 
           <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-zinc-100 leading-[1.1]">
@@ -77,7 +146,7 @@ export default function HomePage() {
           </h1>
 
           <p className="text-zinc-400 text-base sm:text-lg leading-relaxed max-w-2xl">
-            Answer a few simple questions or search by your need to discover National and State welfare schemes, receive plain-English eligibility explanations, and apply directly.
+            Answer 4 simple questions or search by your need to discover official National and State welfare schemes, receive plain-English eligibility explanations, and track document readiness.
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -94,59 +163,100 @@ export default function HomePage() {
               href="#explore"
               className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 hover:text-white font-medium text-sm border border-zinc-700/60 transition-colors"
             >
-              Browse Schemes
+              Browse 4,160+ Schemes
             </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Live Catalog Metrics Bar */}
+      <section className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-5 flex items-center gap-3.5">
+          <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
+            <Building2 className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-xl sm:text-2xl font-black text-zinc-100">4,160+</div>
+            <div className="text-xs text-zinc-400 font-medium">Official Schemes</div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-5 flex items-center gap-3.5">
+          <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+            <MapPin className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-xl sm:text-2xl font-black text-zinc-100">36</div>
+            <div className="text-xs text-zinc-400 font-medium">States & UTs</div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-5 flex items-center gap-3.5">
+          <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-xl sm:text-2xl font-black text-zinc-100">9,950+</div>
+            <div className="text-xs text-zinc-400 font-medium">Eligibility Rules</div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 sm:p-5 flex items-center gap-3.5">
+          <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <FileText className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-xl sm:text-2xl font-black text-zinc-100">14,700+</div>
+            <div className="text-xs text-zinc-400 font-medium">Required Docs</div>
           </div>
         </div>
       </section>
 
       {/* Discovery & Search Section */}
       <section id="explore" className="flex flex-col gap-6 scroll-mt-24">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-zinc-100 tracking-tight">
-              Explore Government Schemes
-            </h2>
-            <p className="text-sm text-zinc-400">
-              Filter by category, search by keywords, or browse state-specific programs (MP, Maharashtra, Karnataka).
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-bold text-zinc-100 tracking-tight">
+                Explore Government Schemes
+              </h2>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-950/80 text-blue-400 border border-blue-800/60">
+                {totalCount.toLocaleString()} available
+              </span>
+            </div>
+            <p className="text-sm text-zinc-400 mt-1">
+              Filter by category, search by keywords, or choose your state to view applicable benefits.
             </p>
           </div>
 
-          {/* Search Box */}
-          <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-            <input
-              type="text"
-              placeholder="Search by need or keyword..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-zinc-900/90 border border-zinc-800 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/80 transition-all shadow-inner"
-            />
-          </div>
-        </div>
+          {/* Search Box & State Dropdown */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+              <input
+                type="text"
+                placeholder="Search schemes, benefits, keywords..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-zinc-900/90 border border-zinc-800 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/80 transition-all shadow-inner"
+              />
+            </div>
 
-        {/* State Quick Filters */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <span className="text-xs font-semibold text-zinc-400 mr-1 flex items-center gap-1">
-            <MapPin className="h-3.5 w-3.5 text-blue-400" />
-            Region:
-          </span>
-          {STATE_FILTERS.map((st) => {
-            const isSelected = selectedState === st.value
-            return (
-              <button
-                key={st.value}
-                onClick={() => setSelectedState(st.value)}
-                className={`text-xs px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer ${
-                  isSelected
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                    : 'bg-zinc-900/80 hover:bg-zinc-800 text-zinc-400 border border-zinc-800'
-                }`}
+            {/* State Picker Dropdown */}
+            <div className="relative w-full sm:w-56">
+              <select
+                value={selectedState}
+                onChange={(e) => setSelectedState(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900/90 border border-zinc-800 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/80 transition-all cursor-pointer"
               >
-                {st.label}
-              </button>
-            )
-          })}
+                {ALL_INDIAN_STATES.map((st) => (
+                  <option key={st} value={st} className="bg-zinc-900 text-zinc-200">
+                    {st === 'All India' ? '🇮🇳 All India (All States)' : `🏛️ ${st}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
 
         {/* Persona Quick Filter Pills */}
@@ -171,6 +281,16 @@ export default function HomePage() {
           })}
         </div>
 
+        {/* Results Header */}
+        <div className="flex items-center justify-between text-xs text-zinc-400 px-1">
+          <span>
+            Showing <strong className="text-zinc-200">{schemes.length}</strong> of{' '}
+            <strong className="text-zinc-200">{totalCount.toLocaleString()}</strong> schemes
+            {selectedState !== 'All India' && ` in ${selectedState}`}
+            {selectedCategory !== 'All' && ` (${selectedCategory})`}
+          </span>
+        </div>
+
         {/* Schemes Grid */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -190,75 +310,100 @@ export default function HomePage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {schemes.map((scheme) => (
-              <div
-                key={scheme.id}
-                className="group rounded-2xl border border-zinc-800/90 bg-zinc-900/60 hover:bg-zinc-900/90 hover:border-zinc-700/80 transition-all p-6 flex flex-col justify-between shadow-lg shadow-black/40 relative overflow-hidden"
-              >
-                <div className="flex flex-col gap-3">
-                  {/* Category & State Badges */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-950/60 text-blue-400 border border-blue-800/40">
-                        {scheme.category || 'General'}
-                      </span>
-                      {scheme.state && scheme.state !== 'ALL_INDIA' ? (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/70 text-amber-300 border border-amber-800/60">
-                          🏛️ {scheme.state}
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {schemes.map((scheme) => (
+                <div
+                  key={scheme.id}
+                  className="group rounded-2xl border border-zinc-800/90 bg-zinc-900/60 hover:bg-zinc-900/90 hover:border-zinc-700/80 transition-all p-6 flex flex-col justify-between shadow-lg shadow-black/40 relative overflow-hidden"
+                >
+                  <div className="flex flex-col gap-3">
+                    {/* Category & State Badges */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-950/60 text-blue-400 border border-blue-800/40">
+                          {scheme.category || 'General'}
                         </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">
-                          🇮🇳 National
+                        {scheme.state && scheme.state !== 'ALL_INDIA' ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/70 text-amber-300 border border-amber-800/60">
+                            🏛️ {scheme.state}
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700">
+                            🇮🇳 National
+                          </span>
+                        )}
+                      </div>
+                      {scheme.official_website && (
+                        <span className="text-[11px] text-zinc-500 flex items-center gap-1">
+                          Official <ExternalLink className="h-3 w-3" />
                         </span>
                       )}
                     </div>
-                    {scheme.official_website && (
-                      <span className="text-[11px] text-zinc-500 flex items-center gap-1">
-                        Official <ExternalLink className="h-3 w-3" />
-                      </span>
+
+                    {/* Title */}
+                    <h3 className="text-lg font-bold text-zinc-100 group-hover:text-blue-300 transition-colors line-clamp-2">
+                      {scheme.name}
+                    </h3>
+
+                    {/* Ministry */}
+                    <p className="text-xs text-zinc-500 line-clamp-1">
+                      {scheme.ministry}
+                    </p>
+
+                    {/* Description */}
+                    <p className="text-xs text-zinc-400 line-clamp-3 leading-relaxed mt-1">
+                      {scheme.description}
+                    </p>
+
+                    {/* Benefits Preview */}
+                    {scheme.benefits && scheme.benefits.length > 0 && (
+                      <div className="mt-2 p-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 text-xs text-emerald-400 flex items-center gap-2">
+                        <span className="font-bold">Benefit:</span>
+                        <span className="truncate text-zinc-300">
+                          {scheme.benefits[0].description}
+                        </span>
+                      </div>
                     )}
                   </div>
 
-                  {/* Title */}
-                  <h3 className="text-lg font-bold text-zinc-100 group-hover:text-blue-300 transition-colors line-clamp-2">
-                    {scheme.name}
-                  </h3>
+                  {/* Footer Action */}
+                  <div className="mt-6 pt-4 border-t border-zinc-800/80 flex items-center justify-between">
+                    <Link
+                      to={`/schemes/${scheme.slug}` as any}
+                      className="text-xs font-semibold text-blue-400 group-hover:text-blue-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <span>View Eligibility & Details</span>
+                      <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-                  {/* Ministry */}
-                  <p className="text-xs text-zinc-500 line-clamp-1">
-                    {scheme.ministry}
-                  </p>
-
-                  {/* Description */}
-                  <p className="text-xs text-zinc-400 line-clamp-3 leading-relaxed mt-1">
-                    {scheme.description}
-                  </p>
-
-                  {/* Benefits Preview */}
-                  {scheme.benefits && scheme.benefits.length > 0 && (
-                    <div className="mt-2 p-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 text-xs text-emerald-400 flex items-center gap-2">
-                      <span className="font-bold">Benefit:</span>
-                      <span className="truncate text-zinc-300">
-                        {scheme.benefits[0].description}
-                      </span>
-                    </div>
+            {/* Load More Button */}
+            {schemes.length < totalCount && (
+              <div className="flex justify-center pt-4 pb-8">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 font-semibold text-sm border border-zinc-800 shadow-xl transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {loadingMore ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
+                      <span>Loading schemes...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Load More Schemes ({schemes.length} of {totalCount.toLocaleString()})</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </>
                   )}
-                </div>
-
-                {/* Footer Action */}
-                <div className="mt-6 pt-4 border-t border-zinc-800/80 flex items-center justify-between">
-                  <Link
-                    to={`/schemes/${scheme.slug}` as any}
-                    className="text-xs font-semibold text-blue-400 group-hover:text-blue-300 flex items-center gap-1.5 transition-colors"
-                  >
-                    <span>View Eligibility & Details</span>
-                    <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
-                  </Link>
-                </div>
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </section>
     </div>

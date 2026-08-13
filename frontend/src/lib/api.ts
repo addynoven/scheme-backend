@@ -186,16 +186,28 @@ export async function fetchPopularSchemes(limit = 8, state?: string): Promise<Sc
   return data.items || []
 }
 
-export async function searchSchemes(q?: string, category?: string, state?: string): Promise<Scheme[]> {
+export async function searchSchemesPaginated(
+  q?: string,
+  category?: string,
+  state?: string,
+  skip = 0,
+  limit = 24
+): Promise<PaginatedResult<Scheme>> {
   const params = new URLSearchParams()
   if (q) params.set('q', q)
   if (category && category !== 'All') params.set('category', category)
   if (state && state !== 'ALL_INDIA' && state !== 'All') params.set('state', state)
   params.set('status', 'active')
+  params.set('skip', String(skip))
+  params.set('limit', String(limit))
 
   const res = await fetch(`${API_BASE}/schemes/search?${params.toString()}`)
   if (!res.ok) throw new Error('Failed to search schemes')
-  const data = await res.json()
+  return res.json()
+}
+
+export async function searchSchemes(q?: string, category?: string, state?: string): Promise<Scheme[]> {
+  const data = await searchSchemesPaginated(q, category, state, 0, 24)
   return data.items || []
 }
 
