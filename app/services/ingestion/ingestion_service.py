@@ -3,7 +3,7 @@ import logging
 import time
 from typing import Any
 import httpx
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import EntityNotFoundError
@@ -30,21 +30,77 @@ def get_or_create_default_sources(db: Session) -> list[IngestionSource]:
         {
             "source_key": "data_gov_in_welfare",
             "name": "Data.gov.in National Welfare Schemes API",
-            "endpoint_url": "https://api.data.gov.in/resource/welfare-schemes-v1.json",
+            "endpoint_url": "http://127.0.0.1:8000/open-data/feeds/data_gov_in_welfare",
+            "source_type": "json_feed",
+            "status": "active",
+        },
+        {
+            "source_key": "rajasthan_state_portal",
+            "name": "Rajasthan State Welfare Portal Feed",
+            "endpoint_url": "http://127.0.0.1:8000/open-data/feeds/rajasthan_state_portal",
+            "source_type": "json_feed",
+            "status": "active",
+        },
+        {
+            "source_key": "up_state_portal",
+            "name": "Uttar Pradesh State Welfare Feed",
+            "endpoint_url": "http://127.0.0.1:8000/open-data/feeds/up_state_portal",
+            "source_type": "json_feed",
+            "status": "active",
+        },
+        {
+            "source_key": "tamilnadu_state_portal",
+            "name": "Tamil Nadu State Welfare Portal Feed",
+            "endpoint_url": "http://127.0.0.1:8000/open-data/feeds/tamilnadu_state_portal",
+            "source_type": "json_feed",
+            "status": "active",
+        },
+        {
+            "source_key": "telangana_state_portal",
+            "name": "Telangana State Welfare Feed",
+            "endpoint_url": "http://127.0.0.1:8000/open-data/feeds/telangana_state_portal",
+            "source_type": "json_feed",
+            "status": "active",
+        },
+        {
+            "source_key": "bihar_state_portal",
+            "name": "Bihar State Welfare Portal Feed",
+            "endpoint_url": "http://127.0.0.1:8000/open-data/feeds/bihar_state_portal",
+            "source_type": "json_feed",
+            "status": "active",
+        },
+        {
+            "source_key": "west_bengal_state_portal",
+            "name": "West Bengal State Welfare Feed",
+            "endpoint_url": "http://127.0.0.1:8000/open-data/feeds/west_bengal_state_portal",
+            "source_type": "json_feed",
+            "status": "active",
+        },
+        {
+            "source_key": "andhra_pradesh_state_portal",
+            "name": "Andhra Pradesh State Welfare Feed",
+            "endpoint_url": "http://127.0.0.1:8000/open-data/feeds/andhra_pradesh_state_portal",
             "source_type": "json_feed",
             "status": "active",
         },
         {
             "source_key": "mp_state_portal",
             "name": "Madhya Pradesh State Welfare Portal Feed",
-            "endpoint_url": "https://mpwelfare.gov.in/api/v1/schemes.json",
+            "endpoint_url": "http://127.0.0.1:8000/open-data/feeds/mp_state_portal",
             "source_type": "json_feed",
             "status": "active",
         },
         {
             "source_key": "mh_state_portal",
             "name": "Maharashtra State Welfare Feed",
-            "endpoint_url": "https://mahaschemes.maharashtra.gov.in/api/v1/feed.json",
+            "endpoint_url": "http://127.0.0.1:8000/open-data/feeds/mh_state_portal",
+            "source_type": "json_feed",
+            "status": "active",
+        },
+        {
+            "source_key": "odisha_state_portal",
+            "name": "Odisha State Welfare Portal Feed",
+            "endpoint_url": "http://127.0.0.1:8000/open-data/feeds/odisha_state_portal",
             "source_type": "json_feed",
             "status": "active",
         },
@@ -57,6 +113,10 @@ def get_or_create_default_sources(db: Session) -> list[IngestionSource]:
         if not existing:
             source = IngestionSource(**d)
             db.add(source)
+        else:
+            # Sync endpoint url and name if updated
+            existing.endpoint_url = d["endpoint_url"]
+            existing.name = d["name"]
 
     try:
         db.commit()
@@ -102,7 +162,14 @@ def _process_single_source(
     if source.last_modified_header:
         headers["If-Modified-Since"] = source.last_modified_header
 
-    http_client = client or httpx.Client(timeout=10.0)
+    if client:
+        http_client = client
+    elif source.endpoint_url.startswith("http://127.0.0.1") or source.endpoint_url.startswith("http://localhost") or source.endpoint_url.startswith("/"):
+        from starlette.testclient import TestClient
+        from app.main import app
+        http_client = TestClient(app)
+    else:
+        http_client = httpx.Client(timeout=15.0)
     try:
         try:
             resp = http_client.get(source.endpoint_url, headers=headers)
@@ -217,7 +284,15 @@ def _process_single_source(
 
         for incoming in incoming_schemes:
             slug = incoming.get("slug") or incoming.get("name", "").lower().replace(" ", "-")
-            existing = db.scalar(select(Scheme).where(Scheme.slug == slug))
+            name = incoming.get("name", "").strip()
+            existing = db.scalar(
+                select(Scheme).where(
+                    or_(
+                        Scheme.slug == slug,
+                        Scheme.name.ilike(name),
+                    )
+                )
+            )
 
             existing_dict = _scheme_to_dict(existing) if existing else None
             diff = classify_scheme_diff(existing_dict, incoming)
@@ -279,7 +354,10 @@ def _process_single_source(
 
     finally:
         if not client:
-            http_client.close()
+            try:
+                http_client.close()
+            except Exception:
+                pass
 
 
 def _scheme_to_dict(scheme: Scheme) -> dict[str, Any]:
