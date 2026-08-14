@@ -22,3 +22,12 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+# Ensure all model entities are registered with SQLAlchemy Base
+from app.modules.auth import models as _auth_models  # noqa
+from app.modules.schemes import models as _schemes_models  # noqa
+from app.modules.vault import models as _vault_models  # noqa
+from app.modules.ingestion import models as _ingestion_models  # noqa
+from app.modules.chat import models as _chat_models  # noqa
+from app.modules.household import models as _household_models  # noqa

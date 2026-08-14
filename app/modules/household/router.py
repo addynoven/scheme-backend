@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user, get_db
+from app.core.deps import get_current_user, get_current_user_optional, get_db
 from app.modules.auth.models import User
 from app.modules.household.schemas import (
     FamilyEligibilityResponse,
@@ -31,9 +31,11 @@ def add_member_endpoint(
 @router.get("/members", response_model=list[HouseholdMemberResponse])
 def list_members_endpoint(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User | None = Depends(get_current_user_optional),
 ):
-    """List all registered family members in the citizen's household."""
+    """List all registered family members in the citizen's household or empty for guest."""
+    if not current_user:
+        return []
     return list_household_members(db, current_user.id)
 
 

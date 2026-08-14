@@ -35,9 +35,11 @@ def create_session_endpoint(
 @router.get("/sessions", response_model=list[ChatSessionResponse])
 def list_sessions_endpoint(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User | None = Depends(get_current_user_optional),
 ):
-    """List all previous chat sessions for the authenticated citizen."""
+    """List all previous chat sessions for the authenticated citizen or empty for guest."""
+    if not current_user:
+        return []
     return list_chat_sessions(db, current_user.id)
 
 
