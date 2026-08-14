@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import EntityNotFoundError, SchemeNotFoundError
 from app.core.storage import storage_service
+from app.modules.auth.models import User
 from app.modules.schemes.models import RequiredDocument
 from app.modules.schemes.models import Scheme
 from app.modules.vault.models import UserDocument
@@ -57,6 +58,7 @@ def upload_user_document(
     file_bytes: bytes,
     mime_type: str,
     document_number_masked: str | None = None,
+    household_member_id: int | None = None,
 ) -> UserDocumentResponse:
     storage_service.ensure_bucket_exists()
 
@@ -70,8 +72,26 @@ def upload_user_document(
         content_type=mime_type,
     )
 
+    citizen_uid = None
+    if household_member_id:
+        from app.modules.household.models import HouseholdMember
+        member = db.scalar(
+            select(HouseholdMember).where(
+                HouseholdMember.id == household_member_id,
+                HouseholdMember.primary_user_id == user_id,
+            )
+        )
+        if member:
+            citizen_uid = member.citizen_uid
+    else:
+        user = db.scalar(select(User).where(User.id == user_id))
+        if user:
+            citizen_uid = user.citizen_uid
+
     doc = UserDocument(
         user_id=user_id,
+        household_member_id=household_member_id,
+        citizen_uid=citizen_uid,
         document_type=document_type.strip(),
         document_number_masked=document_number_masked,
         file_key=object_key,
@@ -93,6 +113,8 @@ def upload_user_document(
     return UserDocumentResponse(
         id=doc.id,
         user_id=doc.user_id,
+        household_member_id=doc.household_member_id,
+        citizen_uid=doc.citizen_uid,
         document_type=doc.document_type,
         document_number_masked=doc.document_number_masked,
         file_name=doc.file_name,
@@ -100,17 +122,19 @@ def upload_user_document(
         mime_type=doc.mime_type,
         is_verified=doc.is_verified,
         download_url=download_url,
-        created_at=doc.created_at,
-        updated_at=doc.updated_at,
     )
 
 
-def list_user_documents(db: Session, user_id: int) -> list[UserDocumentResponse]:
-    stmt = (
-        select(UserDocument)
-        .where(UserDocument.user_id == user_id)
-        .order_by(UserDocument.created_at.desc())
-    )
+def list_user_documents(
+    db: Session,
+    user_id: int,
+    household_member_id: int | None = None,
+) -> list[UserDocumentResponse]:
+    stmt = select(UserDocument).where(UserDocument.user_id == user_id)
+    if household_member_id is not None:
+        stmt = stmt.where(UserDocument.household_member_id == household_member_id)
+
+    stmt = stmt.order_by(UserDocument.uploaded_at.desc())
     docs = list(db.scalars(stmt).all())
 
     results = []
@@ -120,6 +144,8 @@ def list_user_documents(db: Session, user_id: int) -> list[UserDocumentResponse]
             UserDocumentResponse(
                 id=doc.id,
                 user_id=doc.user_id,
+                household_member_id=doc.household_member_id,
+                citizen_uid=doc.citizen_uid,
                 document_type=doc.document_type,
                 document_number_masked=doc.document_number_masked,
                 file_name=doc.file_name,
@@ -127,8 +153,6 @@ def list_user_documents(db: Session, user_id: int) -> list[UserDocumentResponse]
                 mime_type=doc.mime_type,
                 is_verified=doc.is_verified,
                 download_url=download_url,
-                created_at=doc.created_at,
-                updated_at=doc.updated_at,
             )
         )
     return results

@@ -111,6 +111,8 @@ export interface EligibilityCheckPayload {
 export interface UserDocument {
   id: number
   user_id: number
+  household_member_id?: number | null
+  citizen_uid?: string | null
   document_type: string
   document_number_masked?: string | null
   file_name: string
@@ -308,6 +310,34 @@ export async function citizenGetMe() {
   return res.json()
 }
 
+export async function updateCitizenProfile(payload: {
+  full_name: string
+  date_of_birth: string
+  gender: string
+  state: string
+  district: string
+  annual_income: number
+  occupation: string
+  caste_category?: string
+  is_differently_abled?: boolean
+  marital_status?: string
+  residence_area?: string
+  has_land?: boolean
+}) {
+  const headers = getCitizenAuthHeaders()
+  headers['Content-Type'] = 'application/json'
+  const res = await fetch(`${API_BASE}/users/me/profile`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || 'Failed to update citizen profile')
+  }
+  return res.json()
+}
+
 // ============================================================================
 // DOCUMENT VAULT & READINESS APIS
 // ============================================================================
@@ -315,13 +345,17 @@ export async function citizenGetMe() {
 export async function uploadVaultDocument(
   file: File,
   documentType: string,
-  maskedNumber?: string
+  maskedNumber?: string,
+  householdMemberId?: number | null
 ): Promise<UserDocument> {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('document_type', documentType)
   if (maskedNumber) {
     formData.append('document_number_masked', maskedNumber)
+  }
+  if (householdMemberId) {
+    formData.append('household_member_id', String(householdMemberId))
   }
 
   const headers = getCitizenAuthHeaders()
@@ -338,10 +372,13 @@ export async function uploadVaultDocument(
   return res.json()
 }
 
-export async function listVaultDocuments(): Promise<UserDocument[]> {
+export async function listVaultDocuments(householdMemberId?: number | null): Promise<UserDocument[]> {
   const headers = getCitizenAuthHeaders()
   headers['Content-Type'] = 'application/json'
-  const res = await fetch(`${API_BASE}/vault/documents`, { headers })
+  const url = householdMemberId
+    ? `${API_BASE}/vault/documents?household_member_id=${householdMemberId}`
+    : `${API_BASE}/vault/documents`
+  const res = await fetch(url, { headers })
   if (!res.ok) {
     if (res.status === 401) throw new Error('UNAUTHORIZED')
     throw new Error('Failed to list vault documents')
@@ -676,22 +713,36 @@ export async function queryRouter(question: string, state?: string): Promise<Que
 
 export interface HouseholdMember {
   id: number
+  primary_user_id?: number
+  citizen_uid: string
+  member_uid: string
+  household_uid: string
   full_name: string
   relationship: string
+  life_stage: 'MINOR' | 'ADULT' | 'SENIOR'
+  verification_status: 'UNVERIFIED' | 'PENDING_DOCS' | 'DOCUMENT_VERIFIED'
+  date_of_birth?: string | null
   age: number
   gender: string
   occupation?: string | null
   caste_category?: string | null
   annual_income?: number | null
   is_student: boolean
-  has_disability: boolean
+  is_disabled?: boolean
+  has_disability?: boolean
+  aadhaar_last_four?: string | null
   created_at?: string
+  updated_at?: string
 }
 
 export interface HouseholdMemberReport {
   member_id: number
+  citizen_uid: string
+  member_uid: string
   full_name: string
   relationship: string
+  life_stage: string
+  verification_status: string
   age: number
   gender: string
   eligible_schemes_count: number
@@ -704,7 +755,7 @@ export interface HouseholdMemberReport {
 }
 
 export interface FamilyEligibilityReport {
-  user_id: number
+  household_uid: string
   total_family_members: number
   total_collective_schemes: number
   family_members_reports: HouseholdMemberReport[]
@@ -718,7 +769,27 @@ export async function listHouseholdMembers(): Promise<HouseholdMember[]> {
   return res.json()
 }
 
-export async function addHouseholdMember(payload: Omit<HouseholdMember, 'id' | 'created_at'>): Promise<HouseholdMember> {
+export async function getHouseholdMember(id: number): Promise<HouseholdMember> {
+  const res = await fetch(`${API_BASE}/household/members/${id}`, {
+    headers: getCitizenAuthHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to fetch family member')
+  return res.json()
+}
+
+export async function addHouseholdMember(payload: {
+  full_name: string
+  relationship: string
+  age: number
+  date_of_birth?: string | null
+  gender: string
+  occupation?: string | null
+  caste_category?: string | null
+  annual_income?: number | null
+  is_student?: boolean
+  is_disabled?: boolean
+  aadhaar_last_four?: string | null
+}): Promise<HouseholdMember> {
   const res = await fetch(`${API_BASE}/household/members`, {
     method: 'POST',
     headers: {
@@ -730,6 +801,25 @@ export async function addHouseholdMember(payload: Omit<HouseholdMember, 'id' | '
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
     throw new Error(err.message || 'Failed to add family member')
+  }
+  return res.json()
+}
+
+export async function updateHouseholdMember(
+  id: number,
+  payload: Partial<HouseholdMember>
+): Promise<HouseholdMember> {
+  const res = await fetch(`${API_BASE}/household/members/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getCitizenAuthHeaders(),
+    },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || 'Failed to update family member')
   }
   return res.json()
 }

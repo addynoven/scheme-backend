@@ -34,7 +34,11 @@ def register_user(db: Session, payload: UserRegisterRequest) -> TokenResponse:
     if get_user_by_phone(db, payload.phone):
         raise DuplicateEntityError(f"User with phone '{payload.phone}' already exists")
 
+    from app.core.uid_generator import generate_citizen_uid, generate_household_uid
+
     user = User(
+        citizen_uid=generate_citizen_uid(),
+        household_uid=generate_household_uid(),
         email=payload.email,
         phone=payload.phone,
         hashed_password=hash_password(payload.password),
@@ -60,6 +64,19 @@ def authenticate_user(db: Session, payload: UserLoginRequest) -> User:
 
     if not verify_password(payload.password, user.hashed_password):
         raise AuthenticationError("Invalid email or password")
+
+    # Ensure UIDs exist for legacy or seeded accounts
+    from app.core.uid_generator import generate_citizen_uid, generate_household_uid
+    updated = False
+    if not user.citizen_uid:
+        user.citizen_uid = generate_citizen_uid()
+        updated = True
+    if not user.household_uid:
+        user.household_uid = generate_household_uid()
+        updated = True
+    if updated:
+        db.commit()
+        db.refresh(user)
 
     return user
 

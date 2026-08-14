@@ -9,6 +9,9 @@ export type Path =
   | `/chat`
   | `/check`
   | `/household`
+  | `/login`
+  | `/profile`
+  | `/register`
   | `/results`
   | `/schemes/:slug`
   | `/vault`

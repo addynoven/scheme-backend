@@ -30,12 +30,13 @@ router = APIRouter(prefix="/vault", tags=["Document Vault & Readiness"])
     response_model=UserDocumentResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Upload citizen document to vault",
-    description="Uploads a PDF or image document (e.g. Aadhaar Card, Bank Passbook, Land Records) to MinIO/S3 object storage and associates it with the authenticated citizen.",
+    description="Uploads a PDF or image document (e.g. Aadhaar Card, Bank Passbook, Land Records) to MinIO/S3 object storage and associates it with the authenticated citizen or specific household member.",
     response_description="Saved document metadata and secure presigned download URL",
 )
 async def upload_document_endpoint(
     document_type: str = Form(..., description="Type of document e.g. 'Aadhaar Card', 'Bank Passbook', 'Land Records', 'Income Certificate'"),
     document_number_masked: str | None = Form(None, description="Optional masked document identifier e.g. 'XXXX-XXXX-4532'"),
+    household_member_id: int | None = Form(None, description="Optional target family member ID"),
     file: UploadFile = File(..., description="Document file binary (PDF, PNG, JPG)"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -51,6 +52,7 @@ async def upload_document_endpoint(
         file_bytes=file_bytes,
         mime_type=mime_type,
         document_number_masked=document_number_masked,
+        household_member_id=household_member_id,
     )
 
 
@@ -58,14 +60,19 @@ async def upload_document_endpoint(
     "/documents",
     response_model=list[UserDocumentResponse],
     summary="List citizen's vault documents",
-    description="Returns all uploaded documents in the citizen's vault with fresh 1-hour presigned download URLs.",
+    description="Returns all uploaded documents in the citizen's vault with fresh 1-hour presigned download URLs, optionally filtered by family member.",
     response_description="List of citizen vault documents",
 )
 def list_my_vault_documents_endpoint(
+    household_member_id: int | None = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return list_user_documents(db=db, user_id=current_user.id)
+    return list_user_documents(
+        db=db,
+        user_id=current_user.id,
+        household_member_id=household_member_id,
+    )
 
 
 @router.get(

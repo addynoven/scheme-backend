@@ -14,6 +14,8 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    citizen_uid: Mapped[str | None] = mapped_column(String(50), unique=True, index=True, nullable=True)
+    household_uid: Mapped[str | None] = mapped_column(String(50), index=True, nullable=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     phone: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)

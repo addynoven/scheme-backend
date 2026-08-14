@@ -104,7 +104,7 @@ describe('V2.6 - V2.9 Frontend API Client Test Suite', () => {
       age: 14,
       gender: 'female',
       is_student: true,
-      has_disability: false,
+      is_disabled: false,
     })
     expect(added.full_name).toBe('Pooja Sharma')
 

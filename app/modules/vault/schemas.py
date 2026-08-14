@@ -10,6 +10,8 @@ from app.modules.ocr.schemas import (
 class UserDocumentResponse(BaseModel):
     id: int
     user_id: int
+    household_member_id: int | None = None
+    citizen_uid: str | None = None
     document_type: str
     document_number_masked: str | None = None
     file_name: str

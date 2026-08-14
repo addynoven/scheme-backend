@@ -1,51 +1,78 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
+import { Link } from '@/router'
 import {
   Users,
   UserPlus,
   Trash2,
   Sparkles,
-  ShieldCheck,
-  GraduationCap,
-  HeartPulse,
   ChevronRight,
   Loader2,
+  FolderLock,
+  Edit2,
+  Home,
+  Baby,
+  User,
+  Heart,
 } from 'lucide-react'
 import {
   type HouseholdMember,
   type FamilyEligibilityReport,
   listHouseholdMembers,
   addHouseholdMember,
+  updateHouseholdMember,
   deleteHouseholdMember,
   getFamilyEligibility,
+  citizenGetMe,
 } from '@/lib/api'
+import { AuthGuard } from '@/components/AuthGuard'
 
 export default function HouseholdPage() {
+  return (
+    <AuthGuard requireProfile={true}>
+      <HouseholdContent />
+    </AuthGuard>
+  )
+}
+
+function HouseholdContent() {
   const [members, setMembers] = useState<HouseholdMember[]>([])
   const [report, setReport] = useState<FamilyEligibilityReport | null>(null)
   const [loading, setLoading] = useState(true)
   const [scanning, setScanning] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [editingMember, setEditingMember] = useState<HouseholdMember | null>(null)
 
-  // Form State
+  // Primary Citizen Details
+  const [primaryUser, setPrimaryUser] = useState<any | null>(null)
+
+  // Form State for Add / Edit
   const [fullName, setFullName] = useState('')
   const [relationship, setRelationship] = useState('daughter')
   const [age, setAge] = useState<number>(14)
+  const [dob, setDob] = useState('2012-05-15')
   const [gender, setGender] = useState('female')
   const [occupation, setOccupation] = useState('student')
   const [casteCategory, setCasteCategory] = useState('General')
+  const [annualIncome, setAnnualIncome] = useState<number>(0)
   const [isStudent, setIsStudent] = useState(true)
   const [hasDisability, setHasDisability] = useState(false)
+  const [aadhaarLastFour, setAadhaarLastFour] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    loadMembers()
+    loadData()
   }, [])
 
-  async function loadMembers() {
+  async function loadData() {
     setLoading(true)
     try {
-      const data = await listHouseholdMembers()
-      setMembers(data)
+      const [u, mems] = await Promise.all([citizenGetMe(), listHouseholdMembers()])
+      setPrimaryUser(u)
+      setMembers(mems)
+
+      // Auto run family welfare scan
+      const elig = await getFamilyEligibility().catch(() => null)
+      if (elig) setReport(elig)
     } catch (e: any) {
       console.error(e)
     } finally {
@@ -53,35 +80,85 @@ export default function HouseholdPage() {
     }
   }
 
-  async function handleAddMember(e: React.FormEvent) {
+  function openAddModal() {
+    setEditingMember(null)
+    setFullName('')
+    setRelationship('daughter')
+    setAge(14)
+    setDob('2012-05-15')
+    setGender('female')
+    setOccupation('student')
+    setCasteCategory(primaryUser?.profile?.caste_category || 'General')
+    setAnnualIncome(0)
+    setIsStudent(true)
+    setHasDisability(false)
+    setAadhaarLastFour('')
+    setError(null)
+    setShowAddModal(true)
+  }
+
+  function openEditModal(m: HouseholdMember) {
+    setEditingMember(m)
+    setFullName(m.full_name)
+    setRelationship(m.relationship)
+    setAge(m.age)
+    setDob(m.date_of_birth || '')
+    setGender(m.gender)
+    setOccupation(m.occupation || 'unemployed')
+    setCasteCategory(m.caste_category || 'General')
+    setAnnualIncome(m.annual_income || 0)
+    setIsStudent(m.is_student)
+    setHasDisability(m.is_disabled || m.has_disability || false)
+    setAadhaarLastFour(m.aadhaar_last_four || '')
+    setError(null)
+    setShowAddModal(true)
+  }
+
+  async function handleSaveMember(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     try {
-      await addHouseholdMember({
-        full_name: fullName,
-        relationship,
-        age: Number(age),
-        gender,
-        occupation,
-        caste_category: casteCategory,
-        annual_income: 0,
-        is_student: isStudent,
-        has_disability: hasDisability,
-      })
+      if (editingMember) {
+        await updateHouseholdMember(editingMember.id, {
+          full_name: fullName,
+          relationship,
+          age: Number(age),
+          date_of_birth: dob || null,
+          gender,
+          occupation,
+          caste_category: casteCategory,
+          annual_income: Number(annualIncome),
+          is_student: isStudent,
+          is_disabled: hasDisability,
+          aadhaar_last_four: aadhaarLastFour || null,
+        })
+      } else {
+        await addHouseholdMember({
+          full_name: fullName,
+          relationship,
+          age: Number(age),
+          date_of_birth: dob || null,
+          gender,
+          occupation,
+          caste_category: casteCategory,
+          annual_income: Number(annualIncome),
+          is_student: isStudent,
+          is_disabled: hasDisability,
+          aadhaar_last_four: aadhaarLastFour || null,
+        })
+      }
       setShowAddModal(false)
-      // Reset Form
-      setFullName('')
-      setAge(14)
-      await loadMembers()
+      await loadData()
     } catch (e: any) {
-      setError(e.message || 'Failed to add member')
+      setError(e.message || 'Failed to save family member')
     }
   }
 
   async function handleDelete(id: number) {
+    if (!confirm('Are you sure you want to remove this family member?')) return
     try {
       await deleteHouseholdMember(id)
-      setMembers((prev) => prev.filter((m) => m.id !== id))
+      await loadData()
     } catch (e: any) {
       alert(e.message || 'Failed to delete member')
     }
@@ -99,339 +176,461 @@ export default function HouseholdPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="py-24 text-center">
+        <Loader2 className="h-10 w-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-sm text-zinc-400">Loading Household & Family Welfare Graph...</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-8">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-blue-950/40 via-indigo-950/30 to-zinc-900 border border-blue-900/30 rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold">
-            <Users className="h-3.5 w-3.5" />
-            <span>V2.7 Family Welfare Graph</span>
+    <div className="space-y-8 max-w-6xl mx-auto">
+      {/* Household Header */}
+      <div className="rounded-3xl bg-gradient-to-r from-indigo-950/40 via-purple-950/30 to-zinc-950 border border-indigo-500/20 p-6 sm:p-8 backdrop-blur-xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-[11px] font-mono font-bold text-indigo-400 flex items-center gap-1">
+                <Home className="h-3 w-3" />
+                {primaryUser?.household_uid || 'HHD-2026-XXXX'}
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-[11px] font-mono font-bold text-blue-400">
+                Primary: {primaryUser?.citizen_uid || 'CIT-2026-XXXX'}
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Household Welfare & Family Roster
+            </h1>
+            <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-xl">
+              Track sovereign IDs, life stages (Minor 🧒 / Adult 👤 / Senior 👵), and targeted benefit pipelines for every family member.
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-            Household Welfare & Family Graph
-          </h1>
-          <p className="text-sm text-zinc-400 max-w-xl leading-relaxed">
-            Government welfare in India is family-centric. Add your daughters, sons, spouse, and elderly parents to discover Sukanya Samriddhi, Ladli Behna, and National Old Age Pensions simultaneously.
-          </p>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white text-xs sm:text-sm font-medium transition-colors flex items-center gap-2 border border-zinc-700"
-          >
-            <UserPlus className="h-4 w-4 text-blue-400" />
-            <span>Add Family Member</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleScanFamily}
+              disabled={scanning}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/20 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+              {scanning ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              <span>Evaluate 4,148 Schemes</span>
+            </button>
 
-          <button
-            onClick={handleScanFamily}
-            disabled={scanning || members.length === 0}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs sm:text-sm font-semibold transition-all shadow-lg shadow-blue-600/25 flex items-center gap-2"
-          >
-            {scanning ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4" />
-            )}
-            <span>Scan Family Welfare</span>
-          </button>
+            <button
+              onClick={openAddModal}
+              className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-semibold text-xs transition-all flex items-center gap-2"
+            >
+              <UserPlus className="h-4 w-4 text-indigo-400" />
+              <span>Add Family Member</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Family Members Grid */}
+      {/* Family Members Roster Cards */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-zinc-100 flex items-center gap-2">
-          <span>Registered Family Members</span>
-          <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 text-xs font-normal">
-            {members.length}
-          </span>
-        </h2>
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-sm font-bold text-zinc-300 uppercase tracking-wider flex items-center gap-2">
+            <Users className="h-4 w-4 text-indigo-400" />
+            <span>Registered Family Members ({members.length + 1} Total)</span>
+          </h2>
+          <span className="text-xs text-zinc-500">Every member possesses a unique trackable Citizen UID</span>
+        </div>
 
-        {loading ? (
-          <div className="p-8 text-center text-zinc-500 text-sm">Loading family members...</div>
-        ) : members.length === 0 ? (
-          <div className="bg-zinc-900/40 border border-dashed border-zinc-800 rounded-2xl p-8 text-center text-zinc-500">
-            <Users className="h-8 w-8 mx-auto text-zinc-600 mb-2" />
-            <p className="text-sm">No family members registered yet.</p>
-            <p className="text-xs text-zinc-600 mt-1">
-              Add your daughter, son, spouse, or senior parents to calculate collective welfare.
-            </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {/* Head of Household Card (Primary Citizen) */}
+          <div className="rounded-3xl bg-zinc-900/80 border border-blue-500/30 p-6 shadow-xl relative overflow-hidden flex flex-col justify-between">
+            <div className="absolute top-0 right-0 px-3 py-1 bg-blue-500/20 border-b border-l border-blue-500/30 rounded-bl-2xl text-[10px] font-bold text-blue-300">
+              HEAD OF HOUSEHOLD
+            </div>
+
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-12 w-12 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-lg">
+                  {primaryUser?.profile?.full_name?.charAt(0) || 'C'}
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-white">
+                    {primaryUser?.profile?.full_name || 'Primary Citizen'}
+                  </h3>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[10px] font-mono text-blue-400 font-bold">
+                      {primaryUser?.citizen_uid || 'CIT-2026-XXXX'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs py-3 border-y border-zinc-800/80 my-3">
+                <div>
+                  <span className="text-zinc-500 block text-[10px]">Occupation</span>
+                  <span className="font-semibold text-zinc-200 capitalize">
+                    {primaryUser?.profile?.occupation || 'Farmer'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block text-[10px]">Life Stage</span>
+                  <span className="font-bold text-blue-400">ADULT (Head)</span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block text-[10px]">State</span>
+                  <span className="font-semibold text-zinc-200">
+                    {primaryUser?.profile?.state || 'Madhya Pradesh'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block text-[10px]">Category</span>
+                  <span className="font-semibold text-zinc-200">
+                    {primaryUser?.profile?.caste_category || 'OBC'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-between">
+              <Link
+                to="/profile"
+                className="text-xs font-semibold text-blue-400 hover:text-blue-300 flex items-center gap-1"
+              >
+                <span>Edit Primary Profile</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
+              <Link
+                to="/vault"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                title="View Vault Documents"
+              >
+                <FolderLock className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {members.map((m) => (
+
+          {/* Sub-Members Cards */}
+          {members.map((member) => {
+            const memberReport = report?.family_members_reports.find(
+              (r) => r.member_id === member.id
+            )
+
+            return (
               <div
-                key={m.id}
-                className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-5 hover:border-zinc-700 transition-all flex flex-col justify-between"
+                key={member.id}
+                className="rounded-3xl bg-zinc-900/60 hover:bg-zinc-900/90 border border-zinc-800/80 hover:border-zinc-700 p-6 shadow-xl flex flex-col justify-between transition-all group"
               >
                 <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="font-semibold text-zinc-100 text-base">{m.full_name}</h3>
-                      <div className="inline-block px-2 py-0.5 rounded-md bg-blue-950/80 border border-blue-800/40 text-blue-300 text-[11px] font-medium uppercase mt-1">
-                        {m.relationship}
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`h-12 w-12 rounded-2xl flex items-center justify-center font-bold text-lg ${
+                          member.life_stage === 'MINOR'
+                            ? 'bg-amber-500/10 border border-amber-500/30 text-amber-400'
+                            : member.life_stage === 'SENIOR'
+                            ? 'bg-purple-500/10 border border-purple-500/30 text-purple-400'
+                            : 'bg-indigo-500/10 border border-indigo-500/30 text-indigo-400'
+                        }`}
+                      >
+                        {member.life_stage === 'MINOR' ? (
+                          <Baby className="h-6 w-6" />
+                        ) : member.life_stage === 'SENIOR' ? (
+                          <Heart className="h-6 w-6" />
+                        ) : (
+                          <User className="h-6 w-6" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-base text-white group-hover:text-indigo-300 transition-colors">
+                          {member.full_name}
+                        </h3>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[10px] font-mono text-zinc-400">
+                            {member.citizen_uid}
+                          </span>
+                          <span className="text-[9px] font-mono text-zinc-500">
+                            ({member.member_uid})
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDelete(m.id)}
-                      className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-colors"
-                      title="Delete member"
+
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        member.life_stage === 'MINOR'
+                          ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                          : member.life_stage === 'SENIOR'
+                          ? 'bg-purple-500/10 text-purple-400 border border-purple-500/30'
+                          : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30'
+                      }`}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {member.life_stage}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs py-3 border-y border-zinc-800/80 my-3">
+                    <div>
+                      <span className="text-zinc-500 block text-[10px]">Relationship</span>
+                      <span className="font-semibold text-zinc-200 capitalize">
+                        {member.relationship}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500 block text-[10px]">Age / Gender</span>
+                      <span className="font-semibold text-zinc-200">
+                        {member.age} yrs • {member.gender}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500 block text-[10px]">Status</span>
+                      <span className="font-semibold text-zinc-200 capitalize">
+                        {member.is_student ? 'Student' : member.occupation || 'Unemployed'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500 block text-[10px]">Verification</span>
+                      <span
+                        className={`text-[10px] font-semibold ${
+                          member.verification_status === 'DOCUMENT_VERIFIED'
+                            ? 'text-emerald-400'
+                            : 'text-zinc-400'
+                        }`}
+                      >
+                        {member.verification_status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {memberReport && (
+                    <div className="p-3 rounded-2xl bg-zinc-950/60 border border-zinc-800 mb-2">
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <span className="text-zinc-400">Eligible Welfare Schemes:</span>
+                        <span className="font-bold text-emerald-400">
+                          {memberReport.eligible_schemes_count} Programs
+                        </span>
+                      </div>
+                      {memberReport.eligible_schemes.length > 0 && (
+                        <div className="space-y-1 mt-2">
+                          {memberReport.eligible_schemes.slice(0, 2).map((s) => (
+                            <Link
+                              key={s.slug}
+                              to="/schemes/:slug"
+                              params={{ slug: s.slug }}
+                              className="text-[11px] text-zinc-300 hover:text-indigo-300 block truncate"
+                            >
+                              • {s.name}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-3 border-t border-zinc-800/80 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openEditModal(member)}
+                      className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                      title="Edit Member Demographics & Age"
+                    >
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(member.id)}
+                      className="p-1.5 rounded-lg text-zinc-400 hover:text-red-400 hover:bg-zinc-800 transition-colors"
+                      title="Remove Member"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-zinc-400">
-                    <div>
-                      <span className="text-zinc-500">Age: </span>
-                      <span className="text-zinc-200 font-medium">{m.age} yrs</span>
-                    </div>
-                    <div>
-                      <span className="text-zinc-500">Gender: </span>
-                      <span className="text-zinc-200 font-medium capitalize">{m.gender}</span>
-                    </div>
-                    <div>
-                      <span className="text-zinc-500">Role: </span>
-                      <span className="text-zinc-200 font-medium capitalize">{m.occupation || 'N/A'}</span>
-                    </div>
-                    <div>
-                      <span className="text-zinc-500">Category: </span>
-                      <span className="text-zinc-200 font-medium">{m.caste_category || 'General'}</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {m.is_student && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 text-[10px]">
-                        <GraduationCap className="h-3 w-3 text-indigo-400" />
-                        Student
-                      </span>
-                    )}
-                    {m.has_disability && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 text-[10px]">
-                        <HeartPulse className="h-3 w-3 text-emerald-400" />
-                        PwD
-                      </span>
-                    )}
-                  </div>
+                  <Link
+                    to="/vault"
+                    className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+                  >
+                    <span>Upload Docs in Vault</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Link>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            )
+          })}
+        </div>
       </div>
 
-      {/* Family Eligibility Scan Report */}
-      {report && (
-        <div className="space-y-6 pt-6 border-t border-zinc-800">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-emerald-400" />
-                <span>Family Welfare Report</span>
-              </h2>
-              <p className="text-xs text-zinc-400">
-                Evaluated in &lt; 0.05ms across all 4,148 schemes.
-              </p>
-            </div>
-            <div className="px-4 py-2 rounded-xl bg-emerald-950/40 border border-emerald-800/40 text-emerald-300 text-sm font-semibold">
-              {report.total_collective_schemes} Total Eligible Schemes
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {report.family_members_reports.map((mr) => (
-              <div
-                key={mr.member_id}
-                className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-5 space-y-3"
-              >
-                <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
-                  <div>
-                    <h3 className="font-semibold text-zinc-100 text-sm">{mr.full_name}</h3>
-                    <p className="text-[11px] text-zinc-500 uppercase">{mr.relationship} · {mr.age} yrs</p>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-blue-950 text-blue-300 border border-blue-800 text-xs font-semibold">
-                    {mr.eligible_schemes_count} Schemes
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  {mr.eligible_schemes.map((s, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3 rounded-xl bg-zinc-950/80 border border-zinc-800/80 flex items-center justify-between gap-2"
-                    >
-                      <div className="truncate">
-                        <h4 className="text-xs font-medium text-zinc-200 truncate">{s.name}</h4>
-                        <p className="text-[10px] text-emerald-400 font-medium truncate">{s.benefit_title || 'Financial Welfare'}</p>
-                      </div>
-                      <a
-                        href={s.application_url || '#'}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-zinc-400 hover:text-white shrink-0 p-1"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Add Member Modal */}
+      {/* Add / Edit Family Member Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <UserPlus className="h-5 w-5 text-blue-400" />
-                <span>Add Family Member</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl bg-zinc-900 border border-zinc-800 p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+              <h3 className="text-lg font-bold text-white">
+                {editingMember ? 'Update Family Member Profile' : 'Add New Family Member'}
               </h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="text-zinc-500 hover:text-white text-sm"
+                className="text-zinc-500 hover:text-white text-sm font-bold"
               >
                 ✕
               </button>
             </div>
 
             {error && (
-              <div className="p-3 rounded-xl bg-red-950/60 border border-red-800 text-red-300 text-xs">
+              <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs">
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleAddMember} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveMember} className="space-y-4">
               <div>
-                <label className="block text-zinc-400 mb-1">Full Name</label>
+                <label className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">
+                  Full Legal Name
+                </label>
                 <input
                   type="text"
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g. Pooja Sharma"
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-zinc-100 focus:outline-none focus:border-blue-500"
+                  placeholder="e.g. Pooja Sharma, Kamla Devi"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-zinc-400 mb-1">Relationship</label>
+                  <label className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">
+                    Relationship
+                  </label>
                   <select
                     value={relationship}
                     onChange={(e) => setRelationship(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-zinc-100 focus:outline-none focus:border-blue-500"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
                   >
-                    <option value="daughter">Daughter</option>
-                    <option value="son">Son</option>
-                    <option value="spouse">Spouse</option>
-                    <option value="mother">Mother</option>
-                    <option value="father">Father</option>
-                    <option value="sister">Sister</option>
-                    <option value="brother">Brother</option>
+                    <option value="daughter">Daughter (पुत्री)</option>
+                    <option value="son">Son (पुत्र)</option>
+                    <option value="spouse">Spouse / Partner (पति/पत्नी)</option>
+                    <option value="mother">Mother (माताजी)</option>
+                    <option value="father">Father (पिताजी)</option>
+                    <option value="grandparent">Grandparent (दादा/दादी)</option>
+                    <option value="dependent">Dependent (आश्रित)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-zinc-400 mb-1">Age (Years)</label>
+                  <label className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">
+                    Gender
+                  </label>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="female">Female (महिला)</option>
+                    <option value="male">Male (पुरुष)</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">
+                    Age (Years)
+                  </label>
                   <input
                     type="number"
-                    required
                     min={0}
                     max={120}
+                    required
                     value={age}
-                    onChange={(e) => setAge(Number(e.target.value))}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-zinc-100 focus:outline-none focus:border-blue-500"
+                    onChange={(e) => {
+                      const newAge = Number(e.target.value)
+                      setAge(newAge)
+                      if (newAge < 18) setIsStudent(true)
+                    }}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">
+                    Date of Birth (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-zinc-400 mb-1">Gender</label>
-                  <select
-                    value={gender}
-                    onChange={(e) => setGender(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-zinc-100 focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="female">Female</option>
-                    <option value="male">Male</option>
-                    <option value="other">Other</option>
-                  </select>
+                  <label className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">
+                    Occupation
+                  </label>
+                  <input
+                    type="text"
+                    value={occupation}
+                    onChange={(e) => setOccupation(e.target.value)}
+                    placeholder="student, retired, tailor"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-zinc-400 mb-1">Social Category</label>
-                  <select
-                    value={casteCategory}
-                    onChange={(e) => setCasteCategory(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-zinc-100 focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="General">General</option>
-                    <option value="OBC">OBC</option>
-                    <option value="SC">SC</option>
-                    <option value="ST">ST</option>
-                  </select>
+                  <label className="block text-xs font-semibold text-zinc-400 uppercase mb-1.5">
+                    Aadhaar Last 4 Digits
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={4}
+                    value={aadhaarLastFour}
+                    onChange={(e) => setAadhaarLastFour(e.target.value)}
+                    placeholder="e.g. 9402"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                  />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-zinc-400 mb-1">Occupation</label>
-                <select
-                  value={occupation}
-                  onChange={(e) => setOccupation(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-zinc-100 focus:outline-none focus:border-blue-500"
-                >
-                  <option value="student">Student</option>
-                  <option value="farmer">Farmer</option>
-                  <option value="unemployed">Unemployed</option>
-                  <option value="homemaker">Homemaker</option>
-                  <option value="artisan">Artisan</option>
-                  <option value="salaried">Salaried</option>
-                </select>
-              </div>
-
-              <div className="flex items-center gap-4 pt-2">
-                <label className="flex items-center gap-2 text-zinc-300 cursor-pointer">
+              <div className="pt-2 flex items-center gap-4">
+                <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={isStudent}
                     onChange={(e) => setIsStudent(e.target.checked)}
-                    className="rounded bg-zinc-950 border-zinc-800 text-blue-600 focus:ring-0"
+                    className="rounded border-zinc-700 bg-zinc-950 text-indigo-600"
                   />
-                  <span>Is Student?</span>
+                  <span>Currently Studying / Student</span>
                 </label>
 
-                <label className="flex items-center gap-2 text-zinc-300 cursor-pointer">
+                <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={hasDisability}
                     onChange={(e) => setHasDisability(e.target.checked)}
-                    className="rounded bg-zinc-950 border-zinc-800 text-blue-600 focus:ring-0"
+                    className="rounded border-zinc-700 bg-zinc-950 text-indigo-600"
                   />
-                  <span>Has Disability (PwD)?</span>
+                  <span>Person with Disability</span>
                 </label>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-zinc-800">
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-zinc-800">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
+                  className="px-4 py-2 rounded-xl text-xs text-zinc-400 hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-all shadow-md shadow-blue-600/20"
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/20"
                 >
-                  Add Member
+                  {editingMember ? 'Update Member Profile' : 'Issue Member ID & Save'}
                 </button>
               </div>
             </form>

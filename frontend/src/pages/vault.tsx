@@ -26,11 +26,13 @@ import {
   fetchPopularSchemes,
   extractVaultDocumentFacts,
   confirmAndSyncProfileFacts,
+  listHouseholdMembers,
   type UserDocument,
   type Scheme,
   type SchemeDocumentReadiness,
   type ExtractedDocumentFactsResponse,
   type ConfirmFactsAndSyncProfileRequest,
+  type HouseholdMember,
 } from '@/lib/api'
 import {
   saveCitizenToken,
@@ -54,7 +56,13 @@ const DOCUMENT_TYPES = [
 export default function DocumentVaultPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [citizenEmail, setCitizenEmail] = useState<string | null>(null)
+  const [primaryCitizenUid, setPrimaryCitizenUid] = useState<string | null>(null)
   const [checkingAuth, setCheckingAuth] = useState(true)
+
+  // Household & Member Filter State
+  const [householdMembers, setHouseholdMembers] = useState<HouseholdMember[]>([])
+  const [selectedMemberFilter, setSelectedMemberFilter] = useState<number | 'all'>('all')
+  const [uploadTargetMemberId, setUploadTargetMemberId] = useState<number | null>(null)
 
   // Auth form state
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
@@ -98,7 +106,9 @@ export default function DocumentVaultPage() {
         .then((res) => {
           setIsAuthenticated(true)
           setCitizenEmail(res.email)
-          loadDocuments()
+          setPrimaryCitizenUid(res.citizen_uid || null)
+          listHouseholdMembers().then(setHouseholdMembers).catch(() => {})
+          loadDocuments('all')
           loadSchemesList()
           setCheckingAuth(false)
         })
@@ -111,9 +121,9 @@ export default function DocumentVaultPage() {
     }
   }, [])
 
-  function loadDocuments() {
+  function loadDocuments(filter = selectedMemberFilter) {
     setLoadingDocs(true)
-    listVaultDocuments()
+    listVaultDocuments(filter === 'all' ? null : filter)
       .then((docs) => setDocuments(docs))
       .catch((err) => console.error(err))
       .finally(() => setLoadingDocs(false))
@@ -188,7 +198,12 @@ export default function DocumentVaultPage() {
     setUploadSuccess(null)
 
     try {
-      const uploadedDoc = await uploadVaultDocument(file, selectedDocType, docMaskedNumber || undefined)
+      const uploadedDoc = await uploadVaultDocument(
+        file,
+        selectedDocType,
+        docMaskedNumber || undefined,
+        uploadTargetMemberId
+      )
       setUploadSuccess(`Successfully stored "${uploadedDoc.file_name}" in your secure MinIO S3 Vault.`)
       setDocMaskedNumber('')
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -454,8 +469,8 @@ export default function DocumentVaultPage() {
             )}
 
             <form onSubmit={handleUpload} className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="flex flex-col gap-1.5 text-xs sm:col-span-1">
                   <label className="font-semibold text-zinc-300">Document Type *</label>
                   <select
                     value={selectedDocType}
@@ -470,7 +485,23 @@ export default function DocumentVaultPage() {
                   </select>
                 </div>
 
-                <div className="flex flex-col gap-1.5 text-xs">
+                <div className="flex flex-col gap-1.5 text-xs sm:col-span-1">
+                  <label className="font-semibold text-zinc-300">Target Family Member</label>
+                  <select
+                    value={uploadTargetMemberId === null ? '' : String(uploadTargetMemberId)}
+                    onChange={(e) => setUploadTargetMemberId(e.target.value === '' ? null : Number(e.target.value))}
+                    className="px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+                  >
+                    <option value="">👤 Self (Primary - {primaryCitizenUid || 'Head'})</option>
+                    {householdMembers.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.life_stage === 'MINOR' ? '🧒' : m.life_stage === 'SENIOR' ? '👵' : '👤'} {m.full_name} ({m.relationship} • {m.citizen_uid})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5 text-xs sm:col-span-1">
                   <label className="font-semibold text-zinc-300">Masked ID / Certificate No.</label>
                   <input
                     type="text"
@@ -504,7 +535,7 @@ export default function DocumentVaultPage() {
 
           {/* Stored Documents List Card */}
           <div className="rounded-3xl border border-zinc-800/90 bg-zinc-900/60 p-6 shadow-xl flex flex-col gap-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-zinc-400" />
                 <h2 className="text-sm font-bold text-zinc-100">
@@ -513,6 +544,42 @@ export default function DocumentVaultPage() {
               </div>
               <span className="text-[11px] text-zinc-500">Encrypted in MinIO S3</span>
             </div>
+
+            {/* Member Filter Pills */}
+            {householdMembers.length > 0 && (
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                <button
+                  onClick={() => {
+                    setSelectedMemberFilter('all')
+                    loadDocuments('all')
+                  }}
+                  className={`px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
+                    selectedMemberFilter === 'all'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800'
+                  }`}
+                >
+                  All Family Docs
+                </button>
+                {householdMembers.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => {
+                      setSelectedMemberFilter(m.id)
+                      loadDocuments(m.id)
+                    }}
+                    className={`px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+                      selectedMemberFilter === m.id
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800'
+                    }`}
+                  >
+                    <span>{m.life_stage === 'MINOR' ? '🧒' : m.life_stage === 'SENIOR' ? '👵' : '👤'}</span>
+                    <span>{m.full_name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
 
             {loadingDocs ? (
               <div className="py-12 text-center text-zinc-500 text-xs">Loading vault items...</div>
@@ -541,8 +608,13 @@ export default function DocumentVaultPage() {
                           {icon}
                         </div>
                         <div className="flex flex-col gap-0.5">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-xs font-bold text-zinc-100">{doc.document_type}</span>
+                            {doc.citizen_uid && (
+                              <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                                {doc.citizen_uid}
+                              </span>
+                            )}
                             {doc.is_verified && (
                               <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full bg-emerald-950/90 text-emerald-400 border border-emerald-800/70 font-semibold">
                                 <ShieldCheck className="h-3 w-3" />

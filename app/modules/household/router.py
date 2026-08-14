@@ -1,18 +1,21 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user, get_current_user_optional, get_db
+from app.core.deps import get_current_user, get_db
 from app.modules.auth.models import User
 from app.modules.household.schemas import (
     FamilyEligibilityResponse,
     HouseholdMemberCreate,
     HouseholdMemberResponse,
+    HouseholdMemberUpdate,
 )
 from app.modules.household.service import (
     add_household_member,
     delete_household_member,
     evaluate_family_eligibility,
+    get_household_member,
     list_household_members,
+    update_household_member,
 )
 
 router = APIRouter(prefix="/household", tags=["Household & Family Welfare Graph"])
@@ -24,19 +27,38 @@ def add_member_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Add a family member (daughter, son, spouse, mother, father) to household graph."""
+    """Add a family member (daughter, son, spouse, mother, father) to household graph with sovereign CIT-UID and MBR-UID."""
     return add_household_member(db, current_user.id, payload)
 
 
 @router.get("/members", response_model=list[HouseholdMemberResponse])
 def list_members_endpoint(
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(get_current_user),
 ):
-    """List all registered family members in the citizen's household or empty for guest."""
-    if not current_user:
-        return []
+    """List all registered family members in the citizen's household."""
     return list_household_members(db, current_user.id)
+
+
+@router.get("/members/{member_id}", response_model=HouseholdMemberResponse)
+def get_member_endpoint(
+    member_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get single household member profile details."""
+    return get_household_member(db, current_user.id, member_id)
+
+
+@router.put("/members/{member_id}", response_model=HouseholdMemberResponse)
+def update_member_endpoint(
+    member_id: int,
+    payload: HouseholdMemberUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update household member demographic details with automatic life stage transition check."""
+    return update_household_member(db, current_user.id, member_id, payload)
 
 
 @router.delete("/members/{member_id}", status_code=status.HTTP_204_NO_CONTENT)

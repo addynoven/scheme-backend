@@ -8,6 +8,7 @@ from app.database import Base
 
 if TYPE_CHECKING:
     from app.modules.auth.models import User
+    from app.modules.household.models import HouseholdMember
 
 
 class UserDocument(Base):
@@ -20,6 +21,14 @@ class UserDocument(Base):
         nullable=False,
         index=True,
     )
+
+    # Optional linkage to specific household family member
+    household_member_id: Mapped[int | None] = mapped_column(
+        ForeignKey("household_members.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    citizen_uid: Mapped[str | None] = mapped_column(String(50), index=True, nullable=True)
 
     document_type: Mapped[str] = mapped_column(
         String(100),
@@ -59,21 +68,20 @@ class UserDocument(Base):
         nullable=False,
     )
 
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime,
+    uploaded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
     )
 
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
+    verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
     )
 
-    # Relationship back to User
-    user: Mapped["User"] = relationship(
-        "User",
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="documents")
+    household_member: Mapped["HouseholdMember | None"] = relationship(
+        "HouseholdMember",
         back_populates="documents",
     )

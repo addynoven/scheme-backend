@@ -136,6 +136,8 @@ class UserUpdate(BaseModel):
 
 class UserResponse(UserBase):
     id: int
+    citizen_uid: str | None = None
+    household_uid: str | None = None
     is_verified: bool
     created_at: datetime
     updated_at: datetime

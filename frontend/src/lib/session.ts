@@ -140,6 +140,7 @@ export function getAdminUser(): any | null {
 export function saveCitizenToken(token: string) {
   setItem(CITIZEN_TOKEN_KEY, token)
 }
+export const setCitizenToken = saveCitizenToken
 
 export function getCitizenToken(): string | null {
   return getItem(CITIZEN_TOKEN_KEY)
@@ -149,6 +150,7 @@ export function removeCitizenToken() {
   removeItem(CITIZEN_TOKEN_KEY)
   removeItem(CITIZEN_USER_KEY)
 }
+export const clearCitizenToken = removeCitizenToken
 
 export function saveCitizenUser(user: any) {
   setItem(CITIZEN_USER_KEY, JSON.stringify(user))
