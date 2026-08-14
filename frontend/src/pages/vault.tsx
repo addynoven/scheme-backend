@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from '@/router'
 import {
   FolderLock,
   UploadCloud,
@@ -8,10 +7,13 @@ import {
   AlertCircle,
   Trash2,
   Download,
-  ExternalLink,
   Sparkles,
   LogOut,
   FileCheck,
+  Loader2,
+  ShieldCheck,
+  Edit3,
+  X,
 } from 'lucide-react'
 import {
   citizenLogin,
@@ -22,9 +24,13 @@ import {
   deleteVaultDocument,
   getSchemeDocumentReadiness,
   fetchPopularSchemes,
+  extractVaultDocumentFacts,
+  confirmAndSyncProfileFacts,
   type UserDocument,
   type Scheme,
   type SchemeDocumentReadiness,
+  type ExtractedDocumentFactsResponse,
+  type ConfirmFactsAndSyncProfileRequest,
 } from '@/lib/api'
 import {
   saveCitizenToken,
@@ -76,6 +82,14 @@ export default function DocumentVaultPage() {
   const [readiness, setReadiness] = useState<SchemeDocumentReadiness | null>(null)
   const [loadingReadiness, setLoadingReadiness] = useState(false)
 
+  // V2.0 Multimodal Fact Extraction & Verification Modal state
+  const [extractingDocId, setExtractingDocId] = useState<number | null>(null)
+  const [activeModalDocId, setActiveModalDocId] = useState<number | null>(null)
+  const [activeModalData, setActiveModalData] = useState<ExtractedDocumentFactsResponse | null>(null)
+  const [verificationForm, setVerificationForm] = useState<ConfirmFactsAndSyncProfileRequest>({})
+  const [syncingProfile, setSyncingProfile] = useState(false)
+  const [syncSuccessToast, setSyncSuccessToast] = useState<string | null>(null)
+
   // Verify auth on mount
   useEffect(() => {
     const token = getCitizenToken()
@@ -100,40 +114,30 @@ export default function DocumentVaultPage() {
   function loadDocuments() {
     setLoadingDocs(true)
     listVaultDocuments()
-      .then((docs) => {
-        setDocuments(docs)
-        setLoadingDocs(false)
-      })
-      .catch((err) => {
-        if (err.message === 'UNAUTHORIZED') {
-          handleLogout()
-        }
-        setLoadingDocs(false)
-      })
+      .then((docs) => setDocuments(docs))
+      .catch((err) => console.error(err))
+      .finally(() => setLoadingDocs(false))
   }
 
   function loadSchemesList() {
-    fetchPopularSchemes(20).then((res) => {
-      setSchemes(res)
-      if (res.length > 0 && !selectedSchemeId) {
-        const mudra = res.find((s) => s.slug === 'pm-mudra-yojana') || res[0]
-        setSelectedSchemeId(mudra.id)
-      }
-    })
+    fetchPopularSchemes(25)
+      .then((items) => {
+        setSchemes(items)
+        if (items.length > 0) {
+          setSelectedSchemeId(items[0].id)
+        }
+      })
+      .catch((err) => console.error(err))
   }
 
-  // Reload readiness whenever documents or selected scheme changes
+  // Recalculate readiness when selected scheme or documents change
   useEffect(() => {
-    if (isAuthenticated && selectedSchemeId) {
+    if (selectedSchemeId && isAuthenticated) {
       setLoadingReadiness(true)
       getSchemeDocumentReadiness(selectedSchemeId)
-        .then((res) => {
-          setReadiness(res)
-          setLoadingReadiness(false)
-        })
-        .catch(() => {
-          setLoadingReadiness(false)
-        })
+        .then((data) => setReadiness(data))
+        .catch((err) => console.error(err))
+        .finally(() => setLoadingReadiness(false))
     }
   }, [selectedSchemeId, documents, isAuthenticated])
 
@@ -146,16 +150,18 @@ export default function DocumentVaultPage() {
       if (authMode === 'register') {
         await citizenRegister({ email, phone, password })
       }
-      const data = await citizenLogin(email, password)
-      saveCitizenToken(data.access_token)
-      const user = await citizenGetMe()
-      saveCitizenUser(user)
+      const loginRes = await citizenLogin(email, password)
+      saveCitizenToken(loginRes.access_token)
+
+      const userRes = await citizenGetMe()
+      saveCitizenUser(userRes)
+
       setIsAuthenticated(true)
-      setCitizenEmail(user.email)
+      setCitizenEmail(userRes.email)
       loadDocuments()
       loadSchemesList()
     } catch (err: any) {
-      setAuthError(err.message || 'Authentication failed')
+      setAuthError(err.message || 'Authentication failed. Please check credentials.')
     } finally {
       setAuthLoading(false)
     }
@@ -169,33 +175,86 @@ export default function DocumentVaultPage() {
     setReadiness(null)
   }
 
-  async function handleFileUpload(file: File) {
+  async function handleUpload(e: React.FormEvent) {
+    e.preventDefault()
+    const file = fileInputRef.current?.files?.[0]
+    if (!file) {
+      setUploadError('Please choose a PDF or image file to upload.')
+      return
+    }
+
     setUploading(true)
     setUploadError(null)
     setUploadSuccess(null)
 
     try {
-      const doc = await uploadVaultDocument(file, selectedDocType, docMaskedNumber || undefined)
-      setUploadSuccess(`Successfully uploaded "${doc.file_name}" to your secure vault!`)
+      const uploadedDoc = await uploadVaultDocument(file, selectedDocType, docMaskedNumber || undefined)
+      setUploadSuccess(`Successfully stored "${uploadedDoc.file_name}" in your secure MinIO S3 Vault.`)
       setDocMaskedNumber('')
+      if (fileInputRef.current) fileInputRef.current.value = ''
       loadDocuments()
     } catch (err: any) {
-      setUploadError(err.message || 'Failed to upload document')
+      setUploadError(err.message || 'Failed to upload document to S3 storage.')
     } finally {
       setUploading(false)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
     }
   }
 
   async function handleDeleteDoc(id: number, name: string) {
-    if (!confirm(`Are you sure you want to remove "${name}" from your vault?`)) return
+    if (!window.confirm(`Are you sure you want to permanently delete "${name}" from your vault?`)) {
+      return
+    }
     try {
       await deleteVaultDocument(id)
       setDocuments((prev) => prev.filter((d) => d.id !== id))
     } catch (err: any) {
-      alert(err.message || 'Failed to delete document')
+      alert(`Error deleting document: ${err.message}`)
+    }
+  }
+
+  async function handleExtractFacts(docId: number) {
+    setExtractingDocId(docId)
+    setUploadError(null)
+    try {
+      const res = await extractVaultDocumentFacts(docId)
+      setActiveModalDocId(docId)
+      setActiveModalData(res)
+      setVerificationForm({
+        full_name: res.extracted_facts.full_name || '',
+        date_of_birth: res.extracted_facts.date_of_birth || '',
+        gender: res.extracted_facts.gender || '',
+        state: res.extracted_facts.state || '',
+        district: res.extracted_facts.district || '',
+        annual_income: res.extracted_facts.annual_income ?? undefined,
+        occupation: res.extracted_facts.occupation || '',
+        caste_category: res.extracted_facts.caste_category || '',
+        has_land: res.extracted_facts.has_land ?? undefined,
+        is_differently_abled: res.extracted_facts.is_differently_abled ?? undefined,
+      })
+    } catch (err: any) {
+      alert(`Fact extraction failed: ${err.message}`)
+    } finally {
+      setExtractingDocId(null)
+    }
+  }
+
+  async function handleConfirmAndSync() {
+    if (!activeModalDocId) return
+    setSyncingProfile(true)
+    try {
+      const res = await confirmAndSyncProfileFacts(activeModalDocId, verificationForm)
+      setSyncSuccessToast(res.message || 'Profile successfully updated from verified facts.')
+      setActiveModalData(null)
+      setActiveModalDocId(null)
+      loadDocuments()
+      if (selectedSchemeId) {
+        getSchemeDocumentReadiness(selectedSchemeId).then((data) => setReadiness(data))
+      }
+      setTimeout(() => setSyncSuccessToast(null), 6000)
+    } catch (err: any) {
+      alert(`Profile sync failed: ${err.message}`)
+    } finally {
+      setSyncingProfile(false)
     }
   }
 
@@ -208,7 +267,7 @@ export default function DocumentVaultPage() {
   }
 
   // ==========================================================================
-  // VIEW A: CITIZEN VAULT LOGIN / REGISTER (If not authenticated)
+  // VIEW A: CITIZEN VAULT LOGIN / REGISTER
   // ==========================================================================
   if (!isAuthenticated) {
     return (
@@ -219,7 +278,7 @@ export default function DocumentVaultPage() {
               <FolderLock className="h-6 w-6" />
             </div>
             <h1 className="text-2xl font-bold text-zinc-100 tracking-tight">
-              Citizen Document Vault · V1.3
+              Citizen Document Vault · V2.0
             </h1>
             <p className="text-xs text-zinc-400">
               Store your Aadhaar, PAN card, and certificates securely in MinIO S3 and track your live scheme application readiness score.
@@ -326,13 +385,13 @@ export default function DocumentVaultPage() {
         <div className="flex flex-col gap-1">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-950/80 border border-blue-800/60 text-blue-300 w-fit">
             <FolderLock className="h-3.5 w-3.5 text-blue-400" />
-            <span>Encrypted S3 Document Vault · V1.3</span>
+            <span>Encrypted S3 Document Vault · V2.0 (Gemini 3.5 Flash)</span>
           </div>
           <h1 className="text-2xl font-bold text-zinc-100 tracking-tight">
-            Citizen Document Vault & Readiness Meter
+            Citizen Document Vault & Live AI Fact Extractor
           </h1>
           <p className="text-xs text-zinc-400">
-            Upload your verified documents once. The system evaluates your live application readiness across all 19 flagship schemes.
+            Upload verified documents once. Gemini Vision auto-extracts your demographics with human-verified confirmation.
           </p>
         </div>
 
@@ -352,172 +411,192 @@ export default function DocumentVaultPage() {
         </div>
       </div>
 
-      {/* Main 2-Column Grid: Left (Upload & Documents), Right (Live Scheme Readiness Meter) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {syncSuccessToast && (
+        <div className="p-4 rounded-2xl bg-emerald-950/60 border border-emerald-800/80 text-emerald-300 text-xs flex items-center justify-between shadow-xl animate-in fade-in slide-in-from-top duration-300">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
+            <span>{syncSuccessToast}</span>
+          </div>
+          <button onClick={() => setSyncSuccessToast(null)} className="text-emerald-400 hover:text-emerald-200">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Main 2-Column Dashboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* ===================================================================
-            LEFT COLUMN (7 cols): Document Upload Dropzone & Stored Files
+            LEFT COLUMN (7 cols): Document Upload & Stored Items
             =================================================================== */}
         <div className="lg:col-span-7 flex flex-col gap-6">
-          {/* UPLOAD CARD */}
-          <div className="rounded-3xl border border-zinc-800/90 bg-zinc-900/60 p-6 shadow-xl flex flex-col gap-4">
+          {/* Document Upload Card */}
+          <div className="rounded-3xl border border-zinc-800/90 bg-zinc-900/60 p-6 shadow-xl flex flex-col gap-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-zinc-100 flex items-center gap-2">
-                <UploadCloud className="h-5 w-5 text-blue-400" />
+              <div className="flex items-center gap-2 text-sm font-bold text-zinc-100">
+                <UploadCloud className="h-4 w-4 text-blue-400" />
                 <span>Upload Document to Vault</span>
-              </h2>
-              <span className="text-xs text-zinc-500 font-mono">PDF, PNG, JPG (Max 10MB)</span>
+              </div>
+              <span className="text-[11px] text-zinc-400 font-mono">Max 10MB · PDF, JPG, PNG</span>
             </div>
 
             {uploadError && (
-              <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-800/60 text-rose-300 text-xs flex items-center gap-2">
+              <div className="p-3.5 rounded-xl bg-rose-950/50 border border-rose-800/60 text-rose-300 text-xs flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>{uploadError}</span>
               </div>
             )}
 
             {uploadSuccess && (
-              <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-800/60 text-emerald-300 text-xs flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <div className="p-3.5 rounded-xl bg-emerald-950/50 border border-emerald-800/60 text-emerald-300 text-xs flex items-center gap-2">
+                <FileCheck className="h-4 w-4 shrink-0 text-emerald-400" />
                 <span>{uploadSuccess}</span>
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="flex flex-col gap-1">
-                <label className="font-semibold text-zinc-300">Document Type *</label>
-                <select
-                  value={selectedDocType}
-                  onChange={(e) => setSelectedDocType(e.target.value)}
-                  className="px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
-                >
-                  {DOCUMENT_TYPES.map((dt) => (
-                    <option key={dt.value} value={dt.value}>
-                      {dt.icon} {dt.label}
-                    </option>
-                  ))}
-                </select>
+            <form onSubmit={handleUpload} className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5 text-xs">
+                  <label className="font-semibold text-zinc-300">Document Type *</label>
+                  <select
+                    value={selectedDocType}
+                    onChange={(e) => setSelectedDocType(e.target.value)}
+                    className="px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+                  >
+                    {DOCUMENT_TYPES.map((dt) => (
+                      <option key={dt.value} value={dt.value}>
+                        {dt.icon} {dt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5 text-xs">
+                  <label className="font-semibold text-zinc-300">Masked ID / Certificate No.</label>
+                  <input
+                    type="text"
+                    value={docMaskedNumber}
+                    onChange={(e) => setDocMaskedNumber(e.target.value)}
+                    placeholder="e.g. XXXX-XXXX-4532"
+                    className="px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 placeholder:text-zinc-600"
+                  />
+                </div>
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="font-semibold text-zinc-300">Masked ID Number (Optional)</label>
+              <div className="flex flex-col sm:flex-row items-center gap-3">
                 <input
-                  type="text"
-                  value={docMaskedNumber}
-                  onChange={(e) => setDocMaskedNumber(e.target.value)}
-                  placeholder="e.g. ABCDE1234F or XXXX-4532"
-                  className="px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  type="file"
+                  ref={fileInputRef}
+                  required
+                  accept="image/*,.pdf"
+                  className="w-full text-xs text-zinc-400 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-zinc-200 hover:file:bg-zinc-700 cursor-pointer"
                 />
-              </div>
-            </div>
 
-            {/* Dropzone Area */}
-            <div
-              onClick={() => {
-                if (!uploading) fileInputRef.current?.click()
-              }}
-              className={`border-2 border-dashed rounded-2xl p-6 text-center flex flex-col items-center justify-center gap-2 transition-all group ${
-                uploading
-                  ? 'border-blue-500/50 bg-blue-950/20 cursor-wait'
-                  : 'border-zinc-700/80 hover:border-blue-500/70 bg-zinc-950/60 hover:bg-zinc-950/90 cursor-pointer'
-              }`}
-            >
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept=".pdf,.png,.jpg,.jpeg"
-                className="hidden"
-                disabled={uploading}
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) handleFileUpload(file)
-                }}
-              />
-              <div className="h-10 w-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-blue-400 group-hover:scale-105 transition-all">
-                {uploading ? (
-                  <div className="h-5 w-5 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-                ) : (
-                  <UploadCloud className="h-5 w-5" />
-                )}
+                <button
+                  type="submit"
+                  disabled={uploading}
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-semibold text-xs transition-all shadow-lg shadow-blue-600/25 disabled:opacity-50 cursor-pointer shrink-0"
+                >
+                  {uploading ? 'Storing in S3...' : 'Upload File'}
+                </button>
               </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-semibold text-zinc-200 group-hover:text-blue-300 transition-colors">
-                  {uploading ? (
-                    'Uploading document to S3 vault...'
-                  ) : (
-                    <>Click to browse and upload <span className="text-blue-400 underline">{selectedDocType}</span></>
-                  )}
-                </span>
-                <span className="text-[11px] text-zinc-500">
-                  Select any PDF or image from your device (e.g. download.pdf)
-                </span>
-              </div>
-            </div>
+            </form>
           </div>
 
-          {/* STORED DOCUMENTS LIST */}
+          {/* Stored Documents List Card */}
           <div className="rounded-3xl border border-zinc-800/90 bg-zinc-900/60 p-6 shadow-xl flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <FileCheck className="h-5 w-5 text-emerald-400" />
-                <h2 className="text-base font-bold text-zinc-100">
-                  Vault Documents ({documents.length})
+                <FileText className="h-4 w-4 text-zinc-400" />
+                <h2 className="text-sm font-bold text-zinc-100">
+                  Your Vault Documents ({documents.length})
                 </h2>
               </div>
-              <span className="text-xs text-zinc-500">
-                Encrypted in S3 Bucket: <span className="font-mono text-zinc-400">scheme-documents</span>
-              </span>
+              <span className="text-[11px] text-zinc-500">Encrypted in MinIO S3</span>
             </div>
 
             {loadingDocs ? (
-              <div className="p-8 text-center text-zinc-500 text-xs">Loading vault documents...</div>
+              <div className="py-12 text-center text-zinc-500 text-xs">Loading vault items...</div>
             ) : documents.length === 0 ? (
-              <div className="p-8 text-center border border-dashed border-zinc-800 rounded-2xl text-zinc-500 text-xs">
-                No documents uploaded yet. Upload your PAN card, Aadhaar, or Bank Passbook above to see your live application readiness score!
+              <div className="py-12 text-center flex flex-col items-center gap-2 border border-dashed border-zinc-800 rounded-2xl bg-zinc-950/40">
+                <FolderLock className="h-8 w-8 text-zinc-600" />
+                <span className="text-xs font-semibold text-zinc-400">Your Document Vault is empty</span>
+                <span className="text-[11px] text-zinc-500 max-w-xs">
+                  Upload your Aadhaar Card, PAN Card, or Income Certificate above to automatically evaluate your scheme application readiness.
+                </span>
               </div>
             ) : (
               <div className="space-y-3">
                 {documents.map((doc) => {
-                  const sizeKB = (doc.file_size_bytes / 1024).toFixed(1)
+                  const sizeKB = Math.round(doc.file_size_bytes / 1024)
+                  const icon = DOCUMENT_TYPES.find((d) => d.value === doc.document_type)?.icon || '📄'
+                  const isExtractingThis = extractingDocId === doc.id
+
                   return (
                     <div
                       key={doc.id}
-                      className="p-3.5 rounded-2xl bg-zinc-950/80 border border-zinc-800 flex items-center justify-between gap-3 text-xs hover:border-zinc-700 transition-colors"
+                      className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 hover:border-zinc-700/80 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-blue-950/80 border border-blue-800/60 flex items-center justify-center text-blue-400 shrink-0">
-                          <FileText className="h-4 w-4" />
+                      <div className="flex items-center gap-3.5">
+                        <div className="h-10 w-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xl shrink-0">
+                          {icon}
                         </div>
-                        <div className="flex flex-col">
+                        <div className="flex flex-col gap-0.5">
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-zinc-100">{doc.document_type}</span>
+                            <span className="text-xs font-bold text-zinc-100">{doc.document_type}</span>
+                            {doc.is_verified && (
+                              <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full bg-emerald-950/90 text-emerald-400 border border-emerald-800/70 font-semibold">
+                                <ShieldCheck className="h-3 w-3" />
+                                <span>Verified</span>
+                              </span>
+                            )}
                             {doc.document_number_masked && (
-                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">
+                              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-900 text-zinc-400 border border-zinc-800">
                                 {doc.document_number_masked}
                               </span>
                             )}
                           </div>
-                          <span className="text-[11px] text-zinc-400">
+                          <span className="text-[11px] text-zinc-400 font-mono truncate max-w-xs">
                             {doc.file_name} · <span className="text-zinc-500">{sizeKB} KB</span>
                           </span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                        {/* ✨ AI Fact Extraction Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleExtractFacts(doc.id)}
+                          disabled={isExtractingThis}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900/90 text-indigo-300 text-[11px] font-semibold border border-indigo-800/60 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                        >
+                          {isExtractingThis ? (
+                            <>
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              <span>AI Analyzing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-3 w-3 text-indigo-400" />
+                              <span>Extract Facts</span>
+                            </>
+                          )}
+                        </button>
+
                         {doc.download_url && (
                           <a
                             href={doc.download_url.replace('http://minio:9000', 'http://localhost:9000')}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] font-medium transition-colors"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px] font-medium transition-colors"
                           >
                             <Download className="h-3 w-3" />
-                            <span>View / Download</span>
+                            <span>Download</span>
                           </a>
                         )}
 
                         <button
                           onClick={() => handleDeleteDoc(doc.id, doc.file_name)}
-                          className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-950/60 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-xl text-rose-400 hover:bg-rose-950/60 transition-colors cursor-pointer"
                           title="Delete Document"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -545,7 +624,7 @@ export default function DocumentVaultPage() {
                 Check Scheme Readiness
               </h2>
               <span className="text-xs text-zinc-400">
-                Select a target government welfare scheme to calculate your application readiness score based on your uploaded vault documents.
+                Select a target welfare scheme to calculate your application readiness score based on your uploaded vault documents.
               </span>
             </div>
 
@@ -656,28 +735,21 @@ export default function DocumentVaultPage() {
                           .map((item, idx) => (
                             <div
                               key={idx}
-                              className="p-3 rounded-xl border bg-zinc-950/80 border-zinc-800 text-xs flex items-start gap-2.5"
+                              className="p-3 rounded-xl border bg-rose-950/20 border-rose-900/40 text-xs flex items-start gap-2.5"
                             >
                               <AlertCircle className="h-4 w-4 text-rose-400 shrink-0 mt-0.5" />
                               <div className="flex flex-col flex-1 gap-0.5">
                                 <div className="flex items-center justify-between gap-1">
-                                  <span className="font-bold text-zinc-100">{item.document_name}</span>
-                                  <span
-                                    className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                                      item.is_mandatory
-                                        ? 'bg-rose-950/70 text-rose-300 border border-rose-800/50'
-                                        : 'bg-zinc-800 text-zinc-400'
-                                    }`}
-                                  >
-                                    {item.is_mandatory ? 'Mandatory' : 'Optional'}
-                                  </span>
+                                  <span className="font-bold text-rose-200">{item.document_name}</span>
+                                  {item.is_mandatory && (
+                                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-rose-950 text-rose-400 border border-rose-800">
+                                      Mandatory
+                                    </span>
+                                  )}
                                 </div>
                                 {item.description && (
                                   <span className="text-[11px] text-zinc-400">{item.description}</span>
                                 )}
-                                <span className="text-[10px] text-rose-400 mt-1 font-medium">
-                                  Action: Upload this document to dropzone
-                                </span>
                               </div>
                             </div>
                           ))}
@@ -685,20 +757,166 @@ export default function DocumentVaultPage() {
                     </div>
                   )}
                 </div>
-
-                {/* Direct Link to Scheme Detail */}
-                <Link
-                  to={`/schemes/${readiness.scheme_slug}` as any}
-                  className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold text-center border border-zinc-700 transition-colors flex items-center justify-center gap-1.5"
-                >
-                  <span>View Official Scheme Details & Application Portal</span>
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </Link>
               </div>
             ) : null}
           </div>
         </div>
       </div>
+
+      {/* =====================================================================
+          CITIZEN VERIFICATION MODAL (V2.0 Zero Misread Digit Safeguard)
+          ===================================================================== */}
+      {activeModalData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="max-w-xl w-full rounded-3xl border border-zinc-700/90 bg-zinc-900 p-6 sm:p-8 shadow-2xl flex flex-col gap-6 relative max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-4 border-b border-zinc-800 pb-4">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                    {activeModalData.detected_document_type}
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    {Math.round(activeModalData.confidence_score * 100)}% AI Confidence
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold text-zinc-100 tracking-tight mt-1">
+                  Citizen Verification & Profile Sync
+                </h3>
+                <p className="text-xs text-zinc-400">
+                  {activeModalData.evidence_summary}
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setActiveModalData(null)
+                  setActiveModalDocId(null)
+                }}
+                className="p-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Misread Digit Alert Note */}
+            <div className="p-3.5 rounded-2xl bg-amber-950/40 border border-amber-800/60 text-xs text-amber-300 flex items-start gap-2.5">
+              <Edit3 className="h-4 w-4 shrink-0 text-amber-400 mt-0.5" />
+              <p>
+                <strong>Zero Misread Digit Safeguard:</strong> Please review and correct any detected fields before merging into your official citizen profile.
+              </p>
+            </div>
+
+            {/* Verification Form */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div className="flex flex-col gap-1.5">
+                <label className="font-semibold text-zinc-300">Full Name</label>
+                <input
+                  type="text"
+                  value={verificationForm.full_name || ''}
+                  onChange={(e) => setVerificationForm({ ...verificationForm, full_name: e.target.value })}
+                  placeholder="e.g. Ramesh Kumar"
+                  className="px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="font-semibold text-zinc-300">Date of Birth (YYYY-MM-DD)</label>
+                <input
+                  type="text"
+                  value={verificationForm.date_of_birth || ''}
+                  onChange={(e) => setVerificationForm({ ...verificationForm, date_of_birth: e.target.value })}
+                  placeholder="1990-08-15"
+                  className="px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="font-semibold text-zinc-300">Gender</label>
+                <select
+                  value={verificationForm.gender || 'male'}
+                  onChange={(e) => setVerificationForm({ ...verificationForm, gender: e.target.value })}
+                  className="px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+                >
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="font-semibold text-zinc-300">State / Location</label>
+                <input
+                  type="text"
+                  value={verificationForm.state || ''}
+                  onChange={(e) => setVerificationForm({ ...verificationForm, state: e.target.value })}
+                  placeholder="e.g. Madhya Pradesh, Maharashtra"
+                  className="px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="font-semibold text-zinc-300">Annual Family Income (₹ INR)</label>
+                <input
+                  type="number"
+                  value={verificationForm.annual_income ?? ''}
+                  onChange={(e) => setVerificationForm({ ...verificationForm, annual_income: e.target.value ? Number(e.target.value) : undefined })}
+                  placeholder="e.g. 180000"
+                  className="px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="font-semibold text-zinc-300">Caste Category</label>
+                <select
+                  value={verificationForm.caste_category || 'General'}
+                  onChange={(e) => setVerificationForm({ ...verificationForm, caste_category: e.target.value })}
+                  className="px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+                >
+                  <option value="General">General / Open</option>
+                  <option value="OBC">OBC</option>
+                  <option value="SC">SC</option>
+                  <option value="ST">ST</option>
+                  <option value="EWS">EWS</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveModalData(null)
+                  setActiveModalDocId(null)
+                }}
+                className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-300 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmAndSync}
+                disabled={syncingProfile}
+                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-xs font-bold text-white transition-all shadow-lg shadow-blue-600/25 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {syncingProfile ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Syncing Profile...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>Confirm & Sync to Profile</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

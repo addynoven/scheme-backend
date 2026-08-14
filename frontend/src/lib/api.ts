@@ -145,6 +145,44 @@ export interface SchemeDocumentReadiness {
   summary: string
 }
 
+export interface ExtractedDocumentFacts {
+  full_name?: string | null
+  date_of_birth?: string | null
+  age?: number | null
+  gender?: string | null
+  state?: string | null
+  district?: string | null
+  annual_income?: number | null
+  occupation?: string | null
+  caste_category?: string | null
+  has_land?: boolean | null
+  is_differently_abled?: boolean | null
+  document_number_masked?: string | null
+}
+
+export interface ExtractedDocumentFactsResponse {
+  status: string
+  document_id?: number | null
+  detected_document_type: string
+  confidence_score: number
+  evidence_summary: string
+  extracted_facts: ExtractedDocumentFacts
+  applicable_profile_fields: string[]
+}
+
+export interface ConfirmFactsAndSyncProfileRequest {
+  full_name?: string | null
+  date_of_birth?: string | null
+  gender?: string | null
+  state?: string | null
+  district?: string | null
+  annual_income?: number | null
+  occupation?: string | null
+  caste_category?: string | null
+  has_land?: boolean | null
+  is_differently_abled?: boolean | null
+}
+
 export interface PaginatedResult<T> {
   items: T[]
   total: number
@@ -331,6 +369,63 @@ export async function getSchemeDocumentReadiness(schemeId: number): Promise<Sche
   }
   return res.json()
 }
+
+export async function extractVaultDocumentFacts(documentId: number): Promise<ExtractedDocumentFactsResponse> {
+  const headers = getCitizenAuthHeaders()
+  headers['Content-Type'] = 'application/json'
+  const res = await fetch(`${API_BASE}/vault/documents/${documentId}/extract-facts`, {
+    method: 'POST',
+    headers,
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || 'Failed to extract facts from document')
+  }
+  return res.json()
+}
+
+export async function confirmAndSyncProfileFacts(
+  documentId: number,
+  data: ConfirmFactsAndSyncProfileRequest
+): Promise<{ status: string; synced_fields: string[]; message: string; profile: any }> {
+  const headers = getCitizenAuthHeaders()
+  headers['Content-Type'] = 'application/json'
+  const res = await fetch(`${API_BASE}/vault/documents/${documentId}/confirm-and-sync-profile`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || 'Failed to sync confirmed facts to profile')
+  }
+  return res.json()
+}
+
+export async function extractQuickDocument(
+  file: File,
+  documentType?: string
+): Promise<ExtractedDocumentFactsResponse> {
+  const formData = new FormData()
+  formData.append('file', file)
+  if (documentType) {
+    formData.append('document_type', documentType)
+  }
+
+  const headers = getCitizenAuthHeaders()
+  const res = await fetch(`${API_BASE}/vault/extract-quick`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || 'Failed to auto-extract document facts')
+  }
+  return res.json()
+}
+
 
 // ============================================================================
 // ADMIN APIS

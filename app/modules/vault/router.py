@@ -1,16 +1,23 @@
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Header, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user
-from app.database import get_db
+from app.core.deps import get_current_user, get_db
+from app.core.security import decode_token
 from app.modules.auth.models import User
+from app.modules.auth.service import get_user_by_id
+from app.modules.vault.ocr_service import extract_document_facts_pipeline
 from app.modules.vault.schemas import (
+    ConfirmFactsAndSyncProfileRequest,
+    ConfirmFactsAndSyncProfileResponse,
+    ExtractedDocumentFactsResponse,
     SchemeDocumentReadinessResponse,
     UserDocumentResponse,
 )
 from app.modules.vault.service import (
+    confirm_and_sync_profile_from_facts,
     delete_user_document,
     evaluate_document_readiness,
+    extract_facts_from_user_document,
     get_user_document_content,
     list_user_documents,
     upload_user_document,
@@ -114,3 +121,91 @@ def get_scheme_document_readiness_endpoint(
     return evaluate_document_readiness(
         db=db, user_id=current_user.id, scheme_id=scheme_id
     )
+
+
+# --- V2.0 Multimodal Vision LLM Extraction & Profile Sync Endpoints ---
+
+
+@router.post(
+    "/documents/{document_id}/extract-facts",
+    response_model=ExtractedDocumentFactsResponse,
+    summary="Extract demographic facts from vault document (Gemini 3.5 Flash Vision)",
+    description="Runs Multimodal Vision LLM extraction on an existing vault document in S3 to extract document-specific facts (e.g. DOB, Gender, State from Aadhaar; Income from Income Certificate).",
+    response_description="Detected facts and confidence score for citizen verification",
+)
+def extract_facts_from_document_endpoint(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return extract_facts_from_user_document(
+        db=db, user_id=current_user.id, document_id=document_id
+    )
+
+
+@router.post(
+    "/documents/{document_id}/confirm-and-sync-profile",
+    response_model=ConfirmFactsAndSyncProfileResponse,
+    summary="Citizen confirmation: Merge verified facts into Profile",
+    description="Applies citizen-verified / edited facts to their SQL database profile, progressively enriching demographic data and recalculating scheme eligibility.",
+    response_description="Sync status and updated profile object",
+)
+def confirm_and_sync_profile_endpoint(
+    document_id: int,
+    payload: ConfirmFactsAndSyncProfileRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return confirm_and_sync_profile_from_facts(
+        db=db,
+        user_id=current_user.id,
+        payload=payload,
+        document_id=document_id,
+    )
+
+
+@router.post(
+    "/extract-quick",
+    response_model=ExtractedDocumentFactsResponse,
+    summary="1-Click Auto-Fill: Extract facts from uploaded file (Aadhaar/PAN/Income)",
+    description="Accepts an image or PDF upload directly from the eligibility check questionnaire. Runs Gemini 3.5 Flash Vision to auto-populate form inputs. If the citizen is logged in, automatically saves the document to their S3 Vault.",
+    response_description="Extracted facts for instant form population",
+)
+async def extract_quick_endpoint(
+    file: UploadFile = File(..., description="Aadhaar, PAN, or Certificate binary"),
+    document_type: str | None = Form(None, description="Optional document type hint"),
+    authorization: str | None = Header(None, description="Optional Bearer token to auto-save to Vault"),
+    db: Session = Depends(get_db),
+):
+    file_bytes = await file.read()
+    mime_type = file.content_type or "application/octet-stream"
+    file_name = file.filename or "uploaded_document"
+
+    result = extract_document_facts_pipeline(
+        file_bytes=file_bytes,
+        mime_type=mime_type,
+        document_type_hint=document_type,
+        file_name=file_name,
+    )
+
+    # If citizen is logged in, automatically save this file to their S3 Document Vault!
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ")[1]
+        payload = decode_token(token)
+        if payload and "sub" in payload:
+            try:
+                user_id = int(payload["sub"])
+                saved_doc = upload_user_document(
+                    db=db,
+                    user_id=user_id,
+                    document_type=result.detected_document_type or document_type or "Identity Document",
+                    file_name=file_name,
+                    file_bytes=file_bytes,
+                    mime_type=mime_type,
+                    document_number_masked=result.extracted_facts.document_number_masked,
+                )
+                result.document_id = saved_doc.id
+            except Exception:
+                pass
+
+    return result

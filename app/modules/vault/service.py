@@ -8,7 +8,10 @@ from app.modules.schemes.models import RequiredDocument
 from app.modules.schemes.models import Scheme
 from app.modules.vault.models import UserDocument
 from app.modules.vault.schemas import (
+    ConfirmFactsAndSyncProfileRequest,
+    ConfirmFactsAndSyncProfileResponse,
     DocumentReadinessItem,
+    ExtractedDocumentFactsResponse,
     SchemeDocumentReadinessResponse,
     UserDocumentResponse,
 )
@@ -242,3 +245,125 @@ def evaluate_document_readiness(
         checklist=checklist,
         summary=summary,
     )
+
+
+# --- V2.0 Fact Extraction & Profile Merge Service ---
+
+
+def extract_facts_from_user_document(
+    db: Session, user_id: int, document_id: int
+) -> ExtractedDocumentFactsResponse:
+    doc = db.scalar(
+        select(UserDocument).where(
+            UserDocument.id == document_id, UserDocument.user_id == user_id
+        )
+    )
+    if not doc:
+        raise EntityNotFoundError("UserDocument", document_id)
+
+    body_bytes, content_type, file_name = get_user_document_content(
+        db=db, user_id=user_id, document_id=document_id
+    )
+
+    from app.modules.vault.ocr_service import extract_document_facts_pipeline
+    result = extract_document_facts_pipeline(
+        file_bytes=body_bytes,
+        mime_type=content_type or doc.mime_type,
+        document_type_hint=doc.document_type,
+        file_name=file_name,
+    )
+    result.document_id = document_id
+    return result
+
+
+def confirm_and_sync_profile_from_facts(
+    db: Session,
+    user_id: int,
+    payload: ConfirmFactsAndSyncProfileRequest,
+    document_id: int | None = None,
+) -> ConfirmFactsAndSyncProfileResponse:
+    from datetime import date
+    from app.modules.auth.models import Profile
+
+    profile = db.scalar(select(Profile).where(Profile.user_id == user_id))
+
+    synced_fields: list[str] = []
+    data = payload.model_dump(exclude_unset=True)
+
+    if not profile:
+        # Create fresh profile with sensible fallbacks
+        dob = date(2000, 1, 1)
+        if payload.date_of_birth:
+            try:
+                parts = [int(p) for p in payload.date_of_birth.split("-")]
+                dob = date(parts[0], parts[1], parts[2])
+            except Exception:
+                pass
+
+        profile = Profile(
+            user_id=user_id,
+            full_name=payload.full_name or "Citizen",
+            date_of_birth=dob,
+            gender=payload.gender or "other",
+            state=payload.state or "All-India",
+            district=payload.district or "General",
+            annual_income=payload.annual_income or 0,
+            occupation=payload.occupation or "self_employed",
+            caste_category=payload.caste_category,
+            has_land=payload.has_land,
+            is_differently_abled=payload.is_differently_abled,
+        )
+        db.add(profile)
+        synced_fields = [k for k, v in data.items() if v is not None]
+    else:
+        # Progressively update non-null fields
+        for field, val in data.items():
+            if val is not None:
+                if field == "date_of_birth" and isinstance(val, str):
+                    try:
+                        parts = [int(p) for p in val.split("-")]
+                        setattr(profile, field, date(parts[0], parts[1], parts[2]))
+                        synced_fields.append(field)
+                    except Exception:
+                        pass
+                elif hasattr(profile, field):
+                    setattr(profile, field, val)
+                    synced_fields.append(field)
+
+    # Mark document as verified if document_id provided
+    if document_id:
+        doc = db.scalar(
+            select(UserDocument).where(
+                UserDocument.id == document_id, UserDocument.user_id == user_id
+            )
+        )
+        if doc:
+            doc.is_verified = True
+
+    try:
+        db.commit()
+        db.refresh(profile)
+    except Exception:
+        db.rollback()
+        raise
+
+    profile_dict = {
+        "full_name": profile.full_name,
+        "date_of_birth": str(profile.date_of_birth),
+        "gender": profile.gender,
+        "state": profile.state,
+        "district": profile.district,
+        "annual_income": profile.annual_income,
+        "occupation": profile.occupation,
+        "caste_category": profile.caste_category,
+        "has_land": profile.has_land,
+        "is_differently_abled": profile.is_differently_abled,
+    }
+
+    return ConfirmFactsAndSyncProfileResponse(
+        status="synced",
+        synced_fields=synced_fields,
+        message=f"Successfully synced {len(synced_fields)} verified field(s) into citizen profile.",
+        profile=profile_dict,
+    )
+

@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     S3_REGION: str = "us-east-1"
     S3_PRESIGNED_EXPIRY_SECONDS: int = 3600
 
+    # Google Gemini Vision LLM
+    GEMINI_API_KEY: str | None = None
+    GEMINI_MODEL: str = "gemini-3.5-flash"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

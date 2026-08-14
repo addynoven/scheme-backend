@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from '@/router'
 import {
   CheckCircle2,
@@ -11,8 +11,11 @@ import {
   ArrowLeft,
   Sliders,
   ChevronDown,
+  UploadCloud,
+  FileCheck,
+  Loader2,
 } from 'lucide-react'
-import { checkEligibility, type EligibilityCheckPayload } from '@/lib/api'
+import { checkEligibility, extractQuickDocument, type EligibilityCheckPayload } from '@/lib/api'
 import { saveCitizenProfile, saveEligibilityReport, getSavedCitizenProfile } from '@/lib/session'
 
 const ALL_36_INDIAN_STATES_AND_UTS = [
@@ -93,6 +96,11 @@ export default function EligibilityCheckPage() {
   const [error, setError] = useState<string | null>(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
 
+  // AI Quick Extraction state
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [extracting, setExtracting] = useState(false)
+  const [extractSuccessNotice, setExtractSuccessNotice] = useState<string | null>(null)
+
   const [formData, setFormData] = useState<EligibilityCheckPayload>({
     age: 28,
     gender: 'Female',
@@ -113,6 +121,42 @@ export default function EligibilityCheckPage() {
       setFormData((prev) => ({ ...prev, ...saved }))
     }
   }, [])
+
+  async function handleAutoFillUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setExtracting(true)
+    setError(null)
+    setExtractSuccessNotice(null)
+
+    try {
+      const res = await extractQuickDocument(file)
+      const facts = res.extracted_facts
+
+      setFormData((prev) => ({
+        ...prev,
+        age: facts.age || prev.age,
+        gender: facts.gender ? (facts.gender.charAt(0).toUpperCase() + facts.gender.slice(1)) : prev.gender,
+        state: facts.state || prev.state,
+        district: facts.district || prev.district,
+        annual_income: facts.annual_income || prev.annual_income,
+        occupation: facts.occupation || prev.occupation,
+        caste_category: facts.caste_category || prev.caste_category,
+        has_land: facts.has_land !== null && facts.has_land !== undefined ? facts.has_land : prev.has_land,
+        is_differently_abled: facts.is_differently_abled !== null && facts.is_differently_abled !== undefined ? facts.is_differently_abled : prev.is_differently_abled,
+      }))
+
+      setExtractSuccessNotice(
+        `✨ Auto-filled from ${res.detected_document_type} (${Math.round(res.confidence_score * 100)}% AI confidence)`
+      )
+    } catch (err: any) {
+      setError(`Auto-fill error: ${err.message || 'Could not parse document. You can still fill the form manually.'}`)
+    } finally {
+      setExtracting(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -146,7 +190,7 @@ export default function EligibilityCheckPage() {
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-blue-600/10 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 rounded-full bg-purple-600/10 blur-3xl pointer-events-none" />
 
-        <div className="flex flex-col gap-2 mb-8">
+        <div className="flex flex-col gap-2 mb-6">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-950/80 border border-blue-800/60 text-blue-300 w-fit">
             <Sparkles className="h-3.5 w-3.5 text-blue-400" />
             <span>Instant Eligibility Evaluator · 4,160+ Schemes</span>
@@ -155,9 +199,64 @@ export default function EligibilityCheckPage() {
             Check Your Scheme Eligibility
           </h1>
           <p className="text-xs sm:text-sm text-zinc-400">
-            Provide your basic profile details below. The deterministic engine matches you across all 36 States/UTs and Central Ministries in &lt;1 second.
+            Provide your basic profile details below, or let Gemini Vision auto-fill it from an Aadhaar or PAN card.
           </p>
         </div>
+
+        {/* ⚡ AI Auto-Fill Card (Track 1 Fast Path) */}
+        <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-950/40 via-indigo-950/30 to-purple-950/40 border border-blue-800/50 shadow-inner flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 shrink-0">
+              <UploadCloud className="h-5 w-5" />
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-zinc-100">1-Click Auto-Fill with AI</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-semibold border border-blue-500/30">
+                  Gemini Vision
+                </span>
+              </div>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Drop your Aadhaar Card, PAN Card, or Certificate to auto-populate this form instantly.
+              </p>
+            </div>
+          </div>
+
+          <div className="shrink-0 w-full sm:w-auto">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleAutoFillUpload}
+              accept="image/*,.pdf"
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={extracting}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 text-xs font-bold text-white transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {extracting ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>Analyzing with AI...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>Upload & Auto-Fill</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {extractSuccessNotice && (
+          <div className="mb-6 p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-800/60 text-xs text-emerald-300 flex items-center gap-2 animate-in fade-in duration-300">
+            <FileCheck className="h-4 w-4 text-emerald-400 shrink-0" />
+            <span>{extractSuccessNotice}</span>
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 p-4 rounded-2xl bg-red-950/40 border border-red-800/60 text-xs text-red-300 flex items-center gap-2">
