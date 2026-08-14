@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from '@/router'
 import { citizenGetMe, updateCitizenProfile } from '@/lib/api'
-import { AuthGuard } from '@/components/AuthGuard'
 import {
   Save,
   CheckCircle2,
@@ -30,14 +29,6 @@ const OCCUPATIONS = [
 ]
 
 export default function ProfilePage() {
-  return (
-    <AuthGuard>
-      <ProfileContent />
-    </AuthGuard>
-  )
-}
-
-function ProfileContent() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
