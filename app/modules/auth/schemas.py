@@ -194,9 +194,31 @@ class CitizenFactResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class FactSourceEvidence(BaseModel):
+    document_id: int | None = Field(None, description="Vault document ID")
+    document_type: str | None = Field(None, description="Document type e.g. Aadhaar Card, PAN Card")
+    file_name: str | None = Field(None, description="Original uploaded filename")
+    verified_value: str = Field(..., description="Value extracted and confirmed from this document")
+    verified_at: datetime = Field(..., description="Timestamp of confirmation")
+
+
+class FactProvenanceDetail(BaseModel):
+    fact_key: str
+    value: str
+    is_cross_verified: bool = Field(..., description="True if verified by 2 or more distinct documents")
+    verification_count: int = Field(..., description="Number of times this fact was confirmed/extracted")
+    confidence_reason: str = Field(..., description="Human explainability reason for why this fact is considered true")
+    sources: list[FactSourceEvidence] = Field(..., description="All source documents providing evidence for this fact")
+
+
 class CitizenFactsAuditResponse(BaseModel):
     user_id: int
     total_facts: int
     verified_facts: dict[str, str] = Field(..., description="Consolidated dictionary of latest verified facts")
+    provenance_by_fact: dict[str, FactProvenanceDetail] = Field(
+        default_factory=dict,
+        description="Granular proof explaining why each fact is true with linked source documents",
+    )
     fact_history: list[CitizenFactResponse] = Field(..., description="Full immutable audit trail of all verified facts")
+
 

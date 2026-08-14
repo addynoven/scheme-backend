@@ -299,19 +299,69 @@ def list_citizen_facts(db: Session, user_id: int) -> list[CitizenFact]:
 
 
 def get_citizen_facts_audit(db: Session, user_id: int):
-    from app.modules.auth.schemas import CitizenFactResponse, CitizenFactsAuditResponse
+    from app.modules.auth.schemas import (
+        CitizenFactResponse,
+        CitizenFactsAuditResponse,
+        FactProvenanceDetail,
+        FactSourceEvidence,
+    )
+    from app.modules.vault.models import UserDocument
 
     facts = list_citizen_facts(db, user_id)
+    docs = {
+        d.id: d
+        for d in db.scalars(
+            select(UserDocument).where(UserDocument.user_id == user_id)
+        ).all()
+    }
+
     verified_map: dict[str, str] = {}
+    grouped_sources: dict[str, list[FactSourceEvidence]] = {}
+
     for f in reversed(facts):
         verified_map[f.fact_key] = f.fact_value
+        doc = docs.get(f.source_document_id) if f.source_document_id else None
+        evidence = FactSourceEvidence(
+            document_id=f.source_document_id,
+            document_type=doc.document_type if doc else "Direct Entry / Self-Attested",
+            file_name=doc.file_name if doc else None,
+            verified_value=f.fact_value,
+            verified_at=f.verified_at,
+        )
+        grouped_sources.setdefault(f.fact_key, []).append(evidence)
+
+    provenance_map: dict[str, FactProvenanceDetail] = {}
+    for key, val in verified_map.items():
+        srcs = grouped_sources.get(key, [])
+        distinct_doc_types = list(
+            dict.fromkeys([s.document_type for s in srcs if s.document_type])
+        )
+        is_cross = len(distinct_doc_types) >= 2 or len(srcs) >= 2
+
+        if len(distinct_doc_types) >= 2:
+            reason = f"Cross-verified across {len(distinct_doc_types)} independent official sources ({', '.join(distinct_doc_types)})"
+        elif len(distinct_doc_types) == 1:
+            reason = f"Verified from official {distinct_doc_types[0]}"
+        else:
+            reason = "Self-attested citizen claim"
+
+        provenance_map[key] = FactProvenanceDetail(
+            fact_key=key,
+            value=val,
+            is_cross_verified=is_cross,
+            verification_count=len(srcs),
+            confidence_reason=reason,
+            sources=srcs,
+        )
 
     return CitizenFactsAuditResponse(
         user_id=user_id,
         total_facts=len(facts),
         verified_facts=verified_map,
+        provenance_by_fact=provenance_map,
         fact_history=[CitizenFactResponse.model_validate(f) for f in facts],
     )
+
 
 
 

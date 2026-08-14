@@ -88,8 +88,11 @@ def extract_facts_with_gemini_vision(
     if not settings.GEMINI_API_KEY:
         raise ValueError("GEMINI_API_KEY is not configured in environment.")
 
-    model = settings.GEMINI_MODEL or "gemini-3.5-flash"
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    primary_model = settings.GEMINI_MODEL or "gemini-3.5-flash"
+    models_to_try = [primary_model]
+    for alt in ("gemini-3-flash-preview", "gemini-3.7-flash"):
+        if alt not in models_to_try:
+            models_to_try.append(alt)
 
     b64_data = base64.b64encode(file_bytes).decode("utf-8")
     hint_text = f"\nUser Hint: The user claims this is a '{document_type_hint}'." if document_type_hint else ""
@@ -119,50 +122,57 @@ def extract_facts_with_gemini_vision(
         },
     }
 
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "X-goog-api-key": settings.GEMINI_API_KEY,
-        },
-        method="POST",
-    )
+    last_err = None
+    for model_name in models_to_try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "X-goog-api-key": settings.GEMINI_API_KEY,
+            },
+            method="POST",
+        )
 
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            resp_data = json.loads(resp.read().decode("utf-8"))
-            candidates = resp_data.get("candidates", [])
-            if not candidates:
-                raise ValueError("Gemini returned zero candidates.")
+        try:
+            with urllib.request.urlopen(req, timeout=35) as resp:
+                resp_data = json.loads(resp.read().decode("utf-8"))
+                candidates = resp_data.get("candidates", [])
+                if not candidates:
+                    raise ValueError(f"Gemini model {model_name} returned zero candidates.")
 
-            raw_text = candidates[0]["content"]["parts"][0]["text"]
-            cleaned_json = _sanitize_json_text(raw_text)
-            parsed = json.loads(cleaned_json)
+                raw_text = candidates[0]["content"]["parts"][0]["text"]
+                cleaned_json = _sanitize_json_text(raw_text)
+                parsed = json.loads(cleaned_json)
 
-            detected_type = parsed.get("detected_document_type", document_type_hint or "Unknown Document")
-            confidence = float(parsed.get("confidence_score", 0.90))
-            summary = parsed.get("evidence_summary", "Extracted facts from document image.")
-            raw_facts = parsed.get("extracted_facts", {})
-            applicable_fields = parsed.get("applicable_profile_fields", [])
+                detected_type = parsed.get("detected_document_type", document_type_hint or "Unknown Document")
+                confidence = float(parsed.get("confidence_score", 0.90))
+                summary = parsed.get("evidence_summary", "Extracted facts from document image.")
+                raw_facts = parsed.get("extracted_facts", {})
+                applicable_fields = parsed.get("applicable_profile_fields", [])
 
-            normalized_facts = _normalize_extracted_facts(raw_facts)
+                normalized_facts = _normalize_extracted_facts(raw_facts)
 
-            return ExtractedDocumentFactsResponse(
-                status="success",
-                detected_document_type=detected_type,
-                confidence_score=min(max(confidence, 0.0), 1.0),
-                evidence_summary=summary,
-                extracted_facts=normalized_facts,
-                applicable_profile_fields=applicable_fields,
-            )
-    except urllib.error.HTTPError as he:
-        err_msg = he.read().decode("utf-8")
-        logger.error(f"Gemini API HTTP Error {he.code}: {err_msg}")
-        raise RuntimeError(f"Gemini Multimodal API Error: {he.code} - {err_msg}")
-    except Exception as e:
-        logger.error(f"Failed to extract facts via Gemini Vision: {str(e)}")
-        raise
+                return ExtractedDocumentFactsResponse(
+                    status="success",
+                    detected_document_type=detected_type,
+                    confidence_score=min(max(confidence, 0.0), 1.0),
+                    evidence_summary=summary,
+                    extracted_facts=normalized_facts,
+                    applicable_profile_fields=applicable_fields,
+                )
+        except urllib.error.HTTPError as he:
+            err_msg = he.read().decode("utf-8")
+            logger.warning(f"Gemini model {model_name} HTTP Error {he.code}: {err_msg}")
+            last_err = RuntimeError(f"Gemini Multimodal API Error ({model_name}): {he.code} - {err_msg}")
+            continue
+        except Exception as e:
+            logger.warning(f"Gemini model {model_name} failed: {str(e)}")
+            last_err = e
+            continue
+
+    raise last_err or RuntimeError("All Gemini vision models failed.")
 
 
 def extract_facts_from_raw_text_patterns(
