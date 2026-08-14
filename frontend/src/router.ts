@@ -6,10 +6,13 @@ import { components, hooks, utils } from '@generouted/react-router/client'
 export type Path =
   | `/`
   | `/admin`
+  | `/chat`
   | `/check`
+  | `/household`
   | `/results`
   | `/schemes/:slug`
   | `/vault`
+  | `/voice`
 
 export type Params = {
   '/schemes/:slug': { slug: string }

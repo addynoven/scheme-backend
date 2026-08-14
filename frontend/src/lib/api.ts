@@ -631,3 +631,330 @@ export async function adminRejectTriageItem(id: number): Promise<IngestionTriage
   return res.json()
 }
 
+// ============================================================================
+// V2.6 TWO-STAGE QUERY ROUTER APIS
+// ============================================================================
+
+export interface QueryRouteResponse {
+  route_type: string
+  normalized_intent: string
+  answer: string
+  citations: string[]
+  matched_schemes: Array<{
+    name: string
+    slug: string
+    state?: string
+    benefit_title?: string
+    application_url?: string
+  }>
+  execution_plan?: {
+    sql_facts?: any
+    okf_paths?: string[]
+    web_queries?: string[]
+  }
+}
+
+export async function queryRouter(question: string, state?: string): Promise<QueryRouteResponse> {
+  const res = await fetch(`${API_BASE}/routing/query`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getCitizenAuthHeaders(),
+    },
+    body: JSON.stringify({ question, state }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || 'Query routing failed')
+  }
+  return res.json()
+}
+
+// ============================================================================
+// V2.7 HOUSEHOLD & FAMILY WELFARE GRAPH APIS
+// ============================================================================
+
+export interface HouseholdMember {
+  id: number
+  full_name: string
+  relationship: string
+  age: number
+  gender: string
+  occupation?: string | null
+  caste_category?: string | null
+  annual_income?: number | null
+  is_student: boolean
+  has_disability: boolean
+  created_at?: string
+}
+
+export interface HouseholdMemberReport {
+  member_id: number
+  full_name: string
+  relationship: string
+  age: number
+  gender: string
+  eligible_schemes_count: number
+  eligible_schemes: Array<{
+    name: string
+    slug: string
+    benefit_title?: string
+    application_url?: string
+  }>
+}
+
+export interface FamilyEligibilityReport {
+  user_id: number
+  total_family_members: number
+  total_collective_schemes: number
+  family_members_reports: HouseholdMemberReport[]
+}
+
+export async function listHouseholdMembers(): Promise<HouseholdMember[]> {
+  const res = await fetch(`${API_BASE}/household/members`, {
+    headers: getCitizenAuthHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to load household members')
+  return res.json()
+}
+
+export async function addHouseholdMember(payload: Omit<HouseholdMember, 'id' | 'created_at'>): Promise<HouseholdMember> {
+  const res = await fetch(`${API_BASE}/household/members`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getCitizenAuthHeaders(),
+    },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || 'Failed to add family member')
+  }
+  return res.json()
+}
+
+export async function deleteHouseholdMember(id: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/household/members/${id}`, {
+    method: 'DELETE',
+    headers: getCitizenAuthHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to delete family member')
+}
+
+export async function getFamilyEligibility(): Promise<FamilyEligibilityReport> {
+  const res = await fetch(`${API_BASE}/household/eligibility`, {
+    headers: getCitizenAuthHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to run family welfare scan')
+  return res.json()
+}
+
+// ============================================================================
+// V2.8 CONVERSATIONAL CITIZEN CHAT APIS
+// ============================================================================
+
+export interface ChatMessage {
+  id: number
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  citations: string[]
+  created_at: string
+}
+
+export interface ChatSession {
+  id: number
+  title: string
+  created_at: string
+  updated_at?: string
+  messages: ChatMessage[]
+}
+
+export async function listChatSessions(): Promise<ChatSession[]> {
+  const res = await fetch(`${API_BASE}/chat/sessions`, {
+    headers: getCitizenAuthHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to list chat sessions')
+  return res.json()
+}
+
+export async function createChatSession(title: string = 'New Welfare Assistance'): Promise<ChatSession> {
+  const res = await fetch(`${API_BASE}/chat/sessions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getCitizenAuthHeaders(),
+    },
+    body: JSON.stringify({ title }),
+  })
+  if (!res.ok) throw new Error('Failed to create chat session')
+  return res.json()
+}
+
+export async function getChatSession(sessionId: number): Promise<ChatSession> {
+  const res = await fetch(`${API_BASE}/chat/sessions/${sessionId}`, {
+    headers: getCitizenAuthHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to load chat session')
+  return res.json()
+}
+
+export async function sendChatMessage(sessionId: number, content: string): Promise<ChatMessage> {
+  const res = await fetch(`${API_BASE}/chat/sessions/${sessionId}/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getCitizenAuthHeaders(),
+    },
+    body: JSON.stringify({ content }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || 'Failed to send message')
+  }
+  return res.json()
+}
+
+export async function streamChatMessage(
+  sessionId: number,
+  content: string,
+  onToken: (token: string, citations?: string[]) => void,
+  onDone: (messageId: number) => void,
+  onError: (err: Error) => void
+): Promise<void> {
+  try {
+    const res = await fetch(`${API_BASE}/chat/sessions/${sessionId}/messages/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getCitizenAuthHeaders(),
+      },
+      body: JSON.stringify({ content }),
+    })
+
+    if (!res.ok || !res.body) {
+      throw new Error(`SSE streaming failed with status ${res.status}`)
+    }
+
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder('utf-8')
+    let buffer = ''
+
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const jsonStr = line.slice(6).trim()
+          if (!jsonStr) continue
+          try {
+            const data = JSON.parse(jsonStr)
+            if (data.type === 'token') {
+              onToken(data.token, data.citations)
+            } else if (data.type === 'done') {
+              onDone(data.message_id)
+            } else if (data.type === 'error') {
+              onError(new Error(data.message || 'Streaming error'))
+            }
+          } catch (e) {
+            console.error('SSE JSON parse error:', e)
+          }
+        }
+      }
+    }
+  } catch (err: any) {
+    onError(err)
+  }
+}
+
+// ============================================================================
+// V2.9 VOICE-FIRST SPEECH INTERFACE APIS
+// ============================================================================
+
+export interface VoiceTranscriptionResponse {
+  transcribed_text: string
+  detected_language: string
+  confidence: number
+}
+
+export interface VoiceChatResponse {
+  transcribed_text: string
+  detected_language: string
+  answer: string
+  citations: string[]
+  matched_schemes: Array<{
+    name: string
+    slug: string
+    benefit_title?: string
+    application_url?: string
+  }>
+  synthesized_speech_base64: string | null
+}
+
+export interface VoiceSynthesisResponse {
+  language_code: string
+  audio_format: string
+  audio_base64: string
+  synthesized_text: string
+}
+
+export async function transcribeAudio(file: File): Promise<VoiceTranscriptionResponse> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const res = await fetch(`${API_BASE}/voice/transcribe`, {
+    method: 'POST',
+    headers: getCitizenAuthHeaders(),
+    body: formData,
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || 'Audio transcription failed')
+  }
+  return res.json()
+}
+
+export async function voiceChat(file: File): Promise<VoiceChatResponse> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const res = await fetch(`${API_BASE}/voice/chat`, {
+    method: 'POST',
+    headers: getCitizenAuthHeaders(),
+    body: formData,
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || 'Voice chat failed')
+  }
+  return res.json()
+}
+
+export async function synthesizeSpeech(text: string, languageCode: string = 'hi'): Promise<VoiceSynthesisResponse> {
+  const res = await fetch(`${API_BASE}/voice/synthesize`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getCitizenAuthHeaders(),
+    },
+    body: JSON.stringify({ text, language_code: languageCode }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message || 'Speech synthesis failed')
+  }
+  return res.json()
+}
+
+export async function getVoiceTools(): Promise<any> {
+  const res = await fetch(`${API_BASE}/voice/tools`)
+  if (!res.ok) throw new Error('Failed to fetch voice tools')
+  return res.json()
+}
+
+

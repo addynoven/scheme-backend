@@ -9,79 +9,125 @@ const CITIZEN_USER_KEY = 'scheme_citizen_user'
 
 let inMemoryReport: EligibilityReport | null = null
 let inMemoryProfile: EligibilityCheckPayload | null = null
+const inMemoryStore: Record<string, string> = {}
+
+function isStorageAvailable(type: 'localStorage' | 'sessionStorage'): boolean {
+  try {
+    if (typeof window === 'undefined') return false
+    const storage = window[type]
+    const testKey = '__storage_test__'
+    storage.setItem(testKey, testKey)
+    storage.removeItem(testKey)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function getItem(key: string): string | null {
+  if (isStorageAvailable('localStorage')) {
+    return localStorage.getItem(key)
+  }
+  return inMemoryStore[key] || null
+}
+
+function setItem(key: string, value: string): void {
+  if (isStorageAvailable('localStorage')) {
+    localStorage.setItem(key, value)
+  } else {
+    inMemoryStore[key] = value
+  }
+}
+
+function removeItem(key: string): void {
+  if (isStorageAvailable('localStorage')) {
+    localStorage.removeItem(key)
+  } else {
+    delete inMemoryStore[key]
+  }
+}
 
 export function saveCitizenProfile(profile: EligibilityCheckPayload) {
   inMemoryProfile = profile
-  try {
-    sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile))
-  } catch (e) {
-    console.warn('SessionStorage quota exceeded, using in-memory profile store.', e)
+  if (isStorageAvailable('sessionStorage')) {
+    try {
+      sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile))
+    } catch (e) {
+      console.warn('SessionStorage quota exceeded, using in-memory profile store.', e)
+    }
   }
 }
 
 export function getSavedCitizenProfile(): EligibilityCheckPayload | null {
   if (inMemoryProfile) return inMemoryProfile
-  const data = sessionStorage.getItem(PROFILE_KEY)
-  if (!data) return null
-  try {
-    inMemoryProfile = JSON.parse(data)
-    return inMemoryProfile
-  } catch {
-    return null
+  if (isStorageAvailable('sessionStorage')) {
+    const data = sessionStorage.getItem(PROFILE_KEY)
+    if (!data) return null
+    try {
+      inMemoryProfile = JSON.parse(data)
+      return inMemoryProfile
+    } catch {
+      return null
+    }
   }
+  return null
 }
 
 export function saveEligibilityReport(report: EligibilityReport) {
   inMemoryReport = report
-  try {
-    sessionStorage.setItem(REPORT_KEY, JSON.stringify(report))
-  } catch (e) {
-    console.warn('SessionStorage quota exceeded, using in-memory report store.', e)
-    // Attempt saving compact version without large descriptions if possible
+  if (isStorageAvailable('sessionStorage')) {
     try {
-      const compact = {
-        ...report,
-        ineligible_schemes: [],
+      sessionStorage.setItem(REPORT_KEY, JSON.stringify(report))
+    } catch (e) {
+      console.warn('SessionStorage quota exceeded, using in-memory report store.', e)
+      try {
+        const compact = {
+          ...report,
+          ineligible_schemes: [],
+        }
+        sessionStorage.setItem(REPORT_KEY, JSON.stringify(compact))
+      } catch {
+        // Keep in memory
       }
-      sessionStorage.setItem(REPORT_KEY, JSON.stringify(compact))
-    } catch {
-      // Keep in memory
     }
   }
 }
 
 export function getSavedEligibilityReport(): EligibilityReport | null {
   if (inMemoryReport) return inMemoryReport
-  const data = sessionStorage.getItem(REPORT_KEY)
-  if (!data) return null
-  try {
-    inMemoryReport = JSON.parse(data)
-    return inMemoryReport
-  } catch {
-    return null
+  if (isStorageAvailable('sessionStorage')) {
+    const data = sessionStorage.getItem(REPORT_KEY)
+    if (!data) return null
+    try {
+      inMemoryReport = JSON.parse(data)
+      return inMemoryReport
+    } catch {
+      return null
+    }
   }
+  return null
 }
 
 // Admin Auth Session
 export function saveAdminToken(token: string) {
-  localStorage.setItem(ADMIN_TOKEN_KEY, token)
+  setItem(ADMIN_TOKEN_KEY, token)
 }
 
 export function getAdminToken(): string | null {
-  return localStorage.getItem(ADMIN_TOKEN_KEY)
+  return getItem(ADMIN_TOKEN_KEY)
 }
 
 export function removeAdminToken() {
-  localStorage.removeItem(ADMIN_TOKEN_KEY)
-  localStorage.removeItem(ADMIN_USER_KEY)
+  removeItem(ADMIN_TOKEN_KEY)
+  removeItem(ADMIN_USER_KEY)
 }
 
 export function saveAdminUser(user: any) {
-  localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user))
+  setItem(ADMIN_USER_KEY, JSON.stringify(user))
 }
 
 export function getAdminUser(): any | null {
-  const data = localStorage.getItem(ADMIN_USER_KEY)
+  const data = getItem(ADMIN_USER_KEY)
   if (!data) return null
   try {
     return JSON.parse(data)
@@ -92,24 +138,24 @@ export function getAdminUser(): any | null {
 
 // Citizen Auth Session
 export function saveCitizenToken(token: string) {
-  localStorage.setItem(CITIZEN_TOKEN_KEY, token)
+  setItem(CITIZEN_TOKEN_KEY, token)
 }
 
 export function getCitizenToken(): string | null {
-  return localStorage.getItem(CITIZEN_TOKEN_KEY)
+  return getItem(CITIZEN_TOKEN_KEY)
 }
 
 export function removeCitizenToken() {
-  localStorage.removeItem(CITIZEN_TOKEN_KEY)
-  localStorage.removeItem(CITIZEN_USER_KEY)
+  removeItem(CITIZEN_TOKEN_KEY)
+  removeItem(CITIZEN_USER_KEY)
 }
 
 export function saveCitizenUser(user: any) {
-  localStorage.setItem(CITIZEN_USER_KEY, JSON.stringify(user))
+  setItem(CITIZEN_USER_KEY, JSON.stringify(user))
 }
 
 export function getCitizenUser(): any | null {
-  const data = localStorage.getItem(CITIZEN_USER_KEY)
+  const data = getItem(CITIZEN_USER_KEY)
   if (!data) return null
   try {
     return JSON.parse(data)
