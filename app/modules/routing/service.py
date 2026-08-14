@@ -62,7 +62,7 @@ class IntelligentQueryRouter:
         # 1. Language Detection
         detected_lang = "en"
         for lang_code, hints in INDIC_LANGUAGE_HINTS.items():
-            if any(h in q for h in hints):
+            if any(re.search(r"\b" + re.escape(h) + r"\b", q) for h in hints):
                 detected_lang = "hi" if lang_code == "hi" else lang_code
                 break
 
@@ -311,12 +311,16 @@ class IntelligentQueryRouter:
 
         system_instruction = (
             "You are the Sovereign Citizen Welfare AI Advisor for Scheme Navigator (India).\n"
-            "Your goal is to synthesize the worker findings (SQL Rules, OKF Canonical Docs, and Live Web Facts) into an accurate, empathetic, and actionable response for the citizen.\n"
-            "Rules:\n"
-            "1. Language: Answer naturally in the same language as the citizen's query (Hindi, Hinglish, English, etc.).\n"
+            "Your goal is to synthesize the worker findings (SQL Rules, OKF Canonical Docs, and Live Web Facts) into an accurate, empathetic, and actionable response for the citizen.\n\n"
+            "CRITICAL LANGUAGE RULES:\n"
+            "1. Language Match: Strictly match the language of the citizen's latest query!\n"
+            "   - If the citizen writes in English, reply strictly in clear, fluent, professional English. Do NOT mix Hindi or Hinglish phrases into English replies.\n"
+            "   - If the citizen writes in Hindi (Devanagari script), reply in natural Hindi.\n"
+            "   - If the citizen writes in Romanized Hindi (Hinglish), reply in natural Hinglish.\n"
+            "   - If the citizen writes in regional Indic languages (Marathi, Tamil, Telugu, Bengali, Gujarati, Kannada, etc.), reply in that exact language.\n"
             "2. Grounding: Rely on the verified SQL matches and OKF canonical guidelines provided in the context.\n"
             "3. Business in MP/India: If the citizen asks about starting a business or loans in Madhya Pradesh / India, detail PM Mudra Yojana (loans up to ₹10-20 Lakhs collateral-free), PMEGP (25-35% subsidy), and MP Mukhyamantri Udyam Kranti Yojana, and specify required documents (Aadhaar, Project Report, Bank Passbook).\n"
-            "4. Greetings / Short messages ('hi', 'h', 't', 'namaste'): Greet them politely by name (if available in profile) and ask how you can help them navigate welfare programs.\n"
+            "4. Greetings / Short messages ('hi', 'h', 't', 'namaste'): Greet them politely by name (if available in profile) and ask how you can help them navigate welfare programs in the citizen's chosen language.\n"
             "5. Markdown Links: Format scheme names with markdown links in format: [Scheme Name](/schemes/{slug}).\n"
             "6. Structure: Keep responses clear, professional, and easy to read with bullet points."
         )
@@ -333,13 +337,12 @@ class IntelligentQueryRouter:
         }
 
         models_to_try = [
-            settings.GEMINI_MODEL or "gemini-flash-latest",
-            "gemini-flash-latest",
             "gemini-flash-lite-latest",
-            "gemini-3.5-flash-lite",
-            "gemini-3.7-flash",
             "gemini-3.1-flash-lite",
+            "gemini-3.5-flash-lite",
             "gemini-2.5-flash-lite",
+            "gemini-3.7-flash",
+            "gemini-flash-latest",
         ]
         for model_name in models_to_try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
@@ -353,7 +356,7 @@ class IntelligentQueryRouter:
                 method="POST",
             )
             try:
-                with urllib.request.urlopen(req, timeout=12) as resp:
+                with urllib.request.urlopen(req, timeout=15) as resp:
                     data = json.loads(resp.read().decode("utf-8"))
                     cand = data.get("candidates", [])[0]
                     text = cand.get("content", {}).get("parts", [])[0].get("text", "")
