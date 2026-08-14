@@ -5,6 +5,7 @@ from app.modules.admin.router import router as admin_router
 from app.modules.auth.router import router as auth_router
 from app.modules.eligibility.router import router as eligibility_router
 from app.modules.ingestion.router import router as open_data_router
+from app.modules.ocr.router import router as ocr_router
 from app.modules.schemes.router import router as schemes_router
 from app.modules.vault.router import router as vault_router
 
@@ -121,6 +122,7 @@ def health_check():
 app.include_router(auth_router)
 app.include_router(schemes_router)
 app.include_router(eligibility_router)
+app.include_router(ocr_router)
 app.include_router(vault_router)
 app.include_router(open_data_router)
 app.include_router(admin_router)

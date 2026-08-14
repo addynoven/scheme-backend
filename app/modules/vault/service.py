@@ -265,7 +265,7 @@ def extract_facts_from_user_document(
         db=db, user_id=user_id, document_id=document_id
     )
 
-    from app.modules.vault.ocr_service import extract_document_facts_pipeline
+    from app.modules.ocr.service import extract_document_facts_pipeline
     result = extract_document_facts_pipeline(
         file_bytes=body_bytes,
         mime_type=content_type or doc.mime_type,

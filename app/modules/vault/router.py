@@ -4,12 +4,11 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_user, get_db
 from app.core.security import decode_token
 from app.modules.auth.models import User
-from app.modules.auth.service import get_user_by_id
-from app.modules.vault.ocr_service import extract_document_facts_pipeline
+from app.modules.ocr.schemas import ExtractedDocumentFactsResponse
+from app.modules.ocr.service import extract_document_facts_pipeline
 from app.modules.vault.schemas import (
     ConfirmFactsAndSyncProfileRequest,
     ConfirmFactsAndSyncProfileResponse,
-    ExtractedDocumentFactsResponse,
     SchemeDocumentReadinessResponse,
     UserDocumentResponse,
 )
@@ -123,9 +122,6 @@ def get_scheme_document_readiness_endpoint(
     )
 
 
-# --- V2.0 Multimodal Vision LLM Extraction & Profile Sync Endpoints ---
-
-
 @router.post(
     "/documents/{document_id}/extract-facts",
     response_model=ExtractedDocumentFactsResponse,
@@ -168,8 +164,9 @@ def confirm_and_sync_profile_endpoint(
     "/extract-quick",
     response_model=ExtractedDocumentFactsResponse,
     summary="1-Click Auto-Fill: Extract facts from uploaded file (Aadhaar/PAN/Income)",
-    description="Accepts an image or PDF upload directly from the eligibility check questionnaire. Runs Gemini 3.5 Flash Vision to auto-populate form inputs. If the citizen is logged in, automatically saves the document to their S3 Vault.",
+    description="Delegates to the dedicated OCR extraction module.",
     response_description="Extracted facts for instant form population",
+    include_in_schema=False,
 )
 async def extract_quick_endpoint(
     file: UploadFile = File(..., description="Aadhaar, PAN, or Certificate binary"),
@@ -177,35 +174,11 @@ async def extract_quick_endpoint(
     authorization: str | None = Header(None, description="Optional Bearer token to auto-save to Vault"),
     db: Session = Depends(get_db),
 ):
-    file_bytes = await file.read()
-    mime_type = file.content_type or "application/octet-stream"
-    file_name = file.filename or "uploaded_document"
+    from app.modules.ocr.router import extract_facts_endpoint
 
-    result = extract_document_facts_pipeline(
-        file_bytes=file_bytes,
-        mime_type=mime_type,
-        document_type_hint=document_type,
-        file_name=file_name,
+    return await extract_facts_endpoint(
+        file=file,
+        document_type=document_type,
+        authorization=authorization,
+        db=db,
     )
-
-    # If citizen is logged in, automatically save this file to their S3 Document Vault!
-    if authorization and authorization.startswith("Bearer "):
-        token = authorization.split(" ")[1]
-        payload = decode_token(token)
-        if payload and "sub" in payload:
-            try:
-                user_id = int(payload["sub"])
-                saved_doc = upload_user_document(
-                    db=db,
-                    user_id=user_id,
-                    document_type=result.detected_document_type or document_type or "Identity Document",
-                    file_name=file_name,
-                    file_bytes=file_bytes,
-                    mime_type=mime_type,
-                    document_number_masked=result.extracted_facts.document_number_masked,
-                )
-                result.document_id = saved_doc.id
-            except Exception:
-                pass
-
-    return result

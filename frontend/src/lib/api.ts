@@ -413,7 +413,7 @@ export async function extractQuickDocument(
   }
 
   const headers = getCitizenAuthHeaders()
-  const res = await fetch(`${API_BASE}/vault/extract-quick`, {
+  const res = await fetch(`${API_BASE}/ocr/extract`, {
     method: 'POST',
     headers,
     body: formData,

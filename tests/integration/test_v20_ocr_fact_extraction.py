@@ -143,10 +143,10 @@ def test_v20_progressive_profile_enrichment_with_income_certificate(
 
 
 def test_v20_quick_extract_for_onboarding_form(client: TestClient):
-    # Ad-hoc extract for anonymous citizen filling /check form
+    # Ad-hoc extract for anonymous citizen filling /check form via dedicated OCR endpoint
     aadhaar_bytes = b"MOCK_IMAGE_UIDAI_GOVERNMENT_OF_INDIA_AADHAAR_FEMALE_MAHARASHTRA"
     res = client.post(
-        "/vault/extract-quick",
+        "/ocr/extract",
         data={"document_type": "Aadhaar Card"},
         files={"file": ("my_aadhaar.jpg", aadhaar_bytes, "image/jpeg")},
     )
@@ -155,3 +155,12 @@ def test_v20_quick_extract_for_onboarding_form(client: TestClient):
     assert data["detected_document_type"] == "Aadhaar Card"
     assert data["extracted_facts"]["full_name"] is not None
     assert data["extracted_facts"]["gender"] is not None
+
+    # Backward compatibility check for /vault/extract-quick
+    res_compat = client.post(
+        "/vault/extract-quick",
+        data={"document_type": "Aadhaar Card"},
+        files={"file": ("my_aadhaar.jpg", aadhaar_bytes, "image/jpeg")},
+    )
+    assert res_compat.status_code == 200
+
