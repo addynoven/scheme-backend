@@ -1,13 +1,31 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.core.error_handlers import register_error_handlers
+from app.database import SessionLocal
 from app.modules.admin.router import router as admin_router
 from app.modules.auth.router import router as auth_router
+from app.modules.chat.router import router as chat_router
+from app.modules.eligibility.bitmask_engine import bitmask_engine
 from app.modules.eligibility.router import router as eligibility_router
+from app.modules.household.router import router as household_router
 from app.modules.ingestion.router import router as open_data_router
 from app.modules.ocr.router import router as ocr_router
+from app.modules.routing.router import router as routing_router
 from app.modules.schemes.router import router as schemes_router
 from app.modules.vault.router import router as vault_router
+from app.modules.voice.router import router as voice_router
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Warm up in-memory bitmask rule engine on startup
+    db = SessionLocal()
+    try:
+        bitmask_engine.warm_up(db)
+    finally:
+        db.close()
+    yield
 
 API_DESCRIPTION = """
 ## 🏛️ Government Welfare Scheme Navigator & Eligibility API
@@ -94,8 +112,9 @@ TAGS_METADATA = [
 app = FastAPI(
     title="Government Welfare Scheme Navigator API",
     description=API_DESCRIPTION,
-    version="1.0.0",
+    version="2.0.0",
     openapi_tags=TAGS_METADATA,
+    lifespan=lifespan,
     contact={
         "name": "Scheme Navigator Engineering Team",
         "url": "https://github.com/side-project/scheme-backend",
@@ -116,7 +135,7 @@ register_error_handlers(app)
     response_description="System status",
 )
 def health_check():
-    return {"status": "ok", "version": "1.0.0"}
+    return {"status": "ok", "version": "2.0.0", "bitmask_warmed": bitmask_engine.is_warmed}
 
 
 app.include_router(auth_router)
@@ -126,3 +145,7 @@ app.include_router(ocr_router)
 app.include_router(vault_router)
 app.include_router(open_data_router)
 app.include_router(admin_router)
+app.include_router(routing_router)
+app.include_router(chat_router)
+app.include_router(voice_router)
+app.include_router(household_router)
