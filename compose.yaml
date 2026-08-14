@@ -65,6 +65,8 @@ services:
         condition: service_healthy
       minio-createbuckets:
         condition: service_completed_successfully
+    env_file:
+      - .env
     environment:
       - DATABASE_URL=postgresql+psycopg://scheme_user:scheme_password@postgres:5432/scheme_db
       - S3_ENDPOINT_URL=http://minio:9000
@@ -81,6 +83,7 @@ services:
       - "8000:8000"
     volumes:
       - ./app:/app/app
+      - ./knowledge:/app/knowledge
       - ./alembic:/app/alembic
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

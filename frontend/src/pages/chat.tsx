@@ -101,18 +101,33 @@ export default function ChatPage() {
     setStreamBuffer('')
     setStreamCitations([])
 
+    let accumulatedText = ''
+    let accumulatedCitations: string[] = []
+
     try {
       await streamChatMessage(
         activeSessionId,
         userText,
         (token, citations) => {
-          setStreamBuffer((prev) => prev + token)
+          accumulatedText += token
+          setStreamBuffer(accumulatedText)
           if (citations && citations.length > 0) {
-            setStreamCitations((prev) => Array.from(new Set([...prev, ...citations])))
+            accumulatedCitations = Array.from(new Set([...accumulatedCitations, ...citations]))
+            setStreamCitations(accumulatedCitations)
           }
         },
         async () => {
           setIsStreaming(false)
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now() + 1,
+              role: 'assistant',
+              content: accumulatedText,
+              citations: accumulatedCitations,
+              created_at: new Date().toISOString(),
+            },
+          ])
           setStreamBuffer('')
           setStreamCitations([])
           await loadSessionMessages(activeSessionId)
@@ -120,7 +135,17 @@ export default function ChatPage() {
         async (err) => {
           console.warn('SSE fallback to standard HTTP POST:', err)
           try {
-            await sendChatMessage(activeSessionId, userText)
+            const resp = await sendChatMessage(activeSessionId, userText)
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: resp.id,
+                role: 'assistant',
+                content: resp.content,
+                citations: resp.citations || [],
+                created_at: resp.created_at,
+              },
+            ])
             await loadSessionMessages(activeSessionId)
           } catch (postErr: any) {
             setError(postErr.message || 'Failed to send message')

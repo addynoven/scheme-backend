@@ -31,11 +31,6 @@ export default function LoginPage() {
     }
   }
 
-  const fillDemoAccount = () => {
-    setEmail('citizen.ramesh@example.com')
-    setPassword('SecurePass123!')
-  }
-
   return (
     <div className="max-w-md mx-auto my-8">
       <div className="text-center mb-8">
@@ -107,14 +102,28 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-zinc-800/80">
+        <div className="mt-6 pt-6 border-t border-zinc-800/80 space-y-2">
           <button
             type="button"
-            onClick={fillDemoAccount}
+            onClick={() => {
+              setEmail('admin@gov.in')
+              setPassword('AdminPassword123!')
+            }}
+            className="w-full py-2.5 px-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-xs font-semibold text-purple-300 transition-colors flex items-center justify-center gap-2"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-purple-400" />
+            <span>Use Admin / Citizen Account (admin@gov.in)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('citizen.ramesh@example.com')
+              setPassword('SecurePass123!')
+            }}
             className="w-full py-2.5 px-3 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-xs font-semibold text-blue-300 transition-colors flex items-center justify-center gap-2"
           >
             <Sparkles className="h-3.5 w-3.5 text-blue-400" />
-            <span>Use Demo Citizen Profile (Rajesh Sharma)</span>
+            <span>Use Demo Citizen Profile (Ramesh Chandra Patel)</span>
           </button>
         </div>
 

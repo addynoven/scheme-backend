@@ -225,6 +225,9 @@ class IntelligentQueryRouter:
         if is_greeting:
             citations = []
             matches = []
+        elif not citations and matches:
+            for m in matches[:3]:
+                citations.append(f"knowledge/schemes/{m['slug']}.md")
 
         # Step 4: Synthesize Response
         synthesizer_ctx = SynthesizerContext(
@@ -278,7 +281,7 @@ class IntelligentQueryRouter:
 
         schemes_str = ""
         if ctx.sql_eligibility_matches and not is_greeting:
-            schemes_str = "Relevant Welfare Schemes from Database:\n"
+            schemes_str = "Worker 1: Deterministic SQL & Bitmask Scheme Matches:\n"
             for m in ctx.sql_eligibility_matches[:6]:
                 schemes_str += (
                     f"- [{m['name']}](/schemes/{m['slug']})\n"
@@ -288,6 +291,18 @@ class IntelligentQueryRouter:
                     f"  Application Portal: {m.get('application_url')}\n"
                 )
 
+        okf_str = ""
+        if ctx.okf_documents_content and not is_greeting:
+            okf_str = "Worker 2: Canonical OKF Knowledge Files (Document & Eligibility Rules):\n"
+            for doc in ctx.okf_documents_content[:3]:
+                path = doc.get("path", "")
+                content = doc.get("content", "")[:500]
+                okf_str += f"--- Source ({path}) ---\n{content}\n\n"
+
+        web_str = ""
+        if ctx.web_agent_live_facts and not is_greeting:
+            web_str = f"Worker 3: Live Web & Portal Announcements:\n{ctx.web_agent_live_facts}\n"
+
         history_str = ""
         if ctx.chat_history:
             history_str = "Conversation History:\n"
@@ -296,27 +311,36 @@ class IntelligentQueryRouter:
 
         system_instruction = (
             "You are the Sovereign Citizen Welfare AI Advisor for Scheme Navigator (India).\n"
-            "Your goal is to provide accurate, empathetic, and actionable guidance regarding Indian Central & State Government Welfare Schemes (such as PM Mudra, PMEGP, PM-Kisan, Ayushman Bharat, Ladli Behna, Mukhyamantri Udyami / Udyam Kranti Yojana, scholarships, housing, loans, pensions).\n"
+            "Your goal is to synthesize the worker findings (SQL Rules, OKF Canonical Docs, and Live Web Facts) into an accurate, empathetic, and actionable response for the citizen.\n"
             "Rules:\n"
             "1. Language: Answer naturally in the same language as the citizen's query (Hindi, Hinglish, English, etc.).\n"
-            "2. Business in MP/India: If the citizen asks about starting a business or loans in Madhya Pradesh / India, explicitly detail PM Mudra Yojana (Shishu/Kishor/Tarun loans up to ₹10-20 Lakhs collateral-free), PMEGP (25-35% capital subsidy), and MP Mukhyamantri Udyam Kranti Yojana, along with required documents (Aadhaar, Project Report, Bank Passbook).\n"
-            "3. Greetings / Short messages ('hi', 'h', 't', 'namaste'): Greet them politely by name (if available in profile) and ask how you can help them navigate welfare programs (business, agriculture, scholarships, healthcare, pensions).\n"
-            "4. Markdown Links: Format scheme names with markdown links in format: [Scheme Name](/schemes/{slug}).\n"
-            "5. Structure: Keep responses clear, professional, and easy to read with bullet points."
+            "2. Grounding: Rely on the verified SQL matches and OKF canonical guidelines provided in the context.\n"
+            "3. Business in MP/India: If the citizen asks about starting a business or loans in Madhya Pradesh / India, detail PM Mudra Yojana (loans up to ₹10-20 Lakhs collateral-free), PMEGP (25-35% subsidy), and MP Mukhyamantri Udyam Kranti Yojana, and specify required documents (Aadhaar, Project Report, Bank Passbook).\n"
+            "4. Greetings / Short messages ('hi', 'h', 't', 'namaste'): Greet them politely by name (if available in profile) and ask how you can help them navigate welfare programs.\n"
+            "5. Markdown Links: Format scheme names with markdown links in format: [Scheme Name](/schemes/{slug}).\n"
+            "6. Structure: Keep responses clear, professional, and easy to read with bullet points."
         )
 
-        user_content = f"{profile_str}\n\n{schemes_str}\n\n{history_str}\n\nCitizen Question: {ctx.original_query}"
+        user_content = f"{profile_str}\n\n{schemes_str}\n\n{okf_str}\n\n{web_str}\n\n{history_str}\n\nCitizen Question: {ctx.original_query}"
 
         payload = {
             "system_instruction": {"parts": [{"text": system_instruction}]},
             "contents": [{"parts": [{"text": user_content}]}],
             "generationConfig": {
                 "temperature": 0.3,
-                "maxOutputTokens": 800,
+                "maxOutputTokens": 2048,
             },
         }
 
-        models_to_try = [settings.GEMINI_MODEL or "gemini-3.5-flash", "gemini-3-flash-preview", "gemini-2.5-flash"]
+        models_to_try = [
+            settings.GEMINI_MODEL or "gemini-flash-latest",
+            "gemini-flash-latest",
+            "gemini-flash-lite-latest",
+            "gemini-3.5-flash-lite",
+            "gemini-3.7-flash",
+            "gemini-3.1-flash-lite",
+            "gemini-2.5-flash-lite",
+        ]
         for model_name in models_to_try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
             req = urllib.request.Request(
