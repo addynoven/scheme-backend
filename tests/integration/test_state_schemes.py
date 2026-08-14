@@ -1,23 +1,14 @@
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
-from app.database import SessionLocal
-from app.main import app
 from app.seeds.seed_national_schemes import seed_national_schemes
 
 
 @pytest.fixture(autouse=True)
-def ensure_schemes_seeded():
-    db = SessionLocal()
-    try:
-        seed_national_schemes(db)
-    finally:
-        db.close()
+def ensure_schemes_seeded(db_session: Session):
+    seed_national_schemes(db_session)
 
-
-@pytest.fixture
-def client():
-    return TestClient(app)
 
 
 def test_mp_state_farmer_receives_both_national_and_state_benefits(client: TestClient):
@@ -148,3 +139,33 @@ def test_state_filter_on_schemes_api(client: TestClient):
     slugs = [item["slug"] for item in res_search.json()["items"]]
     assert "mp-kisan-kalyan-yojana" in slugs
     assert any("kisan" in s for s in slugs)
+
+
+def test_mp_st_student_matches_class_9_10_scholarship(client: TestClient):
+    """
+    Raju from Madhya Pradesh:
+    - 15 years old, Male, Student, Caste: ST, State: Madhya Pradesh.
+    - Expected Match: State Government ST Scholarship (Class 9 to 10).
+    """
+    payload = {
+        "age": 15,
+        "gender": "male",
+        "state": "Madhya Pradesh",
+        "district": "Dhar",
+        "annual_income": 80000,
+        "occupation": "student",
+        "caste_category": "ST",
+    }
+
+    response = client.post("/eligibility/explain", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+
+    eligible_slugs = [s["scheme_slug"] for s in data["eligible_schemes"]]
+    assert "mp-st-scholarship-class-9-10" in eligible_slugs
+
+    st_scheme = next(s for s in data["eligible_schemes"] if s["scheme_slug"] == "mp-st-scholarship-class-9-10")
+    assert st_scheme["match_percentage"] == 100.0
+    assert any(c["field"] == "caste_category" and c["status"] == "passed" for c in st_scheme["passed_criteria"])
+
+

@@ -10,7 +10,7 @@ def test_national_schemes_seeding_and_idempotency(
     # 1. First Run -> Seeds all schemes
     count1 = seed_national_schemes(db_session)
     assert count1 == len(NATIONAL_SCHEMES_DATA)
-    assert count1 == 19
+    assert count1 == 20
 
     # 2. Second Run -> Idempotent, doesn't duplicate or fail
     count2 = seed_national_schemes(db_session)
@@ -20,7 +20,7 @@ def test_national_schemes_seeding_and_idempotency(
     res = client.get("/schemes?limit=50")
     assert res.status_code == 200
     data = res.json()
-    assert data["total"] == 19
+    assert data["total"] == 20
 
     # 4. Verify Categories breakdown endpoint
     res_cats = client.get("/schemes/categories")

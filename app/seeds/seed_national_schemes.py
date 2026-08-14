@@ -473,6 +473,48 @@ NATIONAL_AND_STATE_SCHEMES_DATA = [
             {"title": "MP State Scholarship Portal", "url": "http://scholarshipportal.mp.nic.in", "source_type": "portal"}
         ],
     },
+    {
+        "name": "State Government ST Scholarship (Class 9 to 10)",
+        "slug": "mp-st-scholarship-class-9-10",
+        "state": "Madhya Pradesh",
+        "category": "Education",
+        "tags": "scholarship, student, class 9, class 10, pre-matric, scheduled tribe, st, shiksha portal, tribal affairs, madhya pradesh, dbt",
+        "ministry": "Tribal Affairs Department, Government of Madhya Pradesh",
+        "description": "Pre-matric scholarship scheme launched by the Tribal Affairs Department, Government of Madhya Pradesh, providing annual financial assistance to Scheduled Tribe (ST) students in Classes 9 and 10 with no family income limit.",
+        "status": "active",
+        "application_url": "https://shikshaportal.mp.gov.in",
+        "official_website": "https://cmhelpline.mp.gov.in/KnowYourEntitleDetail.aspx?Schemeid=891",
+        "benefits": [
+            {
+                "title": "₹600/year Scholarship for Boys (Class 9-10)",
+                "description": "Direct Benefit Transfer (DBT) of ₹600 per academic year transferred into the student's Aadhaar-linked bank account.",
+            },
+            {
+                "title": "₹1,300/year Scholarship for Girls (Class 9-10)",
+                "description": "Direct Benefit Transfer (DBT) of ₹1,300 per academic year transferred into the student's Aadhaar-linked bank account.",
+            }
+        ],
+        "eligibility_rules": [
+            {"field_name": "state", "operator": "eq", "rule_value": "Madhya Pradesh"},
+            {"field_name": "caste_category", "operator": "eq", "rule_value": "ST"},
+            {"field_name": "occupation", "operator": "eq", "rule_value": "student"},
+            {"field_name": "age", "operator": "between", "rule_value": "13-18"},
+        ],
+        "required_documents": [
+            {"document_name": "Aadhaar Card", "description": "Student Aadhaar identity proof", "is_mandatory": True},
+            {"document_name": "Caste Certificate", "description": "Official Scheduled Tribe (ST) certificate", "is_mandatory": True},
+            {"document_name": "Domicile Certificate", "description": "Madhya Pradesh resident/domicile certificate", "is_mandatory": True},
+            {"document_name": "Samagra Family ID", "description": "9-digit MP Samagra member ID", "is_mandatory": True},
+            {"document_name": "Bank Passbook", "description": "Student bank account details for direct benefit transfer", "is_mandatory": True},
+            {"document_name": "Passport-size Photograph", "description": "Recent passport size photo", "is_mandatory": False},
+        ],
+        "official_sources": [
+            {"title": "MP Shiksha Portal", "url": "https://shikshaportal.mp.gov.in", "source_type": "portal"},
+            {"title": "CM Helpline Entitlement Details", "url": "https://cmhelpline.mp.gov.in/KnowYourEntitleDetail.aspx?Schemeid=891", "source_type": "official_circular"},
+            {"title": "MyScheme National Portal - SGSTSC9T10", "url": "https://www.myscheme.gov.in/schemes/sgstsc9t10", "source_type": "portal"},
+            {"title": "AIGGPA MP Social Protection Guidelines", "url": "https://aiggpa.mp.gov.in/uploads/publication/Social_Protection_Eng.pdf", "source_type": "guidelines_pdf"},
+        ],
+    },
 
     # =========================================================================
     # 3. MAHARASHTRA (MH) STATE FLAGSHIP SCHEMES
