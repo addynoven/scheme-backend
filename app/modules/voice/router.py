@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, UploadFile, WebSocket, Query
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user_optional, get_db
+from app.database import SessionLocal
 from app.modules.auth.models import User
+from app.modules.voice.live_gateway import live_voice_gateway
 from app.modules.voice.schemas import (
     VoiceChatResponse,
     VoiceSynthesisRequest,
@@ -10,8 +12,35 @@ from app.modules.voice.schemas import (
     VoiceTranscriptionResponse,
 )
 from app.modules.voice.service import voice_service
+from app.modules.voice.tools import VOICE_AGENT_TOOLS
 
 router = APIRouter(prefix="/voice", tags=["Voice-First Multilingual Speech Engine"])
+
+
+@router.get("/tools")
+def get_voice_agent_tools():
+    """
+    Returns MCP / Gemini-Compliant Tool Declarations for Live Voice RPC.
+    """
+    return {"tools": VOICE_AGENT_TOOLS}
+
+
+@router.websocket("/live")
+async def live_voice_websocket_endpoint(
+    websocket: WebSocket,
+):
+    """
+    Real-Time Bidirectional Voice Call with Grounded Tool Calling (WebSocket Gateway).
+    """
+    db = SessionLocal()
+    try:
+        await live_voice_gateway.handle_client_session(
+            websocket=websocket,
+            db=db,
+            current_user=None,
+        )
+    finally:
+        db.close()
 
 
 @router.post("/transcribe", response_model=VoiceTranscriptionResponse)
