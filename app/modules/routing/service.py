@@ -239,14 +239,20 @@ class IntelligentQueryRouter:
         lang = ctx.detected_language
         matches = ctx.sql_eligibility_matches
         okf_docs = ctx.okf_documents_content
+        has_profile = bool(ctx.chat_history or (matches and any(m.get("match_score", 0) > 0 for m in matches)))
 
         # Hindi / Hinglish Response Generation
         if lang in ["hi", "hinglish"]:
             if matches:
                 top = matches[0]
+                greeting = (
+                    "**हाँ! आपकी आवश्यकता के अनुसार निम्नलिखित प्रमुख सरकारी योजनाएं उपलब्ध हैं:**"
+                    if not has_profile
+                    else "**हाँ! आपके विवरण के अनुसार आप निम्नलिखित प्रमुख सरकारी योजनाओं के लिए पात्र हैं:**"
+                )
                 lines = [
-                    f"**हाँ! आपके विवरण के अनुसार आप निम्नलिखित प्रमुख सरकारी योजनाओं के लिए पात्र हैं:**",
-                    f"\n### 1. [{top['name']}](knowledge/schemes/{top['slug']}.md)",
+                    greeting,
+                    f"\n### 1. [{top['name']}](/schemes/{top['slug']})",
                     f"- **लाभ:** {top['benefit_title']}",
                     f"- **विभाग:** {top['ministry']}",
                     f"- **आधिकारिक पोर्टल:** [{top['application_url'] or 'पोर्टल पर जाएं'}]({top['application_url'] or '#'})",
@@ -254,7 +260,7 @@ class IntelligentQueryRouter:
                 if len(matches) > 1:
                     lines.append("\n**अन्य संबंधित योजनाएं:**")
                     for m in matches[1:4]:
-                        lines.append(f"- **[{m['name']}](knowledge/schemes/{m['slug']}.md)** ({m['category']}) — {m['benefit_title']}")
+                        lines.append(f"- **[{m['name']}](/schemes/{m['slug']})** ({m['category']}) — {m['benefit_title']}")
 
                 if okf_docs:
                     lines.append("\n**आवश्यक दस्तावेज़ एवं आवेदन प्रक्रिया:**")
@@ -271,9 +277,14 @@ class IntelligentQueryRouter:
         # Default English Response Generation
         if matches:
             top = matches[0]
+            greeting = (
+                "Here are the **government welfare programs & scholarships** matching your request:"
+                if not has_profile
+                else "Based on your criteria, you are **eligible** for the following welfare programs:"
+            )
             lines = [
-                f"Based on your profile, you are **eligible** for the following welfare programs:",
-                f"\n### 1. [{top['name']}](knowledge/schemes/{top['slug']}.md)",
+                greeting,
+                f"\n### 1. [{top['name']}](/schemes/{top['slug']})",
                 f"- **Benefit:** {top['benefit_title']}",
                 f"- **Governing Department:** {top['ministry']}",
                 f"- **Official Application Portal:** [{top['application_url'] or 'Access Portal'}]({top['application_url'] or '#'})",
@@ -281,12 +292,19 @@ class IntelligentQueryRouter:
             if len(matches) > 1:
                 lines.append("\n**Additional Matching Schemes:**")
                 for m in matches[1:4]:
-                    lines.append(f"- **[{m['name']}](knowledge/schemes/{m['slug']}.md)** ({m['category']}): {m['benefit_title']}")
+                    lines.append(f"- **[{m['name']}](/schemes/{m['slug']})** ({m['category']}): {m['benefit_title']}")
 
             if okf_docs:
                 lines.append("\n**Checklist & Guidelines:**")
                 lines.append("- Ensure you have your verified Aadhaar Card, Income Certificate, and Bank Passbook ready.")
                 lines.append(f"- Submit your application via the official state portal: {top['application_url']}.")
+
+            return "\n".join(lines)
+        else:
+            return (
+                "Hello! We couldn't find a direct matching scheme for your specific query. "
+                "Please mention your state, age, student/occupation status, or annual household income so we can find exact benefits for you."
+            )
 
             return "\n".join(lines)
 

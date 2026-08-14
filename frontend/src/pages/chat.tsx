@@ -6,7 +6,6 @@ import {
   Bot,
   User,
   PlusCircle,
-  ExternalLink,
   ShieldCheck,
   Loader2,
 } from 'lucide-react'
@@ -19,6 +18,7 @@ import {
   streamChatMessage,
   sendChatMessage,
 } from '@/lib/api'
+import { MarkdownMessage } from '@/components/MarkdownMessage'
 
 export default function ChatPage() {
   const [sessions, setSessions] = useState<ChatSession[]>([])
@@ -217,23 +217,36 @@ export default function ChatPage() {
                 className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-4 text-xs sm:text-sm leading-relaxed ${
                   m.role === 'user'
                     ? 'bg-blue-600 text-white rounded-br-none shadow-md shadow-blue-600/10'
-                    : 'bg-zinc-950/80 border border-zinc-800/80 text-zinc-200 rounded-bl-none'
+                    : 'bg-zinc-950/80 border border-zinc-800/80 text-zinc-200 rounded-bl-none shadow-sm'
                 }`}
               >
-                <div className="whitespace-pre-wrap">{m.content}</div>
+                {m.role === 'assistant' ? (
+                  <MarkdownMessage content={m.content} />
+                ) : (
+                  <div className="whitespace-pre-wrap">{m.content}</div>
+                )}
 
                 {/* Citations Pill */}
                 {m.citations && m.citations.length > 0 && (
-                  <div className="mt-3 pt-2.5 border-t border-zinc-800 flex flex-wrap gap-1.5">
-                    {m.citations.map((c, i) => (
-                      <span
-                        key={i}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-950/80 text-blue-300 border border-blue-800/40 text-[10px]"
-                      >
-                        <ExternalLink className="h-2.5 w-2.5" />
-                        <span>{c}</span>
-                      </span>
-                    ))}
+                  <div className="mt-3 pt-2.5 border-t border-zinc-800/80 flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] text-zinc-500 font-medium mr-1">Sources:</span>
+                    {m.citations.map((c, i) => {
+                      const cleanLabel = c
+                        .replace('knowledge/schemes/', '')
+                        .replace('knowledge/documents/', '')
+                        .replace('.md', '')
+                        .replace(/-/g, ' ')
+
+                      return (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-950/60 text-blue-300 border border-blue-800/40 text-[10px]"
+                        >
+                          <ShieldCheck className="h-2.5 w-2.5 text-emerald-400" />
+                          <span className="capitalize">{cleanLabel}</span>
+                        </span>
+                      )
+                    })}
                   </div>
                 )}
               </div>
@@ -252,16 +265,17 @@ export default function ChatPage() {
               <div className="h-8 w-8 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0 mt-0.5">
                 <Bot className="h-4 w-4" />
               </div>
-              <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-bl-none p-4 bg-zinc-950/80 border border-zinc-800/80 text-zinc-200 text-xs sm:text-sm leading-relaxed">
-                <div className="whitespace-pre-wrap">{streamBuffer || 'Typing response...'}</div>
+              <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl rounded-bl-none p-4 bg-zinc-950/80 border border-zinc-800/80 text-zinc-200 text-xs sm:text-sm leading-relaxed shadow-sm">
+                <MarkdownMessage content={streamBuffer || 'Typing response...'} />
                 {streamCitations.length > 0 && (
-                  <div className="mt-3 pt-2.5 border-t border-zinc-800 flex flex-wrap gap-1.5">
+                  <div className="mt-3 pt-2.5 border-t border-zinc-800/80 flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] text-zinc-500 font-medium mr-1">Sources:</span>
                     {streamCitations.map((c, i) => (
                       <span
                         key={i}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-950/80 text-blue-300 border border-blue-800/40 text-[10px]"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-950/60 text-blue-300 border border-blue-800/40 text-[10px]"
                       >
-                        <ExternalLink className="h-2.5 w-2.5" />
+                        <ShieldCheck className="h-2.5 w-2.5 text-emerald-400" />
                         <span>{c}</span>
                       </span>
                     ))}
