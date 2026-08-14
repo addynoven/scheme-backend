@@ -6,61 +6,60 @@ ministry: "Tribal Affairs Department, Government of Madhya Pradesh"
 government_level: "state"
 state: "Madhya Pradesh"
 category: "Education"
-benefit_type: "Direct Benefit Transfer (DBT)"
-benefit_amount_inr: 1300
-benefit_frequency: "Annual"
 official_portal: "https://shikshaportal.mp.gov.in"
-last_verified_at: "2026-08-14"
-source_circular_no: "CMHelpline-891"
+status: "active"
 related_documents:
   - "aadhaar-card"
-  - "caste-certificate-st"
-  - "domicile-certificate-mp"
-  - "samagra-id"
+  - "caste-certificate"
+  - "domicile-certificate"
+  - "samagra-family-id"
   - "bank-passbook"
+  - "passport-size-photograph"
 tags:
   - "scholarship"
   - "student"
-  - "class-9"
-  - "class-10"
+  - "class 9"
+  - "class 10"
   - "pre-matric"
-  - "scheduled-tribe"
+  - "scheduled tribe"
   - "st"
-  - "madhya-pradesh"
+  - "shiksha portal"
+  - "tribal affairs"
+  - "madhya pradesh"
+  - "dbt"
 ---
 
 # State Government ST Scholarship (Class 9 to 10)
 
-## 1. Overview & Objectives
-The **State Government ST Scholarship (Class 9 to 10)** is a flagship pre-matric welfare scheme launched by the **Tribal Affairs Department, Government of Madhya Pradesh**. It aims to encourage education among Scheduled Tribe (ST) students, reduce school dropout rates between middle and secondary school, and improve educational outcomes in tribal communities.
+## 1. Overview & Objective
+Pre-matric scholarship scheme launched by the Tribal Affairs Department, Government of Madhya Pradesh, providing annual financial assistance to Scheduled Tribe (ST) students in Classes 9 and 10 with no family income limit.
 
-## 2. Key Benefits
-Scholarships are disbursed directly into the verified bank account of the student via Direct Benefit Transfer (DBT):
-- **Boys (Classes 9 & 10):** ₹600 per academic year.
-- **Girls (Classes 9 & 10):** ₹1,300 per academic year.
+## 2. Benefits & Financial Assistance
+- **₹600/year Scholarship for Boys (Class 9-10):** Direct Benefit Transfer (DBT) of ₹600 per academic year transferred into the student's Aadhaar-linked bank account.
+- **₹1,300/year Scholarship for Girls (Class 9-10):** Direct Benefit Transfer (DBT) of ₹1,300 per academic year transferred into the student's Aadhaar-linked bank account.
 
-## 3. Eligibility Criteria
-1. **Resident:** Must be a bona fide resident/native of Madhya Pradesh.
-2. **Category:** Must belong to the **Scheduled Tribe (ST)** category.
-3. **Class Enrollment:** Must be actively studying in **Class 9 or Class 10** in a recognized government, aided, or private school.
-4. **Income Ceiling:** **Zero income restriction** (There is no upper limit on family annual income).
-5. **Academic Continuity:** Eligible for scholarship renewal even if the student fails for 1 year.
+## 3. Eligibility Criteria (Deterministic Rules)
+- `state eq Madhya Pradesh`
+- `caste_category eq ST`
+- `occupation eq student`
+- `age between 13-18`
 
-## 4. Application Process (Offline -> School Portal)
-1. Eligible students provide their basic documents to the **Principal / Designated Nodal Teacher** of their school.
-2. The educational institution verifies the student's credentials and enters the profile on the official **[MP Shiksha Portal](https://shikshaportal.mp.gov.in/)**.
-3. Once sanctioned by the District Tribal Welfare Officer, funds are credited directly to the student's Aadhaar-seeded bank account.
+## 4. Required Documents Checklist
+- **Aadhaar Card** (Mandatory): Student Aadhaar identity proof
+- **Caste Certificate** (Mandatory): Official Scheduled Tribe (ST) certificate
+- **Domicile Certificate** (Mandatory): Madhya Pradesh resident/domicile certificate
+- **Samagra Family ID** (Mandatory): 9-digit MP Samagra member ID
+- **Bank Passbook** (Mandatory): Student bank account details for direct benefit transfer
+- **Passport-size Photograph** (Optional): Recent passport size photo
 
-## 5. Required Documents
-- **Aadhaar Card** (Identity proof)
-- **Scheduled Tribe (ST) Caste Certificate** (Digital certificate issued by SDM/Tehsildar)
-- **MP Domicile / Mool Niwas Certificate**
-- **Samagra Member ID** (9-digit MP Social Security ID)
-- **Bank Account Passbook** (Aadhaar-linked DBT enabled account)
-- **Passport-size Photograph**
+## 5. Application Procedure
+1. Verify that your citizen profile satisfies the eligibility rules listed above.
+2. Ensure you have the required documents uploaded and verified in your Document Vault.
+3. Access the official application portal: [https://shikshaportal.mp.gov.in](https://shikshaportal.mp.gov.in).
+4. Submit the verified application with your registration number.
 
-## 6. Official Sources & Citations
-- **MP Shiksha Portal:** [shikshaportal.mp.gov.in](https://shikshaportal.mp.gov.in/)
-- **CM Helpline Entitlement Details:** [CM Helpline Scheme #891](https://cmhelpline.mp.gov.in/KnowYourEntitleDetail.aspx?Schemeid=891)
-- **MyScheme National Portal:** [MyScheme SGSTSC9T10](https://www.myscheme.gov.in/schemes/sgstsc9t10)
-- **AIGGPA Social Protection Guidelines:** [AIGGPA Publications (Page 73)](https://aiggpa.mp.gov.in/uploads/publication/Social_Protection_Eng.pdf)
+## 6. Official Sources & Gazette References
+- [MP Shiksha Portal](https://shikshaportal.mp.gov.in) (portal)
+- [CM Helpline Entitlement Details](https://cmhelpline.mp.gov.in/KnowYourEntitleDetail.aspx?Schemeid=891) (official_circular)
+- [MyScheme National Portal - SGSTSC9T10](https://www.myscheme.gov.in/schemes/sgstsc9t10) (portal)
+- [AIGGPA MP Social Protection Guidelines](https://aiggpa.mp.gov.in/uploads/publication/Social_Protection_Eng.pdf) (guidelines_pdf)
