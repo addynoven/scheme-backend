@@ -219,10 +219,12 @@ class IntelligentQueryRouter:
                 okf_docs_content.append({"path": rel_path, "content": content})
                 citations.append(rel_path)
 
-        # If no specific OKF path found, link matched schemes
-        if not citations and matches:
-            for m in matches[:3]:
-                citations.append(f"knowledge/schemes/{m['slug']}.md")
+        # If query is a greeting or short letter, do not attach scheme citations or execute heavy bitmask
+        clean_q = raw_query.strip().lower()
+        is_greeting = clean_q in ["hi", "hello", "hey", "namaste", "h", "t", "hola", "pranam", "kya haal hai", "k"] or len(clean_q) <= 2
+        if is_greeting:
+            citations = []
+            matches = []
 
         # Step 4: Synthesize Response
         synthesizer_ctx = SynthesizerContext(
@@ -230,15 +232,15 @@ class IntelligentQueryRouter:
             chat_history=chat_history or [],
             detected_language=plan.detected_language,
             sql_eligibility_matches=matches[:6],
-            okf_documents_content=okf_docs_content,
-            web_agent_live_facts="Application portal is accepting active registrations for the current fiscal cycle." if plan.web_agent_query else None,
+            okf_documents_content=okf_docs_content if not is_greeting else [],
+            web_agent_live_facts="Application portal is accepting active registrations for the current fiscal cycle." if (plan.web_agent_query and not is_greeting) else None,
         )
 
         response_text = self._synthesize_answer(synthesizer_ctx, user_profile)
 
         return QueryRouteResponse(
             query=raw_query,
-            route_used=plan.route_target,
+            route_used=RouteType.HYBRID_RAG if is_greeting else plan.route_target,
             plan=plan,
             response_text=response_text,
             citations=citations,
@@ -343,10 +345,42 @@ class IntelligentQueryRouter:
         llm_answer = self._generate_answer_with_gemini(ctx, user_profile)
         if llm_answer:
             return llm_answer
+
         lang = ctx.detected_language
         matches = ctx.sql_eligibility_matches
         okf_docs = ctx.okf_documents_content
         has_profile = bool(ctx.chat_history or (matches and any(m.get("match_score", 0) > 0 for m in matches)))
+
+        clean_q = ctx.original_query.strip().lower()
+        is_greeting = clean_q in ["hi", "hello", "hey", "namaste", "h", "t", "hola", "pranam", "kya haal hai", "k"] or len(clean_q) <= 2
+        citizen_name = (user_profile.get("full_name") or "").strip() if user_profile else ""
+        greeting_name = f" {citizen_name}" if citizen_name else ""
+
+        if is_greeting:
+            if lang in ["hi", "hinglish"]:
+                return (
+                    f"नमस्ते{greeting_name}! 🙏 मैं आपका **सॉवरेन वेलफेयर एआई सलाहकार** हूँ।\n\n"
+                    "मैं आपको केंद्र व राज्य सरकार की प्रमुख जनकल्याणकारी योजनाओं की जानकारी देने के लिए यहाँ हूँ।\n\n"
+                    "आप मुझसे निम्नलिखित विषयों पर पूछ सकते हैं:\n"
+                    "- 💼 **स्वरोजगार व बिजनेस लोन:** (जैसे [पीएम मुद्रा योजना](/schemes/pm-mudra-yojana), PMEGP, मुख्यमंत्री उद्यम क्रांति)\n"
+                    "- 🎓 **शिक्षा व छात्रवृत्ति:** (जैसे मेधावी विद्यार्थी योजना, पोस्ट-मैट्रिक स्कॉलरशिप)\n"
+                    "- 🌾 **कृषि व किसान सम्मान:** (जैसे [पीएम-किसान](/schemes/pm-kisan))\n"
+                    "- 🏥 **स्वास्थ्य व सुरक्षा:** (जैसे [आयुष्मान भारत](/schemes/ayushman-bharat-pmjay), लाडली बहना)\n"
+                    "- 🏠 **आवास व पेंशन:** (जैसे [पीएम आवास योजना](/schemes/pmay-gramin), अटल पेंशन)\n\n"
+                    "कृपया बताएं मैं आपकी क्या सहायता कर सकता हूँ?"
+                )
+            else:
+                return (
+                    f"Hello{greeting_name}! 👋 I am your **Sovereign Citizen Welfare AI Advisor**.\n\n"
+                    "I am here to help you navigate and unlock government welfare schemes tailored to your household.\n\n"
+                    "You can ask me about:\n"
+                    "- 💼 **Business & MSME Loans:** (e.g. [PM Mudra Yojana](/schemes/pm-mudra-yojana), PMEGP, State Startup Grants)\n"
+                    "- 🎓 **Education & Scholarships:** (e.g. Higher Education Scholarships, Fee Reimbursement)\n"
+                    "- 🌾 **Agriculture & Farmers:** (e.g. [PM-Kisan](/schemes/pm-kisan), Kisan Credit Card)\n"
+                    "- 🏥 **Healthcare & Family Welfare:** (e.g. [Ayushman Bharat PM-JAY](/schemes/ayushman-bharat-pmjay), Women Welfare)\n"
+                    "- 🏠 **Housing & Pensions:** (e.g. [PMAY-Gramin](/schemes/pmay-gramin), Atal Pension Yojana)\n\n"
+                    "What welfare assistance or scheme details are you looking for today?"
+                )
 
         # Hindi / Hinglish Response Generation
         if lang in ["hi", "hinglish"]:
