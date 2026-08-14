@@ -62,18 +62,34 @@ def parse_myscheme_text_or_markdown(raw_text: str, fallback_slug: str | None = N
     ministry = "Government of India"
     title = "Government Scheme"
 
-    ministry_match = re.search(r"Ministry of ([^\n]+)|Department of ([^\n]+)", full_text, re.IGNORECASE)
+    ministry_match = re.search(r"(?:Ministry of|Department of|Tribal Affairs Department)[^\n,.]+", full_text, re.IGNORECASE)
     if ministry_match:
         ministry = ministry_match.group(0).strip()
 
-    # Title detection (look for first non-metadata heading or title line)
-    for line in lines[:10]:
-        if (
-            not any(kw in line.lower() for kw in ["ministry", "check eligibility", "details", "myscheme", "home"])
-            and len(line) > 5
-        ):
-            title = line
-            break
+    nav_keywords = {
+        "details", "benefits", "eligibility", "application process", "documents required",
+        "sources and references", "frequently asked questions", "feedback", "cancel", "ok",
+        "sign in", "apply now", "back", "home", "check eligibility", "you're being redirected",
+        "something went wrong", "pre-matric", "post-matric"
+    }
+
+    # Title detection
+    quote_title_match = re.search(r'(?:The\s+[\"“\'])([^\"”\']{5,80})(?:[\"”\']\s+scheme)', full_text, re.IGNORECASE)
+    if quote_title_match:
+        title = quote_title_match.group(1).strip()
+    else:
+        for line in lines:
+            cleaned_lower = line.lower().strip()
+            if (
+                cleaned_lower not in nav_keywords
+                and not any(cleaned_lower.startswith(p) for p in ["http", "your mobile", "you have", "it seems", "you're being", "something went", "by proceeding"])
+                and 5 < len(line) < 90
+                and not any(cleaned_lower == s.lower() for s in ["madhya pradesh", "maharashtra", "karnataka", "tamil nadu", "uttar pradesh", "rajasthan", "gujarat", "bihar"])
+            ):
+                title = line.strip()
+                break
+
+
 
     # Determine State / Level
     state = "ALL_INDIA"
