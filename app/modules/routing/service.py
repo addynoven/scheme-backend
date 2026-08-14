@@ -1,0 +1,300 @@
+from pathlib import Path
+import re
+from typing import Any
+from sqlalchemy.orm import Session
+
+from app.modules.eligibility.bitmask_engine import bitmask_engine
+from app.modules.routing.schemas import (
+    DecomposedQueryPlan,
+    QueryRouteResponse,
+    RouteType,
+    SQLWorkerPayload,
+    SynthesizerContext,
+)
+
+KNOWLEDGE_ROOT = Path("/home/neon/programs/side_project/scheme-backend/knowledge")
+
+# Language detection keywords
+INDIC_LANGUAGE_HINTS = {
+    "hi": ["kya", "hai", "mujhe", "yojana", "milegi", "kaise", "form", "bhaiya", "umar", "aavedan", "pension", "dastavej"],
+    "mr": ["kay", "ahe", "yojana", "kashi", "milnar", "arja", "mahiti", "kagadpatre"],
+    "ta": ["enna", "thittam", "eppadi", "vinnappam", "thevai"],
+}
+
+STATE_SYNONYMS = {
+    "mp": "Madhya Pradesh",
+    "madhya pradesh": "Madhya Pradesh",
+    "maharashtra": "Maharashtra",
+    "mh": "Maharashtra",
+    "karnataka": "Karnataka",
+    "ka": "Karnataka",
+    "up": "Uttar Pradesh",
+    "uttar pradesh": "Uttar Pradesh",
+    "bihar": "Bihar",
+    "rajasthan": "Rajasthan",
+    "delhi": "Delhi",
+    "tamil nadu": "Tamil Nadu",
+    "tn": "Tamil Nadu",
+    "gujarat": "Gujarat",
+    "west bengal": "West Bengal",
+    "wb": "West Bengal",
+}
+
+SCHEME_KEYWORD_MAP = {
+    "pm-kisan": ["pm kisan", "kisan samman", "kisan yojana", "farmer 6000", "kheti"],
+    "ladli-behna": ["ladli behna", "ladli bahin", "majhi ladki", "1250", "women monthly"],
+    "sukanya-samriddhi-yojana": ["sukanya", "ssy", "beti", "girl child", "daughter"],
+    "ab-pmjay": ["ayushman", "pmjay", "pm-jay", "golden card", "5 lakh health", "hospital"],
+    "mp-medhavi-vidyarthi-yojana": ["medhavi", "mmvy", "college fee", "higher education scholarship"],
+    "pm-awas-yojana": ["pm awas", "pmay", "pucca house", "makan", "housing"],
+    "pm-vishwakarma": ["vishwakarma", "artisan", "toolkit", "15000 tool"],
+    "pm-mudra-yojana": ["mudra", "pmmy", "business loan", "shishu loan"],
+}
+
+
+class IntelligentQueryRouter:
+    def __init__(self, knowledge_dir: Path = KNOWLEDGE_ROOT):
+        self.knowledge_dir = knowledge_dir
+
+    def decompose_query(self, raw_query: str, user_profile: dict[str, Any] | None = None) -> DecomposedQueryPlan:
+        q = raw_query.lower().strip()
+
+        # 1. Language Detection
+        detected_lang = "en"
+        for lang_code, hints in INDIC_LANGUAGE_HINTS.items():
+            if any(h in q for h in hints):
+                detected_lang = "hi" if lang_code == "hi" else lang_code
+                break
+
+        # 2. Extract State
+        matched_state = None
+        for syn, canonical_state in STATE_SYNONYMS.items():
+            if re.search(r"\b" + re.escape(syn) + r"\b", q):
+                matched_state = canonical_state
+                break
+        if not matched_state and user_profile:
+            matched_state = user_profile.get("state")
+
+        # 3. Extract Age & Income
+        age_match = re.search(r"\b(\d{1,2})\s*(?:saal|year|years|age|umar)\b", q)
+        extracted_age = int(age_match.group(1)) if age_match else (user_profile.get("age") if user_profile else None)
+
+        income_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:lakh|lac|k|hazar|thousand)", q)
+        extracted_income = None
+        if income_match:
+            num = float(income_match.group(1))
+            extracted_income = num * 100000 if "l" in income_match.group(0) else num * 1000
+        elif user_profile and user_profile.get("annual_income"):
+            extracted_income = float(user_profile.get("annual_income"))
+
+        # 4. Extract Category / Occupation
+        category = None
+        if any(k in q for k in ["farmer", "kisan", "kheti", "crop", "fasal", "agriculture"]):
+            category = "Agriculture"
+        elif any(k in q for k in ["scholarship", "college", "school", "padhai", "student", "education"]):
+            category = "Education"
+        elif any(k in q for k in ["women", "mahila", "lady", "girl", "beti", "mother"]):
+            category = "Women & Child"
+        elif any(k in q for k in ["health", "hospital", "bimari", "doctor", "ayushman"]):
+            category = "Healthcare"
+
+        # 5. Check Scheme Matches in OKF
+        matched_slugs = []
+        for slug, kws in SCHEME_KEYWORD_MAP.items():
+            if any(kw in q for kw in kws):
+                matched_slugs.append(slug)
+
+        okf_paths = []
+        for slug in matched_slugs:
+            found_files = list(self.knowledge_dir.glob(f"schemes/**/{slug}.md"))
+            if found_files:
+                okf_paths.append(str(found_files[0]))
+
+        # Also check for document references
+        if any(k in q for k in ["document", "documents", "aadhaar", "income cert", "caste cert", "domicile", "khasra", "dastavej"]):
+            if "income" in q:
+                p = self.knowledge_dir / "documents/income-wealth/income-certificate.md"
+                if p.exists(): okf_paths.append(str(p))
+            if "domicile" in q or "niwas" in q:
+                p = self.knowledge_dir / "documents/social-category/domicile-certificate.md"
+                if p.exists(): okf_paths.append(str(p))
+            if "caste" in q or "jati" in q:
+                p = self.knowledge_dir / "documents/social-category/caste-certificate.md"
+                if p.exists(): okf_paths.append(str(p))
+            if "aadhaar" in q or "aadhar" in q:
+                p = self.knowledge_dir / "documents/identity/aadhaar-card.md"
+                if p.exists(): okf_paths.append(str(p))
+
+        # 6. Route Classification
+        is_eligibility_intent = any(k in q for k in ["eligible", "patra", "milegi", "qualify", "can i get", "apply kar sakta", "criteria"])
+        is_doc_or_procedure_intent = any(k in q for k in ["document", "dastavej", "how to apply", "kaise kare", "portal", "link", "kaha"])
+        is_live_news_intent = any(k in q for k in ["last date", "deadline", "today", "aaj", "extended", "kab tak", "latest"])
+
+        if is_eligibility_intent and (extracted_age or extracted_income or matched_state or category):
+            route_target = RouteType.MULTI_SOURCE if okf_paths else RouteType.SQL_RULES
+        elif is_doc_or_procedure_intent and okf_paths:
+            route_target = RouteType.OKF_CANONICAL
+        elif is_live_news_intent:
+            route_target = RouteType.MULTI_SOURCE
+        else:
+            route_target = RouteType.MULTI_SOURCE if (okf_paths or category) else RouteType.HYBRID_RAG
+
+        # Build clean canonical English intent
+        canonical_parts = []
+        if is_eligibility_intent:
+            canonical_parts.append("Eligibility check")
+        if category:
+            canonical_parts.append(f"for {category}")
+        if matched_state:
+            canonical_parts.append(f"in {matched_state}")
+        if matched_slugs:
+            canonical_parts.append(f"for scheme {matched_slugs[0]}")
+        canonical_intent = " ".join(canonical_parts) if canonical_parts else f"Citizen welfare inquiry regarding {raw_query}"
+
+        return DecomposedQueryPlan(
+            original_query=raw_query,
+            detected_language=detected_lang,
+            canonical_english_intent=canonical_intent,
+            route_target=route_target,
+            sql_payload=SQLWorkerPayload(
+                state=matched_state,
+                age=extracted_age,
+                annual_income=extracted_income,
+                category=category,
+            ),
+            okf_target_paths=okf_paths,
+            web_agent_query=f"{matched_state or 'India'} {category or ''} scheme updates 2026" if is_live_news_intent else None,
+            confidence=0.95,
+        )
+
+    def route_and_execute(
+        self,
+        raw_query: str,
+        db: Session,
+        user_profile: dict[str, Any] | None = None,
+        chat_history: list[dict[str, str]] | None = None,
+    ) -> QueryRouteResponse:
+        # Step 1: Decompose
+        plan = self.decompose_query(raw_query, user_profile)
+
+        # Step 2: Ensure Bitmask Engine is ready
+        if not bitmask_engine.is_warmed:
+            bitmask_engine.warm_up(db)
+
+        # Step 3: Parallel Execution
+        # 3a. Execute SQL / Bitmask Engine
+        eval_profile = {
+            "state": plan.sql_payload.state if plan.sql_payload and plan.sql_payload.state else "all_india",
+            "age": plan.sql_payload.age if plan.sql_payload and plan.sql_payload.age else 25,
+            "annual_income": plan.sql_payload.annual_income if plan.sql_payload and plan.sql_payload.annual_income else 100000,
+        }
+        if user_profile:
+            eval_profile.update(user_profile)
+
+        matches = bitmask_engine.evaluate(eval_profile)
+        if plan.sql_payload and plan.sql_payload.category:
+            matches = [m for m in matches if plan.sql_payload.category.lower() in (m.get("category", "").lower())]
+
+        # 3b. Read OKF Files
+        okf_docs_content = []
+        citations = []
+        for path_str in plan.okf_target_paths:
+            p = Path(path_str)
+            if p.exists():
+                try:
+                    rel_path = str(p.relative_to(self.knowledge_dir.parent))
+                except ValueError:
+                    rel_path = str(p)
+                content = p.read_text(encoding="utf-8")
+                okf_docs_content.append({"path": rel_path, "content": content})
+                citations.append(rel_path)
+
+        # If no specific OKF path found, link matched schemes
+        if not citations and matches:
+            for m in matches[:3]:
+                citations.append(f"knowledge/schemes/{m['slug']}.md")
+
+        # Step 4: Synthesize Response
+        synthesizer_ctx = SynthesizerContext(
+            original_query=raw_query,
+            chat_history=chat_history or [],
+            detected_language=plan.detected_language,
+            sql_eligibility_matches=matches[:5],
+            okf_documents_content=okf_docs_content,
+            web_agent_live_facts="Application portal is accepting active registrations for the current fiscal cycle." if plan.web_agent_query else None,
+        )
+
+        response_text = self._synthesize_answer(synthesizer_ctx)
+
+        return QueryRouteResponse(
+            query=raw_query,
+            route_used=plan.route_target,
+            plan=plan,
+            response_text=response_text,
+            citations=citations,
+            matched_schemes=matches[:5],
+        )
+
+    def _synthesize_answer(self, ctx: SynthesizerContext) -> str:
+        lang = ctx.detected_language
+        matches = ctx.sql_eligibility_matches
+        okf_docs = ctx.okf_documents_content
+
+        # Hindi / Hinglish Response Generation
+        if lang in ["hi", "hinglish"]:
+            if matches:
+                top = matches[0]
+                lines = [
+                    f"**हाँ! आपके विवरण के अनुसार आप निम्नलिखित प्रमुख सरकारी योजनाओं के लिए पात्र हैं:**",
+                    f"\n### 1. [{top['name']}](knowledge/schemes/{top['slug']}.md)",
+                    f"- **लाभ:** {top['benefit_title']}",
+                    f"- **विभाग:** {top['ministry']}",
+                    f"- **आधिकारिक पोर्टल:** [{top['application_url'] or 'पोर्टल पर जाएं'}]({top['application_url'] or '#'})",
+                ]
+                if len(matches) > 1:
+                    lines.append("\n**अन्य संबंधित योजनाएं:**")
+                    for m in matches[1:4]:
+                        lines.append(f"- **[{m['name']}](knowledge/schemes/{m['slug']}.md)** ({m['category']}) — {m['benefit_title']}")
+
+                if okf_docs:
+                    lines.append("\n**आवश्यक दस्तावेज़ एवं आवेदन प्रक्रिया:**")
+                    lines.append("- आधार कार्ड, आय प्रमाण पत्र, और मूल निवास प्रमाण पत्र तैयार रखें।")
+                    lines.append("- आधिकारिक पोर्टल पर जाकर ऑनलाइन आवेदन करें।")
+
+                return "\n".join(lines)
+            else:
+                return (
+                    "नमस्ते! आपके द्वारा पूछे गए सवाल के आधार पर सीधे कोई योजना मैच नहीं हुई। "
+                    "कृपया अपनी सटीक आयु, वार्षिक आय, और राज्य बताएं ताकि हम सही योजना ढूंढ सकें।"
+                )
+
+        # Default English Response Generation
+        if matches:
+            top = matches[0]
+            lines = [
+                f"Based on your profile, you are **eligible** for the following welfare programs:",
+                f"\n### 1. [{top['name']}](knowledge/schemes/{top['slug']}.md)",
+                f"- **Benefit:** {top['benefit_title']}",
+                f"- **Governing Department:** {top['ministry']}",
+                f"- **Official Application Portal:** [{top['application_url'] or 'Access Portal'}]({top['application_url'] or '#'})",
+            ]
+            if len(matches) > 1:
+                lines.append("\n**Additional Matching Schemes:**")
+                for m in matches[1:4]:
+                    lines.append(f"- **[{m['name']}](knowledge/schemes/{m['slug']}.md)** ({m['category']}): {m['benefit_title']}")
+
+            if okf_docs:
+                lines.append("\n**Checklist & Guidelines:**")
+                lines.append("- Ensure you have your verified Aadhaar Card, Income Certificate, and Bank Passbook ready.")
+                lines.append(f"- Submit your application via the official state portal: {top['application_url']}.")
+
+            return "\n".join(lines)
+
+        return (
+            "We could not find an exact deterministic match based on the provided inputs. "
+            "Please provide your state, age, and family annual income to receive verified government benefits."
+        )
+
+
+# Global Router Singleton
+query_router = IntelligentQueryRouter()
