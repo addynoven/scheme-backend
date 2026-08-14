@@ -1,0 +1,47 @@
+---
+type: "state_index"
+state: "Andaman and Nicobar Islands"
+total_schemes: 35
+---
+
+# 🏛️ State Schemes: Andaman and Nicobar Islands
+
+Total Schemes: **35**
+
+| Scheme | Category | Primary Benefit | Apply |
+| :--- | :--- | :--- | :--- |
+| [Andaman and Nicobar Islands Kisan Samriddhi & Crop Assistance](andaman-and-nicobar-islands-kisan-samriddhi-crop-assistance.md) | Agriculture | Kisan Samriddhi & Crop Assistance | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Solar Krishi Pump Subsidy](andaman-and-nicobar-islands-solar-krishi-pump-subsidy.md) | Agriculture | Solar Krishi Pump Subsidy | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Horticulture & Drip Irrigation Grant](andaman-and-nicobar-islands-horticulture-drip-irrigation-grant.md) | Agriculture | Horticulture & Drip Irrigation Grant | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Dairy & Cattle Development Incentive](andaman-and-nicobar-islands-dairy-cattle-development-incentive.md) | Agriculture | Dairy & Cattle Development Incentive | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Fodder Cultivation & Animal Care Grant](andaman-and-nicobar-islands-fodder-cultivation-animal-care-grant.md) | Agriculture | Fodder Cultivation & Animal Care Grant | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Fisheries Pond & Biofloc Support](andaman-and-nicobar-islands-fisheries-pond-biofloc-support.md) | Agriculture | Fisheries Pond & Biofloc Support | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Soil Health & Organic Farming Mission](andaman-and-nicobar-islands-soil-health-organic-farming-mission.md) | Agriculture | Soil Health & Organic Farming Mission | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Farm Mechanization & Rotavator Subsidy](andaman-and-nicobar-islands-farm-mechanization-rotavator-subsidy.md) | Agriculture | Farm Mechanization & Rotavator Subsidy | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Post-Matric Merit Scholarship](andaman-and-nicobar-islands-post-matric-merit-scholarship.md) | Education | Post-Matric Merit Scholarship | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Free Digital Tablet & Laptop Distribution](andaman-and-nicobar-islands-free-digital-tablet-laptop-distribution.md) | Education | Free Digital Tablet & Laptop Distribution | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Competitive Exam Coaching Assistance](andaman-and-nicobar-islands-competitive-exam-coaching-assistance.md) | Education | Competitive Exam Coaching Assistance | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Girl Child Higher Education Incentive](andaman-and-nicobar-islands-girl-child-higher-education-incentive.md) | Education | Girl Child Higher Education Incentive | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Technical & Polytechnic Skill Stipend](andaman-and-nicobar-islands-technical-polytechnic-skill-stipend.md) | Education | Technical & Polytechnic Skill Stipend | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Overseas Education Scholarship for EWS](andaman-and-nicobar-islands-overseas-education-scholarship-for-ews.md) | Education | Overseas Education Scholarship for EWS | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Special Education Aid for Divyang Students](andaman-and-nicobar-islands-special-education-aid-for-divyang-students.md) | Education | Special Education Aid for Divyang Students | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Matru Kalyan & Nutrition DBT](andaman-and-nicobar-islands-matru-kalyan-nutrition-dbt.md) | Women & Child | Matru Kalyan & Nutrition DBT | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Mahila Swavalamban Livelihood Grant](andaman-and-nicobar-islands-mahila-swavalamban-livelihood-grant.md) | Women & Child | Mahila Swavalamban Livelihood Grant | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Kanya Vivah & Marriage Assistance](andaman-and-nicobar-islands-kanya-vivah-marriage-assistance.md) | Women & Child | Kanya Vivah & Marriage Assistance | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Working Women Hostel & Transport Subsidy](andaman-and-nicobar-islands-working-women-hostel-transport-subsidy.md) | Women & Child | Working Women Hostel & Transport Subsidy | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Single Mother & Destitute Women Pension](andaman-and-nicobar-islands-single-mother-destitute-women-pension.md) | Women & Child | Single Mother & Destitute Women Pension | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Sukanya Samriddhi High-Interest Top-Up](andaman-and-nicobar-islands-sukanya-samriddhi-high-interest-top-up.md) | Women & Child | Sukanya Samriddhi High-Interest Top-Up | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Universal Cashless Health Insurance](andaman-and-nicobar-islands-universal-cashless-health-insurance.md) | Healthcare | Universal Cashless Health Insurance | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Critical Illness Relief Fund (Cancer & Kidney)](andaman-and-nicobar-islands-critical-illness-relief-fund-cancer-kidney.md) | Healthcare | Critical Illness Relief Fund (Cancer & Kidney) | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Free Diagnostic Tests & Medicine Scheme](andaman-and-nicobar-islands-free-diagnostic-tests-medicine-scheme.md) | Healthcare | Free Diagnostic Tests & Medicine Scheme | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Senior Citizen Specialized Geriatric Care](andaman-and-nicobar-islands-senior-citizen-specialized-geriatric-care.md) | Healthcare | Senior Citizen Specialized Geriatric Care | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Emergency Accidental Trauma Insurance](andaman-and-nicobar-islands-emergency-accidental-trauma-insurance.md) | Healthcare | Emergency Accidental Trauma Insurance | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Old Age Social Security Pension](andaman-and-nicobar-islands-old-age-social-security-pension.md) | Social Welfare | Old Age Social Security Pension | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Divyangjan Disability Monthly Pension](andaman-and-nicobar-islands-divyangjan-disability-monthly-pension.md) | Social Welfare | Divyangjan Disability Monthly Pension | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Antyodaya Subsidized Food Security](andaman-and-nicobar-islands-antyodaya-subsidized-food-security.md) | Social Welfare | Antyodaya Subsidized Food Security | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Sanitation Workers Rehabilitation Grant](andaman-and-nicobar-islands-sanitation-workers-rehabilitation-grant.md) | Social Welfare | Sanitation Workers Rehabilitation Grant | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Tribal Livelihood & Forest Produce Grant](andaman-and-nicobar-islands-tribal-livelihood-forest-produce-grant.md) | Social Welfare | Tribal Livelihood & Forest Produce Grant | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Youth Apprenticeship Monthly Stipend](andaman-and-nicobar-islands-youth-apprenticeship-monthly-stipend.md) | Employment & Skills | Youth Apprenticeship Monthly Stipend | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Artisan & Craftsman Modern Tool Kit Grant](andaman-and-nicobar-islands-artisan-craftsman-modern-tool-kit-grant.md) | Employment & Skills | Artisan & Craftsman Modern Tool Kit Grant | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands Rural Youth Driving & Heavy Machinery Training](andaman-and-nicobar-islands-rural-youth-driving-heavy-machinery-training.md) | Employment & Skills | Rural Youth Driving & Heavy Machinery Training | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |
+| [Andaman and Nicobar Islands IT & Emerging Tech Bootcamp Voucher](andaman-and-nicobar-islands-it-emerging-tech-bootcamp-voucher.md) | Employment & Skills | IT & Emerging Tech Bootcamp Voucher | [Portal](https://serviceonline.gov.in/andaman-and-nicobar-islands) |

@@ -1,0 +1,51 @@
+---
+type: "scheme"
+id: "dadra-and-nagar-haveli-and-daman-and-diu-free-diagnostic-tests-medicine-scheme"
+slug: "dadra-and-nagar-haveli-and-daman-and-diu-free-diagnostic-tests-medicine-scheme"
+title: "Dadra and Nagar Haveli and Daman and Diu Free Diagnostic Tests & Medicine Scheme"
+ministry: "Department of Health & Family Welfare, Dadra and Nagar Haveli and Daman and Diu"
+ministry_ref: "../../../ministries/states/dadra-and-nagar-haveli-and-daman-and-diu/department-of-health-family-welfare-dadra-and-nagar-haveli-and-daman-and-diu.md"
+government_level: "state"
+state: "Dadra and Nagar Haveli and Daman and Diu"
+category: "Healthcare"
+official_portal: "https://serviceonline.gov.in/dadra-and-nagar-haveli-and-daman-and-diu"
+status: "active"
+last_verified_at: "2026-08-01"
+related_documents:
+  - "aadhaar-card"
+  - "ration-card-health-card"
+  - "medical-prescription"
+tags:
+  - "healthcare"
+  - "dadra and nagar haveli and daman and diu"
+  - "welfare"
+  - "subsidy"
+  - "dbt"
+  - "direct benefit"
+---
+
+# Dadra and Nagar Haveli and Daman and Diu Free Diagnostic Tests & Medicine Scheme
+
+## 1. Overview & Objective
+100% free prescription drugs and pathology tests at government clinics. Implemented by Dadra and Nagar Haveli and Daman and Diu government for citizen welfare.
+
+## 2. Benefits & Financial Assistance
+- **Free Diagnostic Tests & Medicine Scheme:** 100% free prescription drugs and pathology tests at government clinics. (₹10,000)
+
+## 3. Eligibility Criteria (Deterministic Rules)
+- `state eq Dadra and Nagar Haveli and Daman and Diu`
+- `annual_income lte 400000`
+
+## 4. Required Documents Checklist
+- [**Aadhaar Card**](../../../documents/identity/aadhaar-card.md) (Mandatory): Official Aadhaar Card for verification
+- [**Ration Card / Health Card**](../../../documents/income-wealth/ration-card-health-card.md) (Mandatory): Official Ration Card / Health Card for verification
+- [**Medical Prescription**](../../../documents/general-compliance/medical-prescription.md) (Mandatory): Official Medical Prescription for verification
+
+## 5. Application Procedure
+1. Verify that your citizen profile satisfies the eligibility rules listed above.
+2. Ensure you have the required documents uploaded and verified in your Document Vault.
+3. Access the official application portal: [https://serviceonline.gov.in/dadra-and-nagar-haveli-and-daman-and-diu](https://serviceonline.gov.in/dadra-and-nagar-haveli-and-daman-and-diu).
+4. Submit the application and save your acknowledgement number.
+
+## 6. Official Sources & References
+- [Official Portal](https://serviceonline.gov.in/dadra-and-nagar-haveli-and-daman-and-diu)
