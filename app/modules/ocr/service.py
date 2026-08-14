@@ -18,9 +18,12 @@ logger = logging.getLogger(__name__)
 
 def _sanitize_json_text(raw_text: str) -> str:
     cleaned = raw_text.strip()
-    if cleaned.startswith("```"):
-        cleaned = re.sub(r"^```[a-zA-Z]*\n", "", cleaned)
-        cleaned = re.sub(r"\n```$", "", cleaned)
+    first_brace = cleaned.find("{")
+    last_brace = cleaned.rfind("}")
+    if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+        cleaned = cleaned[first_brace : last_brace + 1]
+    # Remove trailing commas before closing braces
+    cleaned = re.sub(r",\s*([}\]])", r"\1", cleaned)
     return cleaned.strip()
 
 
