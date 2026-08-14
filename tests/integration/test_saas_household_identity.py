@@ -2,9 +2,28 @@ import io
 import random
 import uuid
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+from app.modules.schemes.models import Scheme, EligibilityRule, Benefit
+from app.modules.eligibility.bitmask_engine import bitmask_engine
 
 
-def test_saas_3tier_identity_and_life_stage_lifecycle(client: TestClient):
+def test_saas_3tier_identity_and_life_stage_lifecycle(client: TestClient, db_session: Session):
+    # Seed a test scheme for family welfare
+    s1 = Scheme(
+        name="Sukanya Samriddhi & Child Welfare",
+        slug="sukanya-samriddhi",
+        state="ALL_INDIA",
+        category="Women & Child",
+        ministry="Ministry of Women and Child",
+        description="Support for daughters and women",
+    )
+    db_session.add(s1)
+    db_session.flush()
+    db_session.add(EligibilityRule(scheme_id=s1.id, field_name="gender", operator="eq", rule_value="female"))
+    db_session.add(Benefit(scheme_id=s1.id, title="Financial Grant", description="Support"))
+    db_session.commit()
+    bitmask_engine.warm_up(db_session)
+
     suffix = uuid.uuid4().hex[:6]
     email = f"rajesh_{suffix}@example.com"
     phone = f"+9198{random.randint(10000000, 99999999)}"
