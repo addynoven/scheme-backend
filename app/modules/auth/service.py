@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import AuthenticationError, DuplicateEntityError, UserNotFoundError
 from app.core.security import create_access_token, hash_password, verify_password
-from app.modules.auth.models import Profile, User
+from app.modules.auth.models import CitizenFact, Profile, User
 from app.modules.auth.schemas import (
     ProfileCreate,
     ProfileUpdate,
@@ -263,5 +263,55 @@ def delete_user(db: Session, user_id: int) -> bool:
     db.delete(user)
     db.commit()
     return True
+
+
+# --- Citizen Facts & Provenance Audit Service ---
+
+
+def record_citizen_fact(
+    db: Session,
+    user_id: int,
+    fact_key: str,
+    fact_value: Any,
+    source_document_id: int | None = None,
+    verified_by_user_id: int | None = None,
+) -> CitizenFact:
+    val_str = str(fact_value) if fact_value is not None else ""
+    fact = CitizenFact(
+        user_id=user_id,
+        fact_key=fact_key,
+        fact_value=val_str,
+        source_document_id=source_document_id,
+        verified_by_user_id=verified_by_user_id or user_id,
+    )
+    db.add(fact)
+    return fact
+
+
+def list_citizen_facts(db: Session, user_id: int) -> list[CitizenFact]:
+    return list(
+        db.scalars(
+            select(CitizenFact)
+            .where(CitizenFact.user_id == user_id)
+            .order_by(CitizenFact.created_at.desc())
+        ).all()
+    )
+
+
+def get_citizen_facts_audit(db: Session, user_id: int):
+    from app.modules.auth.schemas import CitizenFactResponse, CitizenFactsAuditResponse
+
+    facts = list_citizen_facts(db, user_id)
+    verified_map: dict[str, str] = {}
+    for f in reversed(facts):
+        verified_map[f.fact_key] = f.fact_value
+
+    return CitizenFactsAuditResponse(
+        user_id=user_id,
+        total_facts=len(facts),
+        verified_facts=verified_map,
+        fact_history=[CitizenFactResponse.model_validate(f) for f in facts],
+    )
+
 
 

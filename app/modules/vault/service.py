@@ -340,6 +340,21 @@ def confirm_and_sync_profile_from_facts(
         if doc:
             doc.is_verified = True
 
+    # Record immutable audit trail in citizen_facts table
+    from app.modules.auth.service import record_citizen_fact
+
+    for field in synced_fields:
+        val = data.get(field)
+        if val is not None:
+            record_citizen_fact(
+                db=db,
+                user_id=user_id,
+                fact_key=field,
+                fact_value=val,
+                source_document_id=document_id,
+                verified_by_user_id=user_id,
+            )
+
     try:
         db.commit()
         db.refresh(profile)

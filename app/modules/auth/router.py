@@ -5,6 +5,7 @@ from app.core.deps import get_current_user, get_db
 from app.core.exceptions import ProfileNotFoundError, UserNotFoundError
 from app.modules.auth.models import User
 from app.modules.auth.schemas import (
+    CitizenFactsAuditResponse,
     ProfileCreate,
     ProfileResponse,
     ProfileUpdate,
@@ -24,6 +25,7 @@ from app.modules.auth.service import (
     delete_profile,
     delete_user,
     generate_tokens,
+    get_citizen_facts_audit,
     get_profile_by_user_id,
     get_user_by_id,
     list_users,
@@ -160,6 +162,20 @@ def delete_my_profile_endpoint(
 ):
     delete_profile(db=db, profile_id=current_user.profile.id if current_user.profile else 0)
     return None
+
+
+@router.get(
+    "/users/me/facts",
+    response_model=CitizenFactsAuditResponse,
+    summary="Get citizen verified facts and provenance audit trail",
+    description="Returns the consolidated latest verified facts dictionary and full historical audit trail with linked source document IDs.",
+    response_description="Consolidated verified facts and full immutable audit history",
+)
+def get_my_verified_facts_endpoint(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return get_citizen_facts_audit(db=db, user_id=current_user.id)
 
 
 # --- General User Management Endpoints ---

@@ -1,4 +1,4 @@
-from app.modules.auth.models import Profile, User
+from app.modules.auth.models import CitizenFact, Profile, User
 from app.modules.auth.schemas import (
     ProfileCreate,
     ProfileResponse,
@@ -21,6 +21,7 @@ from app.modules.auth.service import (
 __all__ = [
     "User",
     "Profile",
+    "CitizenFact",
     "auth_router",
     "UserRegisterRequest",
     "UserLoginRequest",

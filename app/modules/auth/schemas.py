@@ -177,3 +177,26 @@ class RefreshTokenRequest(BaseModel):
         examples=["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."],
         description="Valid refresh token obtained from login",
     )
+
+
+# --- Citizen Facts & Provenance Schemas ---
+
+class CitizenFactResponse(BaseModel):
+    id: int
+    user_id: int
+    fact_key: str = Field(..., description="Fact identifier e.g. 'annual_income', 'date_of_birth', 'gender'")
+    fact_value: str = Field(..., description="Stringified verified value")
+    source_document_id: int | None = Field(None, description="Linked document in vault if verified via OCR/upload")
+    verified_by_user_id: int | None = Field(None, description="User ID who confirmed this fact")
+    verified_at: datetime
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CitizenFactsAuditResponse(BaseModel):
+    user_id: int
+    total_facts: int
+    verified_facts: dict[str, str] = Field(..., description="Consolidated dictionary of latest verified facts")
+    fact_history: list[CitizenFactResponse] = Field(..., description="Full immutable audit trail of all verified facts")
+
