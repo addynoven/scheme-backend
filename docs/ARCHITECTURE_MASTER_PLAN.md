@@ -16,349 +16,278 @@ MCP exposes capabilities to agents.
 
 ---
 
-## 🗺️ Master Release Roadmap at a Glance
+## 🗺️ Master Release Roadmap & Progress Audit
 
-| Version | Milestone Name | Focus / Core Deliverable | Status |
+| Version / Phase | Milestone Name | Focus / Core Deliverable | Status |
 | :--- | :--- | :--- | :--- |
-| **V1.0** | **The Deterministic Core** | 4-Screen Flow, Rule Engine, Explainability, 12 National Schemes, Docker Stack | ✅ **Completed** |
-| **V1.1** | **State Schemes Expansion** | Flagship state benefits (Madhya Pradesh, Maharashtra, Karnataka) & Location Matching | ✅ **Completed** |
-| **V1.2** | **Admin Management Portal** | Web UI to create, edit, and toggle schemes without SQL, Visual Rule Builder | ✅ **Completed** |
-| **V1.3** | **Document Vault & Readiness** | S3 Document storage & live Scheme Application Readiness Meter | ✅ **Completed** |
+| **V1.0 / Phase 1** | **The Deterministic Core** | 4-Screen Flow, Rule Engine, Explainability, National Schemes, Docker Stack | ✅ **Completed** |
+| **V1.1 / Phase 2** | **State Schemes Expansion** | Flagship state benefits (Madhya Pradesh, Maharashtra, Karnataka) & Location Matching | ✅ **Completed** |
+| **V1.2 / Phase 4** | **Admin Management Portal** | Web UI to create, edit, and toggle schemes without SQL, Visual Rule Builder | ✅ **Completed** |
+| **V1.3 / Phase 1** | **Document Vault & Readiness** | S3 Document storage & live Scheme Application Readiness Meter | ✅ **Completed** |
 | **V1.5** | **Government Ingestion Pipeline** | Two-Phase Semantic CDC + Circuit Breaker + MinIO Staging + Triage Queue | ✅ **Completed** |
-| **V2.0** | **OCR & Fact Extraction** | Auto-extract facts from Aadhaar/Certificates with human verification | 🎯 **Next** |
-| **V2.5** | **OKF Canonical Knowledge** | Structured agent-readable knowledge layer & Query Router | 📋 Planned |
-| **V3.0** | **Hybrid RAG & Provenance** | BM25 + Vector + Cross-Encoder Reranker + Mandatory Citations | 📋 Planned |
-| **V3.5** | **MCP Agent Server** | Standard Model Context Protocol tools for autonomous AI agents | 📋 Planned |
-| **V4.0** | **Life-Event Intelligence** | Proactive triggers on life changes (College, 18+, 60+, Marriage) | 📋 Planned |
-| **V5.0** | **Universal Global Expansion** | Multi-Country ISO 3166-1, Currency formatting, Global doc taxonomies (UN GovStack) | 🔮 Future |
+| **V2.0 / Phase 1** | **OCR & Fact Extraction** | Gemini 3.5 Flash Multimodal Vision + Strict JSON + Citizen Verification Modal | ✅ **Completed** |
+| **V2.1** | **Citizen Facts Provenance Trail** | `citizen_facts` table with origin audit trail (`source_document_id`, `verified_at`) | 🎯 **Current Focus** |
+| **V2.5 / Phase 5** | **OKF Canonical Knowledge** | Structured agent-readable knowledge layer (`knowledge/`) & Query Router | 🎯 **Next** |
+| **V3.0 / Phase 6** | **Hybrid RAG & Provenance** | BM25 + Vector + Cross-Encoder Reranker + Mandatory Citations | 📋 Planned |
+| **V3.5 / Phase 7** | **MCP Agent Server** | Standard Model Context Protocol tools for autonomous AI agents | 📋 Planned |
+| **V4.0 / Phase 8** | **Life-Event Intelligence** | Proactive triggers on life changes (College, 18+, 60+, Marriage, Income change) | 📋 Planned |
+| **V5.0** | **Universal Global Expansion** | Multi-Country ISO 3166-1 (USA/UK/IN/CA), Multi-Currency, Global Taxonomies | 🔮 Future |
 
 ---
 
-# 📦 Detailed Version Specifications
+# 📦 20-Section Architectural Specification & Audit
 
 ---
 
-## 🟢 V1.0 — The Deterministic Core *(Completed & Live)*
-
-### Objective
-Provide a zero-friction, login-free 4-screen citizen web experience backed by a deterministic rules engine and 12 flagship national schemes.
-
+### 1. Citizen Experience ✅ (Completed)
 ```text
-Home (/)  ──▶  Eligibility Form (/check)  ──▶  Results (/results)  ──▶  Scheme Details (/schemes/:slug)
+                    CITIZEN
+                       │
+                       ▼
+              ┌─────────────────┐
+              │ Create Profile  │
+              └────────┬────────┘
+                       │
+                       ▼
+               Upload Documents
+                       │
+                       ▼
+                  OCR + Parser
+                       │
+                       ▼
+              Extract Citizen Facts
+                       │
+                       ▼
+              User Verification
+                 /           \
+              Correct       Edit
+                 \           /
+                       ▼
+              VERIFIED PROFILE
+                       │
+          ┌────────────┼────────────┐
+          ▼            ▼            ▼
+      Dashboard       Chat      Documents
+          │            │            │
+          └────────────┼────────────┘
+                       ▼
+              Scheme Discovery
+                       │
+                       ▼
+              Eligibility Check
+                       │
+                       ▼
+             Application Guidance
 ```
 
-### Key Deliverables
-* **4-Screen Citizen Web App**:
-  * `Home (/)`: Need-based search (`"fertilizer"`, `"pension"`), persona pills (Farmer, Student, Women, Senior), popular schemes.
-  * `Eligibility Form (/check)`: 4-question form (Age, Gender, State, Occupation, Income INR). No login required.
-  * `Results Dashboard (/results)`: Categorized buckets (**Fully Eligible (100%)** vs **Nearly Eligible (50-99%)** with itemized passed/failed reasons).
-  * `Scheme Details (/schemes/:slug)`: Benefits breakdown, criteria checks (`✓`/`✗`), required documents, and official portal application link.
-* **Backend Rules Engine**:
-  * Dynamic relational operators: `=`, `lte`, `gte`, `between`, `in`.
-  * Explainability engine producing human-friendly natural language verdicts.
-* **Database & Infrastructure**:
-  * PostgreSQL 17 + Alembic versioned migrations + MinIO S3.
-  * 12 Seeded Flagship Schemes (PM-Kisan, Ayushman Bharat, PMAY-G, Mudra, Sukanya Samriddhi, Vishwakarma, etc.).
-  * 1-Command Docker Compose (`docker compose up -d`).
+* **Live Status**: Completed across `/`, `/check`, `/results`, `/schemes/:slug`, `/vault`.
+* **Track 1 Fast Path**: 1-click auto-fill on `/check` with Gemini 3.5 Flash Vision.
+* **Track 2 Manual Path**: Instant zero-document entry.
 
 ---
 
-## 🟢 V1.1 — State-Specific Scheme Expansion *(Completed & Live)*
+### 2. Document System & Vault ✅ (Completed)
+```text
+Upload ──▶ Temp S3 Storage ──▶ OCR (Gemini Vision) ──▶ Classification ──▶ Field Extraction ──▶ Normalization ──▶ User Verification Modal ──▶ Citizen Profile
+```
+* **Live Status**: Implemented in `app/modules/ocr/` and `app/modules/vault/`.
+* **Permanent Vault**: S3/MinIO bucket with encrypted document storage, presigned URLs, and live Scheme Application Readiness Meter (available vs missing checklist).
 
-### Objective
-Expand coverage beyond national schemes into high-impact state-level welfare programs (Madhya Pradesh, Maharashtra, Karnataka) where >70% of citizen direct welfare transfers occur.
+---
+
+### 3. Citizen Profile & Fact Audit Trail 🟡 (Next Enhancement)
+Don't make this just a giant `users` table — think in **facts** with an immutable audit trail:
 
 ```text
-Citizen Location (e.g. Madhya Pradesh)
-         │
-         ▼
-Evaluate National Schemes + MP State Schemes
-         │
-         ▼
-Display Unified Opportunities:
-  • PM-Kisan (National: ₹6,000/yr)
-  • MP Mukhya Mantri Kisan Kalyan (State: ₹6,000/yr Top-Up)
-  • Total Citizen Benefit = ₹12,000/year!
+Citizen
+ ├── Identity
+ ├── Location
+ ├── Family
+ ├── Education
+ ├── Employment
+ ├── Income
+ ├── Assets
+ ├── Documents
+ ├── Certificates
+ ├── Existing Benefits
+ └── Life Events
 ```
 
-### Key Deliverables
-* **State Column & Models**:
-  * Added `state` indexed column (`ALL_INDIA` or specific State name) in `schemes` table via Alembic migration `b08d40047bc5`.
-* **State Flagship Dataset (19 Schemes Total)**:
-  * **Madhya Pradesh**:
-    * *Mukhya Mantri Ladli Behna Yojana* (₹1,250/mo direct DBT for women aged 21-60).
-    * *Mukhya Mantri Kisan Kalyan Yojana* (₹6,000/yr farmer state top-up).
-    * *Mukhyamantri Medhavi Vidyarthi Yojana (MMVY)* (100% Higher education tuition fee waiver).
-  * **Maharashtra**:
-    * *Mukhyamantri Majhi Ladki Bahin Yojana* (₹1,500/mo financial aid).
-    * *Namo Shetkari Mahasanman Nidhi Yojana* (₹6,000/yr farmer aid).
-  * **Karnataka**:
-    * *Gruha Lakshmi Scheme* (₹2,000/mo female head-of-household grant).
-    * *Yuva Nidhi Scheme* (₹3,000/mo unemployment stipend for graduates).
-* **Location-Aware Rules Engine**:
-  * Citizen state matching evaluates `ALL_INDIA` + resident state schemes with plain-English reasons.
-* **Frontend State Filters & Badging**:
-  * State filter bar on Home page and badges (`🇮🇳 National` vs `🏛️ Madhya Pradesh`, `🏛️ Maharashtra`, `🏛️ Karnataka`) across Home, Results, and Detail pages.
-* **Tests Passing**:
-  * 44/44 automated integration & unit tests passing (`uv run pytest -v`).
-
----
-
-## 🟢 V1.2 — Admin Scheme Management Portal *(Completed & Live)*
-
-### Objective
-Allow non-technical administrators to create, update, and toggle welfare schemes and eligibility rules via a secure web UI without touching code or SQL.
-
 ```text
-Admin Portal (/admin)
-  ├── Secure JWT Auth (admin@gov.in)
-  ├── Scheme Metadata (Name, Ministry, State, Description, Portal URL)
-  ├── Visual Rule Builder (Field: Age/Income/State, Operator: =, <=, >=, between, Value)
-  ├── Benefits Manager (Type, Cash amount, Description)
-  └── Required Documents Checklist (Mandatory vs Optional)
+annual_income
+    ↓
+₹180,000
+    ↓
+source = income_certificate (doc_id = 4)
+    ↓
+verified_by = citizen (user_id = 1)
+    ↓
+verified_at = 2026-08-14T09:30:00Z
 ```
 
-### Key Deliverables
-* **Admin Dashboard UI (`/admin`)**:
-  * Scheme table with search, category & state filters, instant status toggle (`active` / `draft`), and edit triggers.
-* **Visual Rule Builder**:
-  * Dropdown UI to configure rules without writing code:
-    `[ State ] [ = ] [ Madhya Pradesh ]`
-    `[ Age ] [ >= ] [ 21 ]`
-    `[ Income ] [ <= ] [ 2,50,000 ]`
-* **RBAC Enforcement**:
-  * Restricts `/admin` endpoints to users with `role: "admin"` via JWT.
-* **Full CRUD Lifecycle**:
-  * Create, edit, toggle, and delete schemes + nested benefits, eligibility rules, and required documents.
+* **Live Status**: Demographic attributes are synced to PostgreSQL `profiles` table.
+* **V2.1 Enhancement**: Add `citizen_facts` table storing `fact_key`, `fact_value`, `source_document_id`, `verified_by_user_id`, `verified_at` for forensic auditability.
 
 ---
 
-## 🟢 V1.3 — Document Vault & Live Readiness Meter *(Completed & Live)*
-
-### Objective
-Enable citizens to store documents securely in MinIO S3 and view real-time application readiness scores before applying.
-
-```text
-Citizen Document Vault
-  ├── Aadhaar Card (✓ Uploaded)
-  ├── Bank Passbook (✓ Uploaded)
-  └── Income Certificate (✗ Missing)
-         │
-         ▼
-Readiness Score: 66.7% Ready
-Action: "Upload Income Certificate to reach 100% Readiness"
-```
-
-### Key Deliverables
-* **MinIO S3 Vault Dropzone**:
-  * Secure presigned URL uploads with server-side mime-type & size validation.
-* **Live Readiness Evaluator**:
-  * Compares uploaded documents against scheme `required_documents`.
-  * Returns percentage score (e.g. 2 of 3 documents present $\to$ `66.7% Ready`).
-* **Document Checklist in UI**:
-  * Visual checklist showing which documents are ready and which need to be obtained.
+### 4. Life-Event Engine 📋 (Planned - V4.0 / Phase 8)
+Transforms the platform from reactive search into a proactive life assistant:
+* Triggers: Daughter turns 18 / enters College, Citizen turns 60, moved state, family income bracket changed.
+* Background re-evaluation $\to$ Proactive notification to citizen.
 
 ---
 
-## 🟢 V1.5 — Automated Government Ingestion & Sync Pipeline *(Completed & Live)*
-
-### Objective
-High-efficiency background pipeline pulling official datasets from `data.gov.in` and state portals without putting load on production read databases.
-
+### 5. The Knowledge Architecture: Canonical First ✅ (In Progress)
 ```text
-               SCHEDULED INGESTION WORKER
-                            │
-                            ▼
- ┌──────────────────────────────────────────────────────────┐
- │ GATE 1: ZERO-BANDWIDTH HTTP CHECK (RFC 7232)             │
- │ Send "If-None-Match: <ETag>" / "If-Modified-Since"       │
- └──────────────────────────┬───────────────────────────────┘
-                            │
-            ┌───────────────┴───────────────┐
-            ▼                               ▼
-    [ HTTP 304 Not Modified ]       [ HTTP 200 OK ]
-            │                               │
-     ✅ 0 Bytes Downloaded.                 ▼
-     Exit in 10ms.             ┌────────────────────────────┐
-                               │ 1. MINIO S3 RAW DUMP BLOB  │
-                               │ Audit snapshot saved to S3 │
-                               └────────────┬───────────────┘
-                                            │
-                                            ▼
-                               ┌────────────────────────────┐
-                               │ GATE 2: CIRCUIT BREAKER    │
-                               │ Rejects corrupted payloads │
-                               └────────────┬───────────────┘
-                                            │
-                                            ▼
-                               ┌────────────────────────────┐
-                               │ GATE 3: SEMANTIC HASH DIFF │
-                               │ Hashes only business rules │
-                               └────────────┬───────────────┘
-                                            │
-                     ┌──────────────────────┴──────────────────────┐
-                     ▼                                             ▼
-          [ NON-BREAKING CHANGE ]                        [ BREAKING CHANGE ]
-          (New scheme, new benefit)                      (Income limit lowered)
-                     │                                             │
-                     ▼                                             ▼
-          ┌─────────────────────┐                       ┌─────────────────────┐
-          │ STAGING BATCH WRITE │                       │ ADMIN TRIAGE QUEUE  │
-          │ (PostgreSQL Writer) │                       │ (1-Click Approval)  │
-          └─────────────────────┘                       └─────────────────────┘
+                 OFFICIAL SOURCES
+                       │
+                       ▼
+                INGESTION PIPELINE (v1.5 CDC)
+                       │
+                       ▼
+             CANONICAL KNOWLEDGE
+                       │
+             ┌─────────┴─────────┐
+             ▼                   ▼
+        PostgreSQL              OKF (v2.5)
+             │                   │
+             ▼                   ▼
+       Rules Engine       Agent-readable
+                              knowledge
 ```
 
 ---
 
-## 📋 V2.0 — OCR Ingestion & Fact Extraction
+### 6. PostgreSQL = Deterministic Truth ✅ (Completed)
+* PostgreSQL stores facts that computers query precisely: schemes, eligibility rules, benefits, required documents, locations, ministries, triage logs.
+* Rules engine evaluates relational operators (`=`, `lte`, `gte`, `between`, `in`).
+* **The LLM never decides eligibility.**
 
-### Objective
-Eliminate manual form-filling by auto-extracting citizen facts from uploaded identity cards and certificates with human-in-the-loop verification.
+---
 
+### 7. OKF = Canonical Knowledge Representation 🎯 (V2.5 Next)
+Structured, agent-readable knowledge layer preserving official hierarchy:
 ```text
-Upload Document (Aadhaar / Ration Card / Income Certificate)
-  ↓
-OCR & Entity Extraction Pipeline
-  ↓
-Confidence Scoring & Normalization
-  ↓
-Citizen Confirmation Screen:
-  "We detected your Annual Income as ₹1,80,000 from Income Certificate."
-  [ Correct / Confirm ]    [ Edit ]
-  ↓
-Verified Fact Stored in Citizen Profile
+knowledge/
+├── index.md
+├── schemes/
+│   ├── pm-kisan.md
+│   ├── ladli-behna.md
+│   └── sukanya-samriddhi.md
+├── documents/
+│   ├── income-certificate.md
+│   └── domicile-certificate.md
+├── ministries/
+└── eligibility/
+```
+* Structured frontmatter, relationships, official source URLs, circular numbers, and freshness timestamps.
+
+---
+
+### 8. Query Router 🎯 (V2.5 Next)
+```text
+                      USER QUESTION
+                           │
+                           ▼
+                    QUERY ANALYSIS
+                           │
+          ┌────────────────┼─────────────────┐
+          ▼                ▼                 ▼
+     STRUCTURED        CANONICAL          UNKNOWN /
+       FACT             KNOWLEDGE         AMBIGUOUS
+          │                │                 │
+          ▼                ▼                 ▼
+      SQL/Rules           OKF               RAG
+          │                │                 │
+          └────────────────┼─────────────────┘
+                           │
+                           ▼
+                         ANSWER
 ```
 
 ---
 
-## 📋 V2.5 — OKF (Open Knowledge Framework) & Canonical Representation
+### 9. RAG = Fallback, Not Foundation 📋 (V3.0 / Phase 6)
+* Canonical knowledge (OKF + Rules) answers structured and verified questions first.
+* RAG only handles unstructured circulars, historical policies, ambiguous FAQs, and edge cases.
 
-### Objective
-Create a structured, agent-readable knowledge layer preserving official hierarchy and establish a Query Router.
+---
 
+### 10. RAG Pipeline 📋 (V3.0 / Phase 6)
+* Hybrid Retrieval: BM25 keyword + Dense vector embeddings.
+* Cross-Encoder Reranker: Prioritizes highest-evidence passages.
+* Dynamic Top-K: Proportional evidence selection.
+* Mandatory Citations.
+
+---
+
+### 11. Chunking Strategy 📋 (V3.0)
+* Heading-aware / parent-child hierarchical chunking.
+* Benchmarked against evaluation datasets on Recall@K, MRR, and citation precision.
+
+---
+
+### 12. Dynamic K 📋 (V3.0)
+* Variable K based on query complexity and relevance distribution.
+
+---
+
+### 13. Embeddings Hygiene 📋 (V3.0)
+* Document and query embeddings enforce identical model and dimension.
+* Index versions tracked with migration scripts.
+
+---
+
+### 14. Freshness-Aware Semantic Cache 📋 (V3.0)
+* Caches responses with hash of source versions.
+* Government policy changes automatically invalidate affected cache entries.
+
+---
+
+### 15. Government Data Ingestion Pipeline ✅ (Completed - V1.5)
+* Two-Phase Semantic CDC: HTTP 304 / hash diff + circuit breaker quarantine + MinIO staging + Admin triage queue.
+
+---
+
+### 16. Mandatory Citations 📋 (V3.0)
+* Every claim cited back to official gazette notification, page, section, and circular date.
+
+---
+
+### 17. MCP (Model Context Protocol) Server 📋 (V3.5 / Phase 7)
+* Exposes application capabilities as standard MCP tools (`find_schemes`, `check_eligibility`, `get_scheme_readiness`, `get_official_source`) for AI agents.
+
+---
+
+### 18. The Core System Rule (Golden Law)
 ```text
-                      CITIZEN QUERY
-                            │
-                            ▼
-                     QUERY ROUTER
-                            │
-          ┌─────────────────┼─────────────────┐
-          ▼                 ▼                 ▼
-     STRUCTURED         CANONICAL          UNKNOWN /
-    RULE / SQL          KNOWLEDGE          AMBIGUOUS
-    (FastAPI)             (OKF)              (RAG)
+LLM interprets.
+Database stores.
+Rules engine decides.
+OKF represents canonical knowledge.
+RAG retrieves uncertain/unstructured knowledge.
+Reranker prioritizes evidence.
+Citations prove claims.
+Human confirms personal information.
+MCP exposes capabilities to agents.
 ```
 
 ---
 
-## 📋 V3.0 — Hybrid RAG & Provenance Citations
+### 19. 8-Phase MVP Execution Roadmap
 
-### Objective
-Handle messy, unstructured circulars and FAQs using hybrid search, reranking, and mandatory source citations.
-
-```text
-Citizen Query
-  ↓
-Hybrid Retrieval (BM25 Keyword + Dense Vector Embeddings)
-  ↓
-Cross-Encoder Reranking (Prioritize highest-evidence passages)
-  ↓
-Dynamic Top-K Evidence Selection
-  ↓
-LLM Synthesis with Mandatory Citations:
-  "Claim: Eligible up to age 35. [Source: Gazette Notification 2024, Page 4, Section 2b]"
-```
+- [x] **Phase 1 — Foundation (Madhya Pradesh + National)**: Auth, Profile, S3 Vault, Gemini Vision OCR, Human Verification Modal.
+- [x] **Phase 2 — Scheme Knowledge**: 19 Flagship National & State schemes, dynamic rules, required documents, official sources.
+- [x] **Phase 3 — Eligibility Engine**: Relational engine (`=`, `lte`, `gte`, `between`, `in`) + human-friendly explainability breakdown.
+- [x] **Phase 4 — Dashboard & Readiness**: Categorized buckets (100% Eligible, Nearly Eligible) + Live Document Readiness Meter.
+- [ ] **Phase 5 — OKF & Query Router**: Agent-readable `knowledge/` directory + Query Router (SQL vs OKF vs RAG).
+- [ ] **Phase 6 — Hybrid RAG**: BM25 + Vector + Reranking + Dynamic K + Evaluation harness.
+- [ ] **Phase 7 — MCP Server**: Tools for AI agents (`find_schemes`, `check_eligibility`, `get_documents`).
+- [ ] **Phase 8 — Life-Event Intelligence**: Background profile re-evaluation on life changes (18+, 60+, college).
 
 ---
 
-## 📋 V3.5 — MCP (Model Context Protocol) Server
-
-### Objective
-Expose the complete system capabilities through standard MCP tools so autonomous AI agents can operate the platform securely.
-
-```text
-Autonomous AI Agent
-         │
-         ▼
-   [ MCP Server ]
-   ├── find_schemes(query, filters)
-   ├── check_eligibility(citizen_profile)
-   ├── get_required_documents(scheme_slug)
-   ├── calculate_readiness(user_id, scheme_slug)
-   └── get_official_sources(scheme_slug)
-         │
-         ▼
-Application Services & Database
-```
-
----
-
-## 📋 V4.0 — Life-Event Intelligence Engine
-
-### Objective
-Transform the platform from reactive search into a proactive life assistant that notifies citizens as their life evolves.
-
-```text
-Life Event Detected
-  • Daughter turns 18 / enters College
-  • Citizen turns 60
-  • Moved from Bihar to Maharashtra
-  • Family income bracket changed
-         │
-         ▼
-Background Profile Re-evaluation
-         │
-         ▼
-Proactive Citizen Notification:
-  "Your daughter recently turned 18 and entered college. 
-   You now qualify for 3 new Higher Education Scholarships!"
-```
-
----
-
-## 🔮 V5.0 — Universal Multi-Country Global Expansion
-
-### Objective
-Scale the platform from national welfare navigation into a **Universal Open-Source Public Benefit Navigator (UN / GovStack standard)** operable by any country or municipality on Earth.
-
-```text
-                               GLOBAL CITIZEN
-                                     │
-                                     ▼
-                            SELECT JURISDICTION
-                    (USA / UK / Canada / Germany / India)
-                                     │
-                                     ▼
-                     UNIVERSAL RULES ENGINE (ISO 3166-1)
-          ┌──────────────────────────┼──────────────────────────┐
-          ▼                          ▼                          ▼
-     UNITED STATES             UNITED KINGDOM                 INDIA
-     • SNAP (Food Stamps)      • Universal Credit             • PM-Kisan
-     • Medicaid                • Personal Independence (PIP)  • Ladli Behna
-     • Section 8 Housing       • Child Benefit                • Ayushman Bharat
-          │                          │                          │
-          ▼                          ▼                          ▼
-    USD ($) FORMAT             GBP (£) FORMAT             INR (₹) FORMAT
-    SSN / W-2 Docs             NINO / P60 Docs            Aadhaar / PAN Docs
-```
-
-### Key Deliverables
-* **ISO 3166-1 Country Code & Hierarchy**:
-  * Add `country_code: str` (`"US"`, `"GB"`, `"CA"`, `"IN"`, `"DE"`) and `jurisdiction_level` (`"federal"`, `"state_province"`, `"municipal"`).
-* **Multi-Currency & Locale-Aware Engine**:
-  * Dynamic currency symbols (`$`, `£`, `€`, `¥`, `₹`, `CAD`) formatted based on scheme locale.
-* **Universal Demographic Profile + Extensible Attributes**:
-  * Core fields (Universal): `income`, `age`, `household_size`, `employment_status`.
-  * Flexible JSON dictionary (`country_attributes: dict[str, Any]`):
-    * **USA**: `veteran_status`, `medicaid_enrolled`, `snap_eligible`, `tax_filing_status`
-    * **UK**: `disability_living_allowance`, `universal_credit_claimant`
-    * **Canada**: `indigenous_status`, `permanent_resident`
-* **Global Document Taxonomies in S3 Vault**:
-  * Standardized readiness checklists for international identification & tax forms.
-
----
-
-# 🏗️ Architectural Summary: The Long-Term Stack
+### 20. Final System Topology
 
 ```text
                          CITIZEN
@@ -369,26 +298,25 @@ Scale the platform from national welfare navigation into a **Universal Open-Sour
           ┌─────────────────┼─────────────────┐
           │                 │                 │
           ▼                 ▼                 ▼
-     PROFILE (V1)     DOCUMENTS (V1.3)     CHAT (V2.5+)
+       PROFILE          DOCUMENTS           CHAT
           │                 │                 │
           │                 ▼                 ▼
-          │           OCR/PARSER (V2.0)  QUERY ROUTER (V2.5)
+          │              OCR/PARSER      QUERY ROUTER
           │                 │                 │
           │                 ▼       ┌─────────┼─────────┐
           │          VERIFIED FACTS  │         │         │
           │                 │        ▼         ▼         ▼
           │                 │       SQL       OKF       RAG
-          │                 │      (V1.0)    (V2.5)    (V3.0)
+          │                 │       Rules      │         │
           └─────────────────┼────────┴─────────┴─────────┘
                             │
                             ▼
-                   RECOMMENDATION ENGINE (V1.0 - V4.0)
+                   RECOMMENDATION ENGINE
                             │
               ┌─────────────┼──────────────┐
               ▼             ▼              ▼
-          DASHBOARD      CITATIONS    LIFE EVENTS
-           (V1.0)         (V3.0)         (V4.0)
+          DASHBOARD      CITATIONS      NEXT ACTION
                                             │
                                             ▼
-                                   NEXT ACTION & APPLY
+                                    APPLICATION GUIDANCE
 ```
