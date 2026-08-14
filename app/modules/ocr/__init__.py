@@ -5,7 +5,7 @@ from app.modules.ocr.schemas import (
 )
 from app.modules.ocr.service import (
     extract_document_facts_pipeline,
-    extract_facts_heuristic_fallback,
+    extract_facts_from_raw_text_patterns,
     extract_facts_with_gemini_vision,
 )
 
@@ -15,5 +15,5 @@ __all__ = [
     "ExtractedDocumentFactsResponse",
     "extract_document_facts_pipeline",
     "extract_facts_with_gemini_vision",
-    "extract_facts_heuristic_fallback",
+    "extract_facts_from_raw_text_patterns",
 ]

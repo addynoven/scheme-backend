@@ -89,7 +89,6 @@ def extract_facts_with_gemini_vision(
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
     b64_data = base64.b64encode(file_bytes).decode("utf-8")
-
     hint_text = f"\nUser Hint: The user claims this is a '{document_type_hint}'." if document_type_hint else ""
 
     payload = {
@@ -133,7 +132,7 @@ def extract_facts_with_gemini_vision(
             candidates = resp_data.get("candidates", [])
             if not candidates:
                 raise ValueError("Gemini returned zero candidates.")
-            
+
             raw_text = candidates[0]["content"]["parts"][0]["text"]
             cleaned_json = _sanitize_json_text(raw_text)
             parsed = json.loads(cleaned_json)
@@ -163,80 +162,51 @@ def extract_facts_with_gemini_vision(
         raise
 
 
-def extract_facts_heuristic_fallback(
-    file_bytes: bytes,
+def extract_facts_from_raw_text_patterns(
+    text_content: str,
     document_type_hint: str | None = None,
-    file_name: str | None = None,
 ) -> ExtractedDocumentFactsResponse:
-    hint = (document_type_hint or file_name or "").lower()
-    text_content = ""
-    try:
-        text_content = file_bytes.decode("utf-8", errors="ignore")
-    except Exception:
-        pass
-
+    """
+    Pure regex pattern extractor on readable text without inventing fake personas.
+    """
     facts = ExtractedDocumentFacts()
     applicable_fields: list[str] = []
     detected_type = document_type_hint or "Document"
-    summary = "Extracted facts using structured OCR engine."
+    confidence = 0.0
 
-    if "pan" in hint or "permanent account number" in text_content.lower():
+    # PAN pattern: 5 uppercase letters, 4 digits, 1 uppercase letter
+    pan_match = re.search(r"\b([A-Z]{5}[0-9]{4}[A-Z])\b", text_content)
+    if pan_match:
         detected_type = "PAN Card"
-        facts.full_name = "Ramesh Kumar Patel"
-        facts.date_of_birth = "1985-06-20"
-        facts.age = 41
-        facts.document_number_masked = "XXXXX1234F"
-        applicable_fields = ["full_name", "date_of_birth"]
-        summary = "Detected Permanent Account Number (PAN Card) issued by Income Tax Department."
+        pan = pan_match.group(1)
+        facts.document_number_masked = f"{pan[:2]}XXXXX{pan[-2:]}"
+        confidence = 0.85
+        applicable_fields.append("document_number_masked")
 
-    elif "aadhaar" in hint or "uidai" in text_content.lower() or "unique identification" in text_content.lower():
+    # Aadhaar pattern: 12 digits (often in 4-4-4 groups)
+    aadhaar_match = re.search(r"\b(\d{4})[\s-](\d{4})[\s-](\d{4})\b", text_content)
+    if aadhaar_match:
         detected_type = "Aadhaar Card"
-        facts.full_name = "Sunita Devi"
-        facts.date_of_birth = "1992-04-12"
-        facts.age = 34
-        facts.gender = "female"
-        facts.state = "Maharashtra"
-        facts.district = "Pune"
-        facts.document_number_masked = "XXXX-XXXX-4532"
-        applicable_fields = ["full_name", "date_of_birth", "gender", "state", "district"]
-        summary = "Detected Aadhaar Card issued by UIDAI with confirmed gender and location."
+        facts.document_number_masked = f"XXXX-XXXX-{aadhaar_match.group(3)}"
+        confidence = 0.85
+        applicable_fields.append("document_number_masked")
 
-    elif "income" in hint or "aay praman" in text_content.lower():
-        detected_type = "Income Certificate"
-        facts.full_name = "Murugan Swamy"
-        facts.annual_income = 120000
-        facts.state = "Tamil Nadu"
-        facts.district = "Madurai"
-        applicable_fields = ["annual_income", "state", "district"]
-        summary = "Detected Revenue Department Income Certificate declaring annual family income."
+    # DOB pattern: DD/MM/YYYY or YYYY-MM-DD
+    dob_match = re.search(r"\b(\d{2}[/-]\d{2}[/-]\d{4}|\d{4}[/-]\d{2}[/-]\d{2})\b", text_content)
+    if dob_match:
+        facts.date_of_birth = dob_match.group(1)
+        applicable_fields.append("date_of_birth")
 
-    elif "caste" in hint or "jati praman" in text_content.lower():
-        detected_type = "Caste Certificate"
-        facts.full_name = "Ramesh Kumar Patel"
-        facts.caste_category = "OBC"
-        facts.state = "Madhya Pradesh"
-        applicable_fields = ["caste_category", "state"]
-        summary = "Detected State Caste Certificate certifying OBC community category."
-
-    elif "land" in hint or "khasra" in hint or "7/12" in hint or "khatauni" in hint:
-        detected_type = "Land Records"
-        facts.full_name = "Ramesh Kumar Patel"
-        facts.has_land = True
-        facts.state = "Madhya Pradesh"
-        facts.district = "Sehore"
-        applicable_fields = ["has_land", "state", "district"]
-        summary = "Detected Agricultural Land Ownership Record (7/12 Khasra)."
-
-    else:
-        detected_type = "Identity Document"
-        facts.full_name = "Citizen Applicant"
-        applicable_fields = ["full_name"]
-        summary = "Detected government-issued identity document."
+    summary = (
+        f"Extracted pattern-matched facts for {detected_type}."
+        if applicable_fields
+        else "No recognized government document patterns found in text."
+    )
 
     return ExtractedDocumentFactsResponse(
-        status="success",
+        status="success" if applicable_fields else "unprocessed",
         detected_document_type=detected_type,
-        confidence_score=0.88,
+        confidence_score=confidence,
         evidence_summary=summary,
         extracted_facts=facts,
         applicable_profile_fields=applicable_fields,
@@ -249,6 +219,7 @@ def extract_document_facts_pipeline(
     document_type_hint: str | None = None,
     file_name: str | None = None,
 ) -> ExtractedDocumentFactsResponse:
+    # 1. Primary: Gemini Multimodal Vision if key is available
     if settings.GEMINI_API_KEY:
         try:
             return extract_facts_with_gemini_vision(
@@ -257,14 +228,25 @@ def extract_document_facts_pipeline(
                 document_type_hint=document_type_hint,
             )
         except Exception as e:
-            logger.warning(f"Vision API extraction failed, falling back to heuristic engine: {e}")
-            return extract_facts_heuristic_fallback(
-                file_bytes=file_bytes,
+            logger.warning(f"Gemini Vision extraction failed: {e}")
+
+    # 2. Secondary: Real text pattern extraction if text stream is present
+    try:
+        text_content = file_bytes.decode("utf-8", errors="ignore")
+        if text_content.strip():
+            return extract_facts_from_raw_text_patterns(
+                text_content=text_content,
                 document_type_hint=document_type_hint,
-                file_name=file_name,
             )
-    return extract_facts_heuristic_fallback(
-        file_bytes=file_bytes,
-        document_type_hint=document_type_hint,
-        file_name=file_name,
+    except Exception:
+        pass
+
+    # 3. Default safe fallback: Return empty facts with 0.0 confidence (never fake identities)
+    return ExtractedDocumentFactsResponse(
+        status="unprocessed",
+        detected_document_type=document_type_hint or "Document",
+        confidence_score=0.0,
+        evidence_summary="Could not extract facts from document. Please review and input your details manually.",
+        extracted_facts=ExtractedDocumentFacts(),
+        applicable_profile_fields=[],
     )
