@@ -1,4 +1,4 @@
-# 🏛️ Government Benefits Navigator — Master Versioned Architecture Blueprint
+# 🏛️ Government Benefits Navigator — Master Versioned Architecture Blueprint & Historical Changelog
 
 > **"A citizen gives the system their information once. The system continuously helps them discover, understand, verify, and access government benefits and services relevant to their life."**
 
@@ -16,39 +16,52 @@ MCP exposes capabilities to agents.
 
 ---
 
-## 🗺️ Master Release Roadmap & Progress Audit
+## 📜 Architecture Changelog & Milestone History (V1.0 – V2.9)
 
-| Version / Phase | Milestone Name | Focus / Core Deliverable | Status |
+```
+[V1.0] Deterministic Core  ──▶ [V1.5] Semantic CDC  ──▶ [V2.0] Vision OCR  ──▶ [V2.5] OKF Knowledge
+           │                           │                         │                    │
+           ▼                           ▼                         ▼                    ▼
+[V2.6] Bitmask Engine (<0.05ms) ──▶ [V2.7] Household Graph ──▶ [V2.8] Chat SSE ──▶ [V2.9] Voice Gateway
+```
+
+| Version / Milestone | Focus Area | Technical Deliverable & Performance | Release Status |
 | :--- | :--- | :--- | :--- |
-| **V1.0 / Phase 1** | **The Deterministic Core** | 4-Screen Flow, Rule Engine, Explainability, National Schemes, Docker Stack | ✅ **Completed** |
-| **V1.1 / Phase 2** | **State Schemes Expansion** | Flagship state benefits (Madhya Pradesh, Maharashtra, Karnataka) & Location Matching | ✅ **Completed** |
-| **V1.2 / Phase 4** | **Admin Management Portal** | Web UI to create, edit, and toggle schemes without SQL, Visual Rule Builder | ✅ **Completed** |
-| **V1.3 / Phase 1** | **Document Vault & Readiness** | S3 Document storage & live Scheme Application Readiness Meter | ✅ **Completed** |
-| **V1.5** | **Government Ingestion Pipeline** | Two-Phase Semantic CDC + Circuit Breaker + MinIO Staging + Triage Queue | ✅ **Completed** |
-| **V2.0 / Phase 1** | **OCR & Fact Extraction** | Gemini 3.5 Flash Multimodal Vision + Strict JSON + Citizen Verification Modal | ✅ **Completed** |
-| **V2.1** | **Citizen Facts Provenance Trail** | `citizen_facts` table with origin audit trail (`source_document_id`, `verified_at`) | ✅ **Completed** |
-| **V2.5** | **OKF Canonical Knowledge Base** | Domain-partitioned hierarchy, 100% valid Frictionless Data Package, Table Schema | ✅ **Completed** |
-| **V2.6 / Phase 5** | **In-Memory Bitmask Engine & Router** | Inverted Bitmask set engine (<0.05ms) + Two-Stage Query Rewriter & Synthesizer | ✅ **Completed** |
-| **V2.7 / Phase 5** | **Household & Family Welfare Graph** | Multi-member family profiling (`household_members`) for daughter/senior schemes | ✅ **Completed** |
-| **V2.8 / Phase 5** | **Conversational Citizen Chat** | Multi-turn chat assistant, streaming SSE, profile fact injection, citations | ✅ **Completed** |
-| **V2.9 / Phase 5** | **Voice-First Speech & Live Gateway**| Gemini Multimodal STT + TTS + Bidirectional WebSocket Tool-Calling RPC | ✅ **Completed** |
-| **V2.10** | **Application Tracking Ledger** | Milestone tracker (`scheme_applications`: `DRAFT` ➔ `DOCS_READY` ➔ `DISBURSED`) | 🎯 **Next Focus** |
-| **V2.11** | **Scheme Application Kit (PDF)** | Printable checklist + verified document QR links + CSC/Jan Seva Kendra guidance | 📋 Planned |
-| **V2.12** | **DBT Troubleshooter & Grievance** | NPCI Aadhaar bank seeding diagnosis + CPGRAMS / CM Helpline grievance drafter | 📋 Planned |
-| **V2.13** | **DPDP 2023 & Aadhaar Guardrails** | Automatic 8-digit Aadhaar masking (`XXXX-XXXX-1234`) and consent management | 📋 Planned |
-| **V2.14** | **Assisted CSC / Kiosk Mode** | Multi-citizen session isolation for Village Level Entrepreneurs (VLEs) | 📋 Planned |
-| **V3.0 / Phase 6** | **Hybrid RAG & Citations** | BM25 + Vector + Cross-Encoder Reranker + Mandatory File Citations | 📋 Planned |
-| **V3.5 / Phase 7** | **MCP Agent Server** | Standard Model Context Protocol tools for autonomous AI agents | 📋 Planned |
-| **V4.0 / Phase 8** | **Life-Event Intelligence** | Proactive triggers on life changes (College, 18+, 60+, Marriage, Income change) | 📋 Planned |
-| **V5.0** | **Universal Global Expansion** | Multi-Country ISO 3166-1 (USA/UK/IN/CA), Multi-Currency, Global Taxonomies | 🔮 Future |
+| **V1.0 (Phase 1)** | **Deterministic Core** | 4-screen flow, relational rule operators (`=`, `lte`, `gte`, `between`, `in`), explainability breakdown, 19 National/State schemes. | ✅ **Released** |
+| **V1.1 (Phase 2)** | **State Scheme Expansion** | Multi-state schemes (Madhya Pradesh, Maharashtra, Karnataka) & district targeting. | ✅ **Released** |
+| **V1.2 (Phase 4)** | **Admin Management** | Full CRUD for schemes, dynamic rule builder, and activation toggles. | ✅ **Released** |
+| **V1.3 (Phase 1)** | **Document Vault** | S3 MinIO storage, document classification, live Scheme Readiness Meter. | ✅ **Released** |
+| **V1.5** | **Government Ingestion CDC** | Two-Phase Semantic CDC + Circuit Breaker + MinIO Staging + Triage Queue. | ✅ **Released** |
+| **V2.0 (Phase 1)** | **Multimodal Vision OCR** | Gemini Vision OCR fact extraction, structured JSON normalization, citizen verification modal. | ✅ **Released** |
+| **V2.1** | **Fact Provenance Trail** | `citizen_facts` database table tracking audit origin (`source_document_id`, `verified_at`). | ✅ **Released** |
+| **V2.5** | **OKF Canonical Knowledge** | Open Knowledge Foundation markdown catalog, 100% Frictionless Data Package spec. | ✅ **Released** |
+| **V2.6 (Phase 5)** | **In-Memory Bitmask Engine** | Inverted integer bitsets in RAM (< 0.05ms evaluations) + Two-Stage Query Rewriter. | ✅ **Released** |
+| **V2.7 (Phase 5)** | **Household Family Graph** | `household_members` table and single-click family welfare scan across 4,148 schemes. | ✅ **Released** |
+| **V2.8 (Phase 5)** | **Conversational Assistant** | Multi-turn chat sessions, SSE token streaming, verified fact injection. | ✅ **Released** |
+| **V2.9 (Phase 5)** | **Voice-First Speech Kiosk** | Multilingual Indic STT/TTS (24kHz) + Live WebSocket Gateway with Real-Time Tool Calling. | ✅ **Released** |
 
 ---
 
-# 📦 Architectural Specifications
+## 🗺️ Forward-Looking Execution Roadmap (V2.10 ➔ V4.0)
+
+| Version / Milestone | Focus Area | Core Deliverable | Priority |
+| :--- | :--- | :--- | :--- |
+| **V2.10** | **Application Tracking Ledger** | Milestone State Machine (`scheme_applications`: `DRAFT` ➔ `DOCS_READY` ➔ `SUBMITTED` ➔ `APPROVED` ➔ `DISBURSED`). | 🎯 **Next Focus** |
+| **V2.11** | **Scheme Application Kit (PDF)** | Printable PDF checklist + pre-filled citizen details + QR code document verification links. | 📋 Planned |
+| **V2.12** | **DBT Troubleshooter & Grievance** | NPCI Aadhaar bank seeding diagnosis + CPGRAMS / CM Helpline 1-click grievance drafter. | 📋 Planned |
+| **V2.13** | **DPDP 2023 & Aadhaar Privacy** | Automatic 8-digit Aadhaar masking (`XXXX-XXXX-1234`) and granular consent revocation. | 📋 Planned |
+| **V2.14** | **Assisted CSC Kiosk Mode** | Multi-citizen session isolation for Village Level Entrepreneurs (VLEs) at CSCs. | 📋 Planned |
+| **V3.0 (Phase 6)** | **Hybrid RAG & Citations** | BM25 + Vector + Cross-Encoder Reranker + Mandatory File Citations. | 📋 Planned |
+| **V3.5 (Phase 7)** | **MCP Agent Server** | Standard Model Context Protocol tools for autonomous external AI agents. | 📋 Planned |
+| **V4.0 (Phase 8)** | **Life-Event Intelligence** | Background triggers on citizen life milestones (Turning 18, Senior Citizen 60, College). | 📋 Planned |
 
 ---
 
-### 1. In-Memory Bitmask Rule Engine ✅ (Completed - V2.6)
+# 📦 Active Core Architecture Specifications
+
+---
+
+### 1. In-Memory Bitmask Rule Engine (V2.6)
 
 ```text
                                 IN-MEMORY BITMASK ENGINE (CQRS READ PATH)
@@ -67,13 +80,9 @@ MCP exposes capabilities to agents.
                             `matched_schemes = bitwise_AND(...)`
 ```
 
-* **Zero I/O Overhead**: Evaluates citizen demographics in RAM in `< 50 microseconds` ($0.05\text{ ms}$).
-* **State Inheritance**: National/Central schemes automatically match across all states via bitwise OR.
-* **Open Attributes**: Schemes without explicit attribute restrictions are matched via bitwise unrestricted inversion.
-
 ---
 
-### 2. Two-Stage Query Rewriter & Multi-Engine Router ✅ (Completed - V2.6)
+### 2. Two-Stage Query Rewriter & Multi-Engine Router (V2.6)
 
 ```text
                       CITIZEN QUESTION / VOICE AUDIO
@@ -168,15 +177,11 @@ MCP exposes capabilities to agents.
                           └───────────────────────────────────────────────┘
 ```
 
-* **Why Demographic SQL is NOT cached in Redis**: Our In-Memory Bitmask Engine runs in **0.02ms** in RAM. Redis TCP network round-trips take **0.8ms – 1.5ms** (20x slower).
-* **Where Caching is Applied**:
-  - **Semantic LLM Cache (Redis Vector)**: Bypasses 1.5s LLM generation for FAQs in **4ms**.
-  - **Web Agent TTL Cache (Redis Hash, 6h)**: Prevents IP rate-limiting on state portals.
-  - **Voice Audio Cache (MinIO / Redis Binary)**: Instant playback of pre-rendered 24kHz MP3 prompts (<2ms).
+* **Deterministic SQL vs Redis**: In-Memory Bitmask Engine runs in **0.02ms** in RAM. Redis TCP network round-trips take **0.8ms – 1.5ms** (20x to 30x slower). Therefore, process RAM is our Tier-0 cache.
 
 ---
 
-### 4. Real-Time Bidirectional Voice & Live Tool-Calling Gateway ✅ (Completed - V2.9)
+### 4. Real-Time Bidirectional Voice & Live Tool-Calling Gateway (V2.9)
 
 ```text
                                     CITIZEN DEVICE / KIOSK
@@ -213,7 +218,7 @@ MCP exposes capabilities to agents.
 
 ---
 
-### 5. Dual-Tier Citizen Fact Provenance Model ✅ (Completed - V2.1 & V2.9)
+### 5. Dual-Tier Citizen Fact Provenance Model (V2.1 & V2.9)
 
 ```text
  ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -231,35 +236,7 @@ MCP exposes capabilities to agents.
 
 ---
 
-### 6. Household & Family Welfare Graph ✅ (Completed - V2.7)
+### 6. Household & Family Welfare Graph (V2.7)
 
 * **Household Model**: `household_members` table linked to primary citizen (`relationship`, `age`, `gender`, `occupation`, `caste_category`, `is_student`, `has_disability`).
 * **Multi-Member Welfare Scan**: `GET /api/v1/household/eligibility` evaluates all 4,148 schemes across all family members in `< 0.2ms`.
-
----
-
-### 7. Upcoming Milestones (From Discovery to Physical Execution)
-
-#### V2.10 — Scheme Application Tracking Ledger 🎯 (Next Focus)
-* **Milestone State Machine**: `DRAFT` ➔ `DOCS_READY` ➔ `SUBMITTED` ➔ `UNDER_SCRUTINY` ➔ `APPROVED` ➔ `DISBURSED` (or `REJECTED` with reason).
-* **Metadata & Receipts**: Stores `acknowledgement_number`, `submission_date`, `portal_url`, and uploaded application receipts.
-
-#### V2.11 — Scheme Application Kit & PDF Checklist Generator 📄
-* **Printable PDF Kit**:
-  - Pre-filled citizen summary (Demographics, verified income, landholding).
-  - Verified document checklist with QR codes pointing to vault documents.
-  - Official submission guidelines for nearest CSC / Jan Seva Kendra / Tehsildar office.
-
-#### V2.12 — DBT Failure Diagnosis & Grievance Drafter ⚖️
-* **Root-Cause Diagnostic Engine**:
-  - Checks NPCI Aadhaar bank account mapping status.
-  - Detects PFMS payment rejection error codes.
-  - Identifies pending eKYC or IFSC merger issues.
-* **One-Click Grievance Drafter**: Automatically drafts formal grievance petitions for **CPGRAMS (Central)**, **CM Helpline (State)**, or local District Magistrate offices.
-
-#### V2.13 — DPDP Act 2023 & Aadhaar Privacy Guardrails 🛡️
-* **Aadhaar Masking Engine**: Automatically masks first 8 digits (`XXXX-XXXX-1234`) on all OCR vision inputs and database records.
-* **Granular Consent Management**: `consent_logs` table recording citizen consent purpose, timestamp, and instant revocation capability.
-
-#### V2.14 — Assisted CSC / Jan Seva Kendra Kiosk Mode 🏢
-* **Kiosk Session Isolation**: Allows a single CSC operator to handle 50+ village citizens sequentially without cross-contaminating document vaults or profiles.
