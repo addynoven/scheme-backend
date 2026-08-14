@@ -1,10 +1,12 @@
-.PHONY: help dev dev-all frontend test test-cov seed seed-admin migrate db-up db-down up down clean lint
+.PHONY: help dev start dev-backend dev-frontend test test-cov seed seed-admin migrate db-up db-down up down clean lint
 
 help:
-	@echo "🏛️ Scheme Navigator Backend — Developer Commands"
+	@echo "🏛️ Scheme Navigator — Developer Commands"
 	@echo "--------------------------------------------------"
-	@echo "  make dev         : Run FastAPI backend with auto-reload"
-	@echo "  make frontend    : Run React frontend dev server"
+	@echo "  make dev         : 🚀 ONE-COMMAND ALL-IN-ONE: Starts DB + S3 + Migrations + Backend + Frontend"
+	@echo "  make start       : Alias for make dev"
+	@echo "  make dev-backend : Run FastAPI backend only (port 8000)"
+	@echo "  make dev-frontend: Run React frontend only (port 5173)"
 	@echo "  make test        : Run all backend integration & unit tests"
 	@echo "  make test-cov    : Run tests with code coverage summary"
 	@echo "  make seed        : Seed Admin + 4,160 National & State schemes"
@@ -12,15 +14,21 @@ help:
 	@echo "  make migrate     : Run Alembic database schema migrations"
 	@echo "  make db-up       : Start PostgreSQL + MinIO services with Docker"
 	@echo "  make db-down     : Stop Docker database & S3 services"
-	@echo "  make up          : Start entire stack with Docker (Backend + Frontend + DB + S3)"
+	@echo "  make up          : Start entire stack inside Docker containers"
 	@echo "  make down        : Stop all Docker stack services"
 	@echo "  make lint        : Format & typecheck codebase"
 	@echo "  make clean       : Clean temporary cache & pytest artifacts"
 
 dev:
+	uv run python scripts/dev.py
+
+start:
+	uv run python scripts/dev.py
+
+dev-backend:
 	uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-frontend:
+dev-frontend:
 	cd frontend && npm run dev
 
 test:
