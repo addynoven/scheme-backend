@@ -37,4 +37,3 @@ Family membership / BPL card
 - [Andhra Pradesh Phase-3 Working Women Hostel & Transport Subsidy](../../schemes/states/andhra-pradesh/andhra-pradesh-phase-3-working-women-hostel-transport-subsidy.md)
 - [Andhra Pradesh Phase-3 Single Mother & Destitute Women Pension](../../schemes/states/andhra-pradesh/andhra-pradesh-phase-3-single-mother-destitute-women-pension.md)
 - [Andhra Pradesh Phase-3 Sukanya Samriddhi High-Interest Top-Up](../../schemes/states/andhra-pradesh/andhra-pradesh-phase-3-sukanya-samriddhi-high-interest-top-up.md)
-- *...and 522 more schemes.*

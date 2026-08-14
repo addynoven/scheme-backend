@@ -37,4 +37,3 @@ Mandatory identity proof
 - [Andhra Pradesh Kisan Samriddhi & Crop Assistance](../../schemes/states/andhra-pradesh/andhra-pradesh-kisan-samriddhi-crop-assistance.md)
 - [Andhra Pradesh Solar Krishi Pump Subsidy](../../schemes/states/andhra-pradesh/andhra-pradesh-solar-krishi-pump-subsidy.md)
 - [Andhra Pradesh Horticulture & Drip Irrigation Grant](../../schemes/states/andhra-pradesh/andhra-pradesh-horticulture-drip-irrigation-grant.md)
-- *...and 4123 more schemes.*

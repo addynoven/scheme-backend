@@ -37,4 +37,3 @@ Official Bank Account Statement for verification
 - [Assam Phase-2 Women Entrepreneur Startup Grant](../../schemes/states/assam/assam-phase-2-women-entrepreneur-startup-grant.md)
 - [Assam Phase-2 Export Promotion & Quality Certification Subsidy](../../schemes/states/assam/assam-phase-2-export-promotion-quality-certification-subsidy.md)
 - [Assam Phase-2 Credit Linked Capital Subsidy for Tech Upgradation](../../schemes/states/assam/assam-phase-2-credit-linked-capital-subsidy-for-tech-upgradation.md)
-- *...and 284 more schemes.*

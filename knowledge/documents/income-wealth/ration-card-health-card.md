@@ -37,4 +37,3 @@ Official Ration Card / Health Card for verification
 - [Arunachal Pradesh Free Diagnostic Tests & Medicine Scheme](../../schemes/states/arunachal-pradesh/arunachal-pradesh-free-diagnostic-tests-medicine-scheme.md)
 - [Arunachal Pradesh Senior Citizen Specialized Geriatric Care](../../schemes/states/arunachal-pradesh/arunachal-pradesh-senior-citizen-specialized-geriatric-care.md)
 - [Arunachal Pradesh Emergency Accidental Trauma Insurance](../../schemes/states/arunachal-pradesh/arunachal-pradesh-emergency-accidental-trauma-insurance.md)
-- *...and 425 more schemes.*

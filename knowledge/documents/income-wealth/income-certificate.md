@@ -37,4 +37,3 @@ BPL card or Tehsildar income certificate
 - [Andhra Pradesh Divyangjan Disability Monthly Pension](../../schemes/states/andhra-pradesh/andhra-pradesh-divyangjan-disability-monthly-pension.md)
 - [Andhra Pradesh Antyodaya Subsidized Food Security](../../schemes/states/andhra-pradesh/andhra-pradesh-antyodaya-subsidized-food-security.md)
 - [Andhra Pradesh Sanitation Workers Rehabilitation Grant](../../schemes/states/andhra-pradesh/andhra-pradesh-sanitation-workers-rehabilitation-grant.md)
-- *...and 1925 more schemes.*

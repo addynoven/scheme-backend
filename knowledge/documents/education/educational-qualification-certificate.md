@@ -37,4 +37,3 @@ Official Educational Qualification Certificate for verification
 - [Assam Rural Youth Driving & Heavy Machinery Training](../../schemes/states/assam/assam-rural-youth-driving-heavy-machinery-training.md)
 - [Assam IT & Emerging Tech Bootcamp Voucher](../../schemes/states/assam/assam-it-emerging-tech-bootcamp-voucher.md)
 - [Assam Self-Employment Micro-Credit Guarantee](../../schemes/states/assam/assam-self-employment-micro-credit-guarantee.md)
-- *...and 396 more schemes.*

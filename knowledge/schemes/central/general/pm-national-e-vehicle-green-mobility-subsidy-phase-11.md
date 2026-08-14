@@ -8,7 +8,7 @@ ministry_ref: "../../../ministries/central/ministry-of-agriculture-farmers-welfa
 government_level: "central"
 state: "ALL_INDIA"
 category: "General"
-official_portal: "https://www.myscheme.gov.in"
+official_portal: "https://dbtbharat.gov.in/schemes/pm-national-e-vehicle-green-mobility-subsidy-phase-11"
 status: "active"
 last_verified_at: "2026-08-01"
 related_documents:
@@ -43,8 +43,8 @@ Central flagship program: Direct cash incentive on purchase of electric 2-wheele
 ## 5. Application Procedure
 1. Verify that your citizen profile satisfies the eligibility rules listed above.
 2. Ensure you have the required documents uploaded and verified in your Document Vault.
-3. Access the official application portal: [https://www.myscheme.gov.in](https://www.myscheme.gov.in).
+3. Access the official application portal: [https://dbtbharat.gov.in/schemes/pm-national-e-vehicle-green-mobility-subsidy-phase-11](https://dbtbharat.gov.in/schemes/pm-national-e-vehicle-green-mobility-subsidy-phase-11).
 4. Submit the application and save your acknowledgement number.
 
 ## 6. Official Sources & References
-- [Official Portal](https://www.myscheme.gov.in)
+- [Official Portal](https://dbtbharat.gov.in/schemes/pm-national-e-vehicle-green-mobility-subsidy-phase-11)

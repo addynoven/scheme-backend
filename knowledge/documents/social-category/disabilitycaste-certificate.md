@@ -37,4 +37,3 @@ Official Disability/Caste Certificate for verification
 - [Assam Antyodaya Subsidized Food Security](../../schemes/states/assam/assam-antyodaya-subsidized-food-security.md)
 - [Assam Sanitation Workers Rehabilitation Grant](../../schemes/states/assam/assam-sanitation-workers-rehabilitation-grant.md)
 - [Assam Tribal Livelihood & Forest Produce Grant](../../schemes/states/assam/assam-tribal-livelihood-forest-produce-grant.md)
-- *...and 406 more schemes.*

@@ -37,4 +37,3 @@ Official Marksheet / Grade Certificate for verification
 - [Andhra Pradesh Phase-3 Girl Child Higher Education Incentive](../../schemes/states/andhra-pradesh/andhra-pradesh-phase-3-girl-child-higher-education-incentive.md)
 - [Andhra Pradesh Phase-3 Technical & Polytechnic Skill Stipend](../../schemes/states/andhra-pradesh/andhra-pradesh-phase-3-technical-polytechnic-skill-stipend.md)
 - [Andhra Pradesh Phase-3 Overseas Education Scholarship for EWS](../../schemes/states/andhra-pradesh/andhra-pradesh-phase-3-overseas-education-scholarship-for-ews.md)
-- *...and 645 more schemes.*

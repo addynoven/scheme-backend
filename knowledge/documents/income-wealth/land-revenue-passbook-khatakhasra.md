@@ -37,4 +37,3 @@ Official Land Revenue Passbook (Khata/Khasra) for verification
 - [Andhra Pradesh Phase-3 Kisan Samriddhi & Crop Assistance](../../schemes/states/andhra-pradesh/andhra-pradesh-phase-3-kisan-samriddhi-crop-assistance.md)
 - [Andhra Pradesh Phase-3 Solar Krishi Pump Subsidy](../../schemes/states/andhra-pradesh/andhra-pradesh-phase-3-solar-krishi-pump-subsidy.md)
 - [Andhra Pradesh Phase-3 Horticulture & Drip Irrigation Grant](../../schemes/states/andhra-pradesh/andhra-pradesh-phase-3-horticulture-drip-irrigation-grant.md)
-- *...and 778 more schemes.*

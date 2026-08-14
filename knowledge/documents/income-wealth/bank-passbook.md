@@ -37,4 +37,3 @@ Bank account details linked to Aadhaar
 - [Andhra Pradesh Fisheries Pond & Biofloc Support](../../schemes/states/andhra-pradesh/andhra-pradesh-fisheries-pond-biofloc-support.md)
 - [Andhra Pradesh Soil Health & Organic Farming Mission](../../schemes/states/andhra-pradesh/andhra-pradesh-soil-health-organic-farming-mission.md)
 - [Andhra Pradesh Farm Mechanization & Rotavator Subsidy](../../schemes/states/andhra-pradesh/andhra-pradesh-farm-mechanization-rotavator-subsidy.md)
-- *...and 3368 more schemes.*

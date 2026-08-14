@@ -5,7 +5,7 @@ total_schemes: 4147
 total_central_categories: 9
 total_states: 36
 total_documents: 50
-last_updated: "2026-08-14 14:20:17"
+last_updated: "2026-08-14 14:34:09"
 ---
 
 # 🏛️ Open Knowledge Framework (OKF) — Master Welfare Hierarchy
@@ -70,13 +70,3 @@ last_updated: "2026-08-14 14:20:17"
 | **Uttar Pradesh** | 180 schemes | [Browse Uttar Pradesh Schemes →](schemes/states/uttar-pradesh/index.md) |
 | **Uttarakhand** | 85 schemes | [Browse Uttarakhand Schemes →](schemes/states/uttarakhand/index.md) |
 | **West Bengal** | 140 schemes | [Browse West Bengal Schemes →](schemes/states/west-bengal/index.md) |
-
----
-
-## 📄 Canonical Document Taxonomies
-
-- [**Identity Documents**](documents/identity/) (Aadhaar, PAN, Voter ID, Passport)
-- [**Income & Wealth Proofs**](documents/income-wealth/) (Income Certificate, Ration Card, Bank Passbook)
-- [**Education Certificates**](documents/education/) (Bonafide Student, Marksheets, Degree Certificates)
-- [**Property & Land Records**](documents/property-land/) (Khasra/Khatauni, Electricity Bill, Patta)
-- [**Social Category Proofs**](documents/social-category/) (Caste Certificate, Domicile, Disability Certificate)

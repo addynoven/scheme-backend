@@ -5,7 +5,7 @@
   "description": "Comprehensive Open Knowledge Framework (OKF) data package of 4,140+ Indian central and state government schemes, eligibility rule engines, financial benefits, and document taxonomies.",
   "version": "2.5.0",
   "homepage": "https://github.com/addynoven/scheme-backend",
-  "created": "2026-08-14T14:27:57Z",
+  "created": "2026-08-14T14:34:10Z",
   "licenses": [
     {
       "name": "CC-BY-4.0",
@@ -20,7 +20,7 @@
   ],
   "sources": [
     {
-      "title": "MyScheme.gov.in - National Platform for Government Schemes",
+      "title": "MyScheme.gov.in",
       "path": "https://www.myscheme.gov.in"
     },
     {
@@ -32,43 +32,16 @@
       "path": "https://dbtbharat.gov.in"
     }
   ],
-  "contributors": [
-    {
-      "title": "Government Welfare Scheme Navigator Team",
-      "role": "author"
-    },
-    {
-      "title": "Open Knowledge Foundation Standards Working Group",
-      "role": "standards-maintainer"
-    }
-  ],
-  "keywords": [
-    "india",
-    "government-schemes",
-    "welfare",
-    "eligibility",
-    "dbt",
-    "open-data",
-    "okf",
-    "frictionless-data",
-    "civic-tech"
-  ],
   "resources": [
     {
       "name": "schemes",
       "path": "data/schemes.csv",
       "profile": "tabular-data-resource",
-      "title": "Government Schemes Master Table",
-      "description": "Primary master catalog of central and state government welfare schemes.",
-      "format": "csv",
-      "mediatype": "text/csv",
-      "encoding": "utf-8",
       "schema": {
         "fields": [
           {
             "name": "id",
             "type": "integer",
-            "title": "Unique Scheme ID",
             "constraints": {
               "required": true,
               "unique": true
@@ -77,7 +50,6 @@
           {
             "name": "slug",
             "type": "string",
-            "title": "URL Slug",
             "constraints": {
               "required": true,
               "unique": true
@@ -86,61 +58,50 @@
           {
             "name": "title",
             "type": "string",
-            "title": "Scheme Title",
             "constraints": {
               "required": true
             }
           },
           {
             "name": "ministry",
-            "type": "string",
-            "title": "Department / Ministry"
+            "type": "string"
           },
           {
             "name": "state",
-            "type": "string",
-            "title": "State or All India"
+            "type": "string"
           },
           {
             "name": "category",
-            "type": "string",
-            "title": "Welfare Category"
+            "type": "string"
           },
           {
             "name": "is_central",
-            "type": "integer",
-            "title": "Is Central Scheme (1=Yes, 0=No)"
+            "type": "integer"
           },
           {
             "name": "benefit_summary",
-            "type": "string",
-            "title": "Primary Benefit Summary"
+            "type": "string"
           },
           {
             "name": "rules_count",
-            "type": "integer",
-            "title": "Number of Eligibility Rules"
+            "type": "integer"
           },
           {
             "name": "docs_count",
-            "type": "integer",
-            "title": "Number of Required Documents"
+            "type": "integer"
           },
           {
             "name": "application_url",
             "type": "string",
-            "format": "uri",
-            "title": "Official Portal URL"
+            "format": "uri"
           },
           {
             "name": "description",
-            "type": "string",
-            "title": "Scheme Overview and Objectives"
+            "type": "string"
           },
           {
             "name": "last_verified_at",
-            "type": "date",
-            "title": "Verification Date"
+            "type": "date"
           }
         ],
         "primaryKey": "id"
@@ -150,17 +111,11 @@
       "name": "eligibility_rules",
       "path": "data/eligibility_rules.csv",
       "profile": "tabular-data-resource",
-      "title": "Deterministic Eligibility Rules",
-      "description": "Rule engine conditions (operators and thresholds) per scheme.",
-      "format": "csv",
-      "mediatype": "text/csv",
-      "encoding": "utf-8",
       "schema": {
         "fields": [
           {
             "name": "id",
             "type": "integer",
-            "title": "Rule ID",
             "constraints": {
               "required": true,
               "unique": true
@@ -169,7 +124,6 @@
           {
             "name": "scheme_slug",
             "type": "string",
-            "title": "Associated Scheme Slug",
             "constraints": {
               "required": true
             }
@@ -177,7 +131,6 @@
           {
             "name": "field_name",
             "type": "string",
-            "title": "Profile Field Evaluated",
             "constraints": {
               "required": true
             }
@@ -185,7 +138,6 @@
           {
             "name": "operator",
             "type": "string",
-            "title": "Comparison Operator (eq, lte, gte, in, between)",
             "constraints": {
               "required": true
             }
@@ -193,15 +145,13 @@
           {
             "name": "rule_value",
             "type": "string",
-            "title": "Threshold / Value Evaluated",
             "constraints": {
               "required": true
             }
           },
           {
             "name": "description",
-            "type": "string",
-            "title": "Human-Readable Rule Explanation"
+            "type": "string"
           }
         ],
         "primaryKey": "id"
@@ -211,17 +161,11 @@
       "name": "benefits",
       "path": "data/benefits.csv",
       "profile": "tabular-data-resource",
-      "title": "Scheme Financial and In-Kind Benefits",
-      "description": "Financial assistance, insurance cover, scholarships, and DBT amounts.",
-      "format": "csv",
-      "mediatype": "text/csv",
-      "encoding": "utf-8",
       "schema": {
         "fields": [
           {
             "name": "id",
             "type": "integer",
-            "title": "Benefit ID",
             "constraints": {
               "required": true,
               "unique": true
@@ -230,7 +174,6 @@
           {
             "name": "scheme_slug",
             "type": "string",
-            "title": "Scheme Slug",
             "constraints": {
               "required": true
             }
@@ -238,30 +181,25 @@
           {
             "name": "title",
             "type": "string",
-            "title": "Benefit Title",
             "constraints": {
               "required": true
             }
           },
           {
             "name": "benefit_type",
-            "type": "string",
-            "title": "Type of Benefit"
+            "type": "string"
           },
           {
             "name": "amount_inr",
-            "type": "number",
-            "title": "Monetary Amount in INR"
+            "type": "number"
           },
           {
             "name": "frequency",
-            "type": "string",
-            "title": "Disbursement Frequency"
+            "type": "string"
           },
           {
             "name": "details",
-            "type": "string",
-            "title": "Detailed Breakdown"
+            "type": "string"
           }
         ],
         "primaryKey": "id"
@@ -271,17 +209,11 @@
       "name": "required_documents",
       "path": "data/required_documents.csv",
       "profile": "tabular-data-resource",
-      "title": "Required Supporting Documents",
-      "description": "Checklist of mandatory certificates and IDs required for scheme application.",
-      "format": "csv",
-      "mediatype": "text/csv",
-      "encoding": "utf-8",
       "schema": {
         "fields": [
           {
             "name": "id",
             "type": "integer",
-            "title": "Document Requirement ID",
             "constraints": {
               "required": true,
               "unique": true
@@ -290,7 +222,6 @@
           {
             "name": "scheme_slug",
             "type": "string",
-            "title": "Scheme Slug",
             "constraints": {
               "required": true
             }
@@ -298,20 +229,17 @@
           {
             "name": "document_name",
             "type": "string",
-            "title": "Canonical Document Name",
             "constraints": {
               "required": true
             }
           },
           {
             "name": "is_mandatory",
-            "type": "integer",
-            "title": "Is Mandatory (1=Yes, 0=No)"
+            "type": "integer"
           },
           {
             "name": "description",
-            "type": "string",
-            "title": "Issuing Authority / Guidelines"
+            "type": "string"
           }
         ],
         "primaryKey": "id"
@@ -321,17 +249,11 @@
       "name": "ministries",
       "path": "data/ministries.csv",
       "profile": "tabular-data-resource",
-      "title": "Government Ministries and Departments",
-      "description": "Administrative authority registry governing schemes.",
-      "format": "csv",
-      "mediatype": "text/csv",
-      "encoding": "utf-8",
       "schema": {
         "fields": [
           {
             "name": "slug",
             "type": "string",
-            "title": "Ministry Slug",
             "constraints": {
               "required": true,
               "unique": true
@@ -340,20 +262,17 @@
           {
             "name": "name",
             "type": "string",
-            "title": "Full Ministry Name",
             "constraints": {
               "required": true
             }
           },
           {
             "name": "level",
-            "type": "string",
-            "title": "Administrative Level (central / state)"
+            "type": "string"
           },
           {
             "name": "schemes_count",
-            "type": "integer",
-            "title": "Total Governed Schemes"
+            "type": "integer"
           }
         ],
         "primaryKey": "slug"

@@ -37,4 +37,3 @@ Khasra / Khatauni land record
 - [Assam Phase-2 Pucca House Construction Subsidy](../../schemes/states/assam/assam-phase-2-pucca-house-construction-subsidy.md)
 - [Assam Phase-2 Rooftop Solar & Green Energy Assistance](../../schemes/states/assam/assam-phase-2-rooftop-solar-green-energy-assistance.md)
 - [Assam Phase-2 Slum Rehabilitation & EWS Flat Allocation](../../schemes/states/assam/assam-phase-2-slum-rehabilitation-ews-flat-allocation.md)
-- *...and 292 more schemes.*

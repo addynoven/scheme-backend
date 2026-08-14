@@ -37,4 +37,3 @@ Tax identity for business borrower
 - [Assam Phase-2 Micro Enterprise Collateral-Free Loan](../../schemes/states/assam/assam-phase-2-micro-enterprise-collateral-free-loan.md)
 - [Assam Phase-2 Women Entrepreneur Startup Grant](../../schemes/states/assam/assam-phase-2-women-entrepreneur-startup-grant.md)
 - [Assam Phase-2 Export Promotion & Quality Certification Subsidy](../../schemes/states/assam/assam-phase-2-export-promotion-quality-certification-subsidy.md)
-- *...and 285 more schemes.*
