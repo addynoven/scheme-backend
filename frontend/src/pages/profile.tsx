@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { Link, useNavigate } from '@/router'
-import { citizenGetMe, updateCitizenProfile } from '@/lib/api'
+import { citizenGetMe, updateCitizenProfile, extractQuickDocument } from '@/lib/api'
 import {
   Save,
   CheckCircle2,
   AlertCircle,
   Home,
+  Upload,
+  Sparkles,
+  ShieldCheck,
+  Loader2,
 } from 'lucide-react'
 
 const INDIAN_STATES = [
@@ -34,6 +38,12 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+
+  // OCR Scan State
+  const [scanningDoc, setScanningDoc] = useState(false)
+  const [scanSuccessMsg, setScanSuccessMsg] = useState<string | null>(null)
+  const [scanErrorMsg, setScanErrorMsg] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const [citizenUid, setCitizenUid] = useState('CIT-PENDING')
   const [householdUid, setHouseholdUid] = useState('HHD-PENDING')
@@ -97,6 +107,40 @@ export default function ProfilePage() {
   }
 
   const completeness = calculateCompleteness()
+
+  const handleDocumentFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setScanningDoc(true)
+    setScanSuccessMsg(null)
+    setScanErrorMsg(null)
+
+    try {
+      const res = await extractQuickDocument(file)
+      const facts = res.extracted_facts
+
+      setFormData((prev) => ({
+        ...prev,
+        full_name: facts.full_name || prev.full_name,
+        date_of_birth: facts.date_of_birth || prev.date_of_birth,
+        gender: facts.gender || prev.gender,
+        state: facts.state || prev.state,
+        district: facts.district || prev.district,
+        annual_income: facts.annual_income !== null && facts.annual_income !== undefined ? facts.annual_income : prev.annual_income,
+        caste_category: facts.caste_category || prev.caste_category,
+      }))
+
+      const docName = res.detected_document_type || 'Document'
+      const docNum = facts.document_number_masked ? ` (${facts.document_number_masked})` : ''
+      setScanSuccessMsg(`✓ Successfully extracted & verified facts from ${docName}${docNum}. Stored in your encrypted S3 Vault.`)
+    } catch (err: any) {
+      setScanErrorMsg(err.message || 'Failed to scan document. Please fill details manually.')
+    } finally {
+      setScanningDoc(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -162,6 +206,71 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ⚡ 1-Click Document Scan / OCR Auto-Fill Box */}
+      <div className="rounded-3xl bg-gradient-to-br from-indigo-950/60 via-zinc-900/80 to-zinc-950/80 border border-indigo-500/30 p-6 shadow-xl relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="h-10 w-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300 shrink-0">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-white">1-Click Auto-Fill with Document Scan (OCR)</h3>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30">
+                  Gemini Vision
+                </span>
+              </div>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Upload your Aadhaar Card, PAN Card, or Income Certificate to auto-populate your verified legal name, DOB, state, district, and income.
+              </p>
+            </div>
+          </div>
+
+          <div className="shrink-0">
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*,.pdf"
+              onChange={handleDocumentFileChange}
+              className="hidden"
+              id="ocr-file-upload"
+            />
+            <label
+              htmlFor="ocr-file-upload"
+              className={`px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs transition-all shadow-lg shadow-blue-600/25 flex items-center gap-2 cursor-pointer ${
+                scanningDoc ? 'opacity-50 pointer-events-none' : ''
+              }`}
+            >
+              {scanningDoc ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Scanning Document...</span>
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4" />
+                  <span>Scan & Auto-Fill Form</span>
+                </>
+              )}
+            </label>
+          </div>
+        </div>
+
+        {scanSuccessMsg && (
+          <div className="mt-4 p-3.5 rounded-2xl bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2.5">
+            <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
+            <span>{scanSuccessMsg}</span>
+          </div>
+        )}
+
+        {scanErrorMsg && (
+          <div className="mt-4 p-3.5 rounded-2xl bg-red-950/70 border border-red-500/40 text-red-300 text-xs flex items-center gap-2.5">
+            <AlertCircle className="h-4 w-4 text-red-400 shrink-0" />
+            <span>{scanErrorMsg}</span>
+          </div>
+        )}
       </div>
 
       {error && (

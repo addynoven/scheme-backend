@@ -41,14 +41,14 @@ STATE_SYNONYMS = {
 }
 
 SCHEME_KEYWORD_MAP = {
-    "pm-kisan": ["pm kisan", "kisan samman", "kisan yojana", "farmer 6000", "kheti"],
+    "pm-kisan": ["pm kisan", "kisan samman", "kisan yojana", "farmer 6000", "kheti", "kisan"],
     "ladli-behna": ["ladli behna", "ladli bahin", "majhi ladki", "1250", "women monthly"],
     "sukanya-samriddhi-yojana": ["sukanya", "ssy", "beti", "girl child", "daughter"],
-    "ab-pmjay": ["ayushman", "pmjay", "pm-jay", "golden card", "5 lakh health", "hospital"],
+    "ab-pmjay": ["ayushman", "pmjay", "pm-jay", "golden card", "5 lakh health", "hospital", "ilaj"],
     "mp-medhavi-vidyarthi-yojana": ["medhavi", "mmvy", "college fee", "higher education scholarship"],
-    "pm-awas-yojana": ["pm awas", "pmay", "pucca house", "makan", "housing"],
-    "pm-vishwakarma": ["vishwakarma", "artisan", "toolkit", "15000 tool"],
-    "pm-mudra-yojana": ["mudra", "pmmy", "business loan", "shishu loan"],
+    "pm-awas-yojana": ["pm awas", "pmay", "pucca house", "makan", "housing", "ghar"],
+    "pm-vishwakarma": ["vishwakarma", "artisan", "toolkit", "15000 tool", "karigar", "carpenter", "tailor"],
+    "pm-mudra-yojana": ["mudra", "pmmy", "business loan", "shishu loan", "business", "vyapar", "startup", "dukan", "shop", "msme", "udyog", "dhandha"],
 }
 
 
@@ -89,14 +89,24 @@ class IntelligentQueryRouter:
 
         # 4. Extract Category / Occupation
         category = None
-        if any(k in q for k in ["farmer", "kisan", "kheti", "crop", "fasal", "agriculture"]):
+        if any(k in q for k in ["business", "loan", "startup", "msme", "dukan", "shop", "vyapar", "udyog", "dhandha", "kranti", "kam"]):
+            category = "Business & Finance"
+        elif any(k in q for k in ["farmer", "kisan", "kheti", "crop", "fasal", "agriculture"]):
             category = "Agriculture"
-        elif any(k in q for k in ["scholarship", "college", "school", "padhai", "student", "education"]):
+        elif any(k in q for k in ["scholarship", "college", "school", "padhai", "student", "education", "fee"]):
             category = "Education"
-        elif any(k in q for k in ["women", "mahila", "lady", "girl", "beti", "mother"]):
+        elif any(k in q for k in ["women", "mahila", "lady", "girl", "beti", "mother", "daughter"]):
             category = "Women & Child"
-        elif any(k in q for k in ["health", "hospital", "bimari", "doctor", "ayushman"]):
+        elif any(k in q for k in ["health", "hospital", "bimari", "doctor", "ayushman", "treatment", "ilaj"]):
             category = "Healthcare"
+        elif any(k in q for k in ["house", "housing", "makan", "ghar", "awas", "flat"]):
+            category = "Housing"
+        elif any(k in q for k in ["artisan", "karigar", "skill", "training", "vishwakarma", "job", "naukri"]):
+            category = "Employment & Skills"
+        elif any(k in q for k in ["pension", "old age", "senior", "vriddha", "atal", "elderly"]):
+            category = "Social Welfare"
+        elif any(k in q for k in ["disability", "disabled", "divyang", "viklang"]):
+            category = "Social Welfare"
 
         # 5. Check Scheme Matches in OKF
         matched_slugs = []
@@ -219,12 +229,12 @@ class IntelligentQueryRouter:
             original_query=raw_query,
             chat_history=chat_history or [],
             detected_language=plan.detected_language,
-            sql_eligibility_matches=matches[:5],
+            sql_eligibility_matches=matches[:6],
             okf_documents_content=okf_docs_content,
             web_agent_live_facts="Application portal is accepting active registrations for the current fiscal cycle." if plan.web_agent_query else None,
         )
 
-        response_text = self._synthesize_answer(synthesizer_ctx)
+        response_text = self._synthesize_answer(synthesizer_ctx, user_profile)
 
         return QueryRouteResponse(
             query=raw_query,
@@ -235,7 +245,104 @@ class IntelligentQueryRouter:
             matched_schemes=matches[:5],
         )
 
-    def _synthesize_answer(self, ctx: SynthesizerContext) -> str:
+    def _generate_answer_with_gemini(
+        self, ctx: SynthesizerContext, user_profile: dict[str, Any] | None = None
+    ) -> str | None:
+        from app.core.config import settings
+        import json
+        import urllib.request
+
+        if not settings.GEMINI_API_KEY:
+            return None
+
+        # Short casual greetings or random test letters
+        clean_q = ctx.original_query.strip().lower()
+        is_greeting = clean_q in ["hi", "hello", "hey", "namaste", "h", "t", "hola", "pranam", "kya haal hai", "k"]
+
+        # Build user profile string
+        profile_str = ""
+        if user_profile:
+            profile_str = (
+                f"Citizen Profile:\n"
+                f"- Name: {user_profile.get('full_name', 'Citizen')}\n"
+                f"- State: {user_profile.get('state', 'All-India')}\n"
+                f"- District: {user_profile.get('district', '')}\n"
+                f"- Age: {user_profile.get('age', '')}\n"
+                f"- Gender: {user_profile.get('gender', '')}\n"
+                f"- Occupation: {user_profile.get('occupation', '')}\n"
+                f"- Annual Income: ₹{user_profile.get('annual_income', '')}\n"
+                f"- Caste Category: {user_profile.get('caste_category', '')}\n"
+            )
+
+        schemes_str = ""
+        if ctx.sql_eligibility_matches and not is_greeting:
+            schemes_str = "Relevant Welfare Schemes from Database:\n"
+            for m in ctx.sql_eligibility_matches[:6]:
+                schemes_str += (
+                    f"- [{m['name']}](/schemes/{m['slug']})\n"
+                    f"  Category: {m.get('category')}, State: {m.get('state')}\n"
+                    f"  Benefit: {m.get('benefit_title')}\n"
+                    f"  Description: {m.get('description', '')[:140]}\n"
+                    f"  Application Portal: {m.get('application_url')}\n"
+                )
+
+        history_str = ""
+        if ctx.chat_history:
+            history_str = "Conversation History:\n"
+            for h in ctx.chat_history[-4:]:
+                history_str += f"{h.get('sender', 'user')}: {h.get('content', '')}\n"
+
+        system_instruction = (
+            "You are the Sovereign Citizen Welfare AI Advisor for Scheme Navigator (India).\n"
+            "Your goal is to provide accurate, empathetic, and actionable guidance regarding Indian Central & State Government Welfare Schemes (such as PM Mudra, PMEGP, PM-Kisan, Ayushman Bharat, Ladli Behna, Mukhyamantri Udyami / Udyam Kranti Yojana, scholarships, housing, loans, pensions).\n"
+            "Rules:\n"
+            "1. Language: Answer naturally in the same language as the citizen's query (Hindi, Hinglish, English, etc.).\n"
+            "2. Business in MP/India: If the citizen asks about starting a business or loans in Madhya Pradesh / India, explicitly detail PM Mudra Yojana (Shishu/Kishor/Tarun loans up to ₹10-20 Lakhs collateral-free), PMEGP (25-35% capital subsidy), and MP Mukhyamantri Udyam Kranti Yojana, along with required documents (Aadhaar, Project Report, Bank Passbook).\n"
+            "3. Greetings / Short messages ('hi', 'h', 't', 'namaste'): Greet them politely by name (if available in profile) and ask how you can help them navigate welfare programs (business, agriculture, scholarships, healthcare, pensions).\n"
+            "4. Markdown Links: Format scheme names with markdown links in format: [Scheme Name](/schemes/{slug}).\n"
+            "5. Structure: Keep responses clear, professional, and easy to read with bullet points."
+        )
+
+        user_content = f"{profile_str}\n\n{schemes_str}\n\n{history_str}\n\nCitizen Question: {ctx.original_query}"
+
+        payload = {
+            "system_instruction": {"parts": [{"text": system_instruction}]},
+            "contents": [{"parts": [{"text": user_content}]}],
+            "generationConfig": {
+                "temperature": 0.3,
+                "maxOutputTokens": 800,
+            },
+        }
+
+        models_to_try = [settings.GEMINI_MODEL or "gemini-3.5-flash", "gemini-3-flash-preview", "gemini-2.5-flash"]
+        for model_name in models_to_try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    "X-goog-api-key": settings.GEMINI_API_KEY,
+                },
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=12) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    cand = data.get("candidates", [])[0]
+                    text = cand.get("content", {}).get("parts", [])[0].get("text", "")
+                    if text:
+                        return text.strip()
+            except Exception:
+                continue
+
+        return None
+
+    def _synthesize_answer(self, ctx: SynthesizerContext, user_profile: dict[str, Any] | None = None) -> str:
+        # Try Gemini LLM generation first
+        llm_answer = self._generate_answer_with_gemini(ctx, user_profile)
+        if llm_answer:
+            return llm_answer
         lang = ctx.detected_language
         matches = ctx.sql_eligibility_matches
         okf_docs = ctx.okf_documents_content
