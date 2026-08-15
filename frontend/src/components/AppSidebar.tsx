@@ -28,7 +28,7 @@ interface AppSidebarProps {
   userName: string | null
   userProfile: any | null
   citizenUid: string | null
-  householdUid: string | null
+  householdUid?: string | null
   onNewChat: () => void
   onOpenVoiceModal: () => void
   onLogout: () => void
@@ -54,26 +54,45 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   const [editingSessionId, setEditingSessionId] = useState<number | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
 
-  const handleRename = async (id: number, e?: React.FormEvent) => {
-    if (e) e.preventDefault()
-    if (!editingTitle.trim()) {
+  const handleStartRename = (session: ChatSession, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setEditingSessionId(session.id)
+    setEditingTitle(session.title || 'Welfare conversation')
+  }
+
+  const handleSaveRename = async (id: number, e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    const cleanTitle = editingTitle.trim()
+    if (!cleanTitle) {
       setEditingSessionId(null)
       return
     }
     try {
-      const updated = await updateChatSessionTitle(id, editingTitle.trim())
-      setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, title: updated.title } : s)))
+      // Optimistic update
+      setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, title: cleanTitle } : s)))
       setEditingSessionId(null)
+      await updateChatSessionTitle(id, cleanTitle)
+      window.dispatchEvent(new CustomEvent('scheme:session-updated'))
     } catch (err) {
-      console.error(err)
+      console.error('Failed to rename session:', err)
     }
   }
 
-  const handleDelete = async (id: number, e: React.MouseEvent) => {
+  const handleCancelRename = (e: React.MouseEvent) => {
+    e.preventDefault()
     e.stopPropagation()
-    if (!confirm('Are you sure you want to delete this chat conversation?')) return
+    setEditingSessionId(null)
+  }
+
+  const handleDelete = async (id: number, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     try {
-      await deleteChatSession(id)
+      // Optimistic delete
       const remaining = sessions.filter((s) => s.id !== id)
       setSessions(remaining)
       if (activeSessionId === id) {
@@ -83,8 +102,10 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           navigate('/')
         }
       }
+      await deleteChatSession(id)
+      window.dispatchEvent(new CustomEvent('scheme:session-updated'))
     } catch (err) {
-      console.error(err)
+      console.error('Failed to delete session:', err)
     }
   }
 
@@ -132,8 +153,9 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               </Link>
             ) : (
               <button
+                type="button"
                 onClick={() => setIsOpen(true)}
-                className="h-8 w-8 mx-auto rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-zinc-100 flex items-center justify-center transition-colors"
+                className="h-8 w-8 mx-auto rounded-lg hover:bg-zinc-800/80 text-zinc-400 hover:text-zinc-100 flex items-center justify-center transition-colors cursor-pointer"
                 title="Expand sidebar"
               >
                 <PanelLeft className="h-4 w-4" />
@@ -142,8 +164,9 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 
             {isOpen && (
               <button
+                type="button"
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/70 transition-colors"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/70 transition-colors cursor-pointer"
                 title="Collapse sidebar"
               >
                 <PanelLeftClose className="h-4 w-4" />
@@ -168,7 +191,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             <button
               type="button"
               onClick={onNewChat}
-              className="h-8 w-8 mx-auto rounded-lg bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/50 flex items-center justify-center text-zinc-300 hover:text-white transition-colors shrink-0"
+              className="h-8 w-8 mx-auto rounded-lg bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/50 flex items-center justify-center text-zinc-300 hover:text-white transition-colors shrink-0 cursor-pointer"
               title="New Chat"
             >
               <Plus className="h-4 w-4" />
@@ -204,7 +227,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 onOpenVoiceModal()
                 if (window.innerWidth < 1024) setIsOpen(false)
               }}
-              className={`flex items-center rounded-lg text-xs transition-colors text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 ${
+              className={`flex items-center rounded-lg text-xs transition-colors text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 cursor-pointer ${
                 isOpen ? 'gap-2.5 px-2.5 py-1.5' : 'justify-center h-8 w-8 mx-auto'
               }`}
               title="Voice Mode"
@@ -265,58 +288,60 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                               value={editingTitle}
                               onChange={(e) => setEditingTitle(e.target.value)}
                               onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleRename(s.id, e)
+                                if (e.key === 'Enter') handleSaveRename(s.id, e)
                                 if (e.key === 'Escape') setEditingSessionId(null)
                               }}
                               className="bg-zinc-950 border border-zinc-600 text-xs text-white rounded px-1.5 py-0.5 w-full focus:outline-none"
                               onClick={(e) => e.stopPropagation()}
+                              onMouseDown={(e) => e.stopPropagation()}
                             />
                           ) : (
-                            s.title || 'Welfare consultation'
+                            s.title || 'Welfare conversation'
                           )}
                         </span>
 
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* Action Buttons (Rename & Delete) */}
+                        <div
+                          className="flex items-center gap-1 shrink-0"
+                          onClick={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
+                        >
                           {isEditing ? (
                             <>
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleRename(s.id)
-                                }}
-                                className="p-0.5 hover:text-emerald-400 text-zinc-400"
+                                type="button"
+                                onClick={(e) => handleSaveRename(s.id, e)}
+                                className="p-1 hover:text-emerald-400 text-zinc-400 rounded hover:bg-zinc-700/50 cursor-pointer"
+                                title="Save title"
                               >
-                                <Check className="h-3 w-3" />
+                                <Check className="h-3.5 w-3.5 text-emerald-400" />
                               </button>
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setEditingSessionId(null)
-                                }}
-                                className="p-0.5 hover:text-red-400 text-zinc-400"
+                                type="button"
+                                onClick={handleCancelRename}
+                                className="p-1 hover:text-red-400 text-zinc-400 rounded hover:bg-zinc-700/50 cursor-pointer"
+                                title="Cancel"
                               >
-                                <X className="h-3 w-3" />
+                                <X className="h-3.5 w-3.5 text-zinc-400" />
                               </button>
                             </>
                           ) : (
                             <>
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setEditingSessionId(s.id)
-                                  setEditingTitle(s.title)
-                                }}
-                                className="p-0.5 hover:text-zinc-200 text-zinc-500"
-                                title="Rename"
+                                type="button"
+                                onClick={(e) => handleStartRename(s, e)}
+                                className="p-1 hover:text-zinc-100 text-zinc-500 rounded hover:bg-zinc-700/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                title="Rename conversation"
                               >
-                                <Edit2 className="h-3 w-3" />
+                                <Edit2 className="h-3.5 w-3.5" />
                               </button>
                               <button
+                                type="button"
                                 onClick={(e) => handleDelete(s.id, e)}
-                                className="p-0.5 hover:text-red-400 text-zinc-500"
-                                title="Delete"
+                                className="p-1 hover:text-red-400 text-zinc-500 rounded hover:bg-zinc-700/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                title="Delete conversation"
                               >
-                                <Trash2 className="h-3 w-3" />
+                                <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             </>
                           )}
@@ -350,8 +375,9 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               </Link>
 
               <button
+                type="button"
                 onClick={onLogout}
-                className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-zinc-800/80 transition-colors"
+                className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-zinc-800/80 transition-colors cursor-pointer"
                 title="Log Out"
               >
                 <LogOut className="h-3.5 w-3.5" />
