@@ -1,12 +1,15 @@
-# 🏛️ Government Welfare Scheme Navigator & Eligibility API
+# 🏛️ Scheme AI — Citizen Welfare Navigator & Sovereign Engine
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Python](https://img.shields.io/badge/Python-3.13+-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![MinIO / S3](https://img.shields.io/badge/MinIO-S3_Storage-C72C48?style=flat&logo=minio&logoColor=white)](https://min.io)
-[![Tests](https://img.shields.io/badge/Tests-49%20Passing%20(100%25)-brightgreen?style=flat&logo=pytest&logoColor=white)](https://pytest.org)
+[![Gemini](https://img.shields.io/badge/Gemini_3.7_Flash-AI_Synthesis-8E75B2?style=flat&logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
+[![Tests](https://img.shields.io/badge/Tests-100%25%20Passing-brightgreen?style=flat&logo=pytest&logoColor=white)](https://pytest.org)
 
-A high-performance **Feature-Driven Modular Monolith** that aggregates over **4,160+ Central and State welfare schemes**, matches citizen profiles with **deterministic rule evaluation**, generates **plain-English eligibility reasons**, and calculates **document readiness scores** backed by S3 object storage.
+A high-performance **Feature-Driven Modular Monolith** that aggregates over **4,160+ Central and State welfare schemes**, evaluates citizen profiles with **sub-millisecond deterministic bitmask engines**, explains eligibility in plain language, and provides a polished **conversational AI assistant** with real-time SSE streaming, Document OCR extraction, Family Graph calculations, and browser-native voice interactions.
 
 ---
 
@@ -17,60 +20,67 @@ A high-performance **Feature-Driven Modular Monolith** that aggregates over **4,
 # 1. Start database, object storage, and backend
 docker compose up -d --build
 
-# 2. View Swagger OpenAPI Docs at:
+# 2. View Swagger OpenAPI Docs:
 # http://localhost:8000/docs
 ```
 
-### Option B: Local Development with `uv`
+### Option B: Local Development
 ```bash
-# 1. Install dependencies
+# Backend (Python 3.13 + uv)
 uv sync
+make seed       # Seeds default admin and 4,160+ schemes
+make dev        # Runs FastAPI at http://localhost:8000
 
-# 2. Seed database (Creates admin@gov.in and auto-populates 4,160+ schemes)
-make seed
-
-# 3. Start local development server (with hot reload)
-make dev
-
-# 4. Run the full test suite (49 integration & unit tests)
-make test
+# Frontend (React 19 + TypeScript + Vite)
+cd frontend
+npm install
+npm run dev     # Runs Web App at http://localhost:5173
 ```
 
 ---
 
 ## 📐 Architecture & Mental Model
 
-This repository is organized as a **Feature-Driven Modular Monolith**. Code is grouped **by business capability**, never by technical layer.
+The repository follows a **Feature-Driven Modular Monolith** architecture. Code is grouped **by business capability**, never by technical layer.
 
 ```mermaid
 graph TD
-    Client["Citizen / Admin Client (React / Mobile / API)"] --> FastAPI["FastAPI Gateway (app/main.py)"]
+    Client["Citizen Web App (React 19 / Vite / Tailwind)"] --> Gateway["FastAPI Gateway (app/main.py)"]
     
     subgraph Feature Modules ["app/modules/"]
-        Auth["auth/ (JWT Auth & Citizen Profile)"]
-        Schemes["schemes/ (Discovery, Search, Categories)"]
-        Elig["eligibility/ (Rule Matcher & Reasoner)"]
-        Vault["vault/ (S3 Doc Storage & Readiness Meter)"]
+        Chat["chat/ & voice/ (Conversational Assistant & SSE Streaming)"]
+        Routing["routing/ (Gemini 3.7 Flash + Multi-Model Router)"]
+        Auth["auth/ (JWT Auth, Citizen Facts & Profiles)"]
+        Household["household/ (Multi-Member Family Graph & Pooling)"]
+        Schemes["schemes/ (Faceted Search & Categories)"]
+        Elig["eligibility/ (Bitmask Engine & Explainable Reasoner)"]
+        Vault["vault/ (S3 Doc Storage, OCR Scanner & Readiness)"]
         Ingest["ingestion/ (4-Gate Gov Crawler & Diffing)"]
-        Admin["admin/ (Staff Controls & Role Elevation)"]
+        Admin["admin/ (Administrative Portal & Ingestion Triage)"]
     end
     
-    FastAPI --> Auth
-    FastAPI --> Schemes
-    FastAPI --> Elig
-    FastAPI --> Vault
-    FastAPI --> Ingest
-    FastAPI --> Admin
+    Gateway --> Chat
+    Gateway --> Routing
+    Gateway --> Auth
+    Gateway --> Household
+    Gateway --> Schemes
+    Gateway --> Elig
+    Gateway --> Vault
+    Gateway --> Ingest
+    Gateway --> Admin
     
     Auth --> PostgreSQL[("PostgreSQL 16")]
+    Chat --> PostgreSQL
+    Household --> PostgreSQL
     Schemes --> PostgreSQL
-    Elig --> PostgreSQL
-    Vault --> MinIO[("MinIO / S3 Vault")]
+    Elig --> BitmaskRAM["⚡ RAM Bitmasks (0.85ms)"]
+    Vault --> MinIO[("MinIO / S3 Storage")]
+    Routing --> GeminiAPI["Google Gemini 3.7 Flash"]
     Ingest --> GovData["Data.gov.in / State Feeds"]
 ```
 
 ### The Standard 4-File Feature Pattern
-Every domain feature in `app/modules/<feature>/` follows the exact same predictable 4-file structure:
+Every domain feature in `app/modules/<feature>/` follows the same predictable 4-file structure:
 
 | File | Responsibility |
 | :--- | :--- |
@@ -86,54 +96,62 @@ Every domain feature in `app/modules/<feature>/` follows the exact same predicta
 ```text
 scheme-backend/
 ├── app/
-│   ├── core/                  # Shared cross-cutting concerns (config, JWT security, pagination, errors)
+│   ├── core/                  # Cross-cutting concerns (config, JWT security, pagination, error envelope)
 │   │   ├── config.py          # Pydantic BaseSettings environment variables
 │   │   ├── deps.py            # FastAPI dependencies (get_db, get_current_user, get_current_admin)
-│   │   ├── exceptions.py      # Standard domain exceptions (SchemeNotFoundError, etc.)
+│   │   ├── exceptions.py      # Standard domain exceptions
 │   │   ├── error_handlers.py  # Centralized JSON error contract envelope
-│   │   ├── pagination.py      # Generic PaginatedResponse[T] container
 │   │   └── security.py        # Argon2id password hashing & JWT token issuing
 │   │
 │   ├── database.py            # SQLAlchemy engine & SessionLocal factory
 │   ├── main.py                # FastAPI entrypoint, mounts feature routers
-│   ├── seeds/                 # DB seeders (4,160 National/State schemes + Admin user)
+│   ├── seeds/                 # DB seeders (4,160+ National & State schemes + Admin user)
 │   │
 │   └── modules/               # Feature-Driven Domain Modules
 │       ├── admin/             # Administrative control plane & user role elevation
-│       ├── auth/              # Registration, Login, Token Refresh, and Citizen Demographics
-│       ├── eligibility/       # Fast binary matcher & plain-English eligibility explanation engine
+│       ├── auth/              # Registration, Login, Token Refresh, and Citizen Facts
+│       ├── chat/              # Multi-turn chat sessions, history, and SSE token streaming
+│       ├── eligibility/       # ⚡ In-Memory Bitmask matcher & Explainable Reasoner
+│       ├── household/         # Multi-member family graph & collective eligibility pooling
 │       ├── ingestion/         # RFC 7232 Caching, MinIO Raw Archival, Circuit Breaker, Diff Triage
-│       ├── schemes/           # Welfare Scheme search, problem tagging, categories, and CRUD
-│       └── vault/             # Citizen document upload, presigned URLs, application readiness
+│       ├── routing/           # Grounded Query Router (Direct SQL, In-Memory Bitmask, Gemini 3.7)
+│       ├── schemes/           # Welfare Scheme search, categories, and CRUD
+│       ├── vault/             # Citizen document upload, presigned URLs, OCR fact extraction
+│       └── voice/             # Speech-to-Text transcription & Indic voice synthesis
+│
+├── frontend/                  # Modern Consumer AI Interface (React 19 + TypeScript + Tailwind)
+│   ├── src/
+│   │   ├── components/        # AppSidebar, ChatComposer, SuggestionChip, MarkdownMessage, ErrorBoundary
+│   │   ├── lib/               # API clients, session token storage, SSE streaming handlers
+│   │   ├── pages/             # Route pages: / (Chat), /household, /vault, /results, /profile
+│   │   ├── main.tsx           # React entry point
+│   │   └── router.ts          # Type-safe file-based client routing
+│   ├── package.json
+│   └── vite.config.ts
 │
 ├── tests/
-│   ├── integration/           # Black-box API tests across all features (42 tests)
-│   └── unit/                  # Rule engine edge cases & boundary tests (7 tests)
+│   ├── integration/           # Black-box API tests across all features
+│   └── unit/                  # Rule engine edge cases & bitmask boundary tests
 │
-├── api.http                   # Ready-to-use VS Code / IntelliJ HTTP request playground
 ├── Makefile                   # 1-command developer shortcuts (make dev, make test, make seed)
 └── .env.example               # Environment variables template
 ```
 
 ---
 
-## 🧩 Core Product Engines
+## 🧩 Core Product Capabilities
 
-### 1. Scheme Discovery Engine (`/schemes`)
-- **Faceted Search**: Full-text and keyword search by problem statement (e.g. `?q=fertilizer`, `?q=pension`, `?q=scholarship`).
-- **Categorization**: Instant filtering across Agriculture, Healthcare, Education, Social Welfare, Housing, and Business/MSME.
-- **State Filtering**: Distinguishes Central flagship schemes (`All-India`) from state-specific schemes (`Madhya Pradesh`, `Maharashtra`, `Karnataka`, `Tamil Nadu`).
+### 1. 💬 Flagship Conversational Assistant (`/`)
+- **Direct Chat Experience**: Visiting `/` opens the conversational interface directly.
+- **Real-Time Token Streaming**: Server-Sent Events (SSE) stream synthesized responses token-by-token.
+- **Interactive Grounded Citations**: Responses feature clickable scheme chips and verified department sources.
+- **Voice Dictation & Speech Synthesis**:
+  - One-tap speech-to-text input in Indian English/Hinglish using browser-native Web Speech API.
+  - Client-side text-to-speech (*"Listen"*) playback with zero latency and zero cloud costs.
+- **Persistent SQL Sessions**: Multi-turn conversations and message threads stored in PostgreSQL (`chat_sessions` and `chat_messages`).
 
-### 2. Explainable Eligibility Reasoner (`/eligibility`)
-- Evaluates citizen demographic context (`age`, `gender`, `state`, `annual_income`, `occupation`, `caste_category`, `has_land`, `is_differently_abled`).
-- Supports comparison operators: `<`, `<=`, `>`, `>=`, `==`, `!=`, `in`, `not_in`, `between`, `range` (`18-60`).
-- **Human-Friendly Explanations**: Rather than returning a blank `true/false`, the engine provides plain-English verdicts:
-  - **`eligible_schemes`** (100% criteria passed).
-  - **`nearly_eligible_schemes`** (50%–99% matched, listing the exact unmet criteria e.g. *"Your annual income (₹3,00,000) exceeds the maximum limit of ₹2,50,000"*).
-  - **`ineligible_schemes`** (<50% matched).
-
-### 3. ⚡ In-Memory Bitmask Rule Engine (Worker 1 CQRS Read Model)
-Pre-compiles all 4,145+ schemes and eligibility rules into in-memory integer bitmasks for microsecond CPU evaluations without SQL database I/O overhead:
+### 2. ⚡ In-Memory Bitmask Rule Engine (`/eligibility`)
+Pre-compiles 4,145+ schemes and eligibility rules into integer bitmasks for microsecond CPU evaluations without SQL database I/O overhead:
 
 ```text
 ======================================================================
@@ -145,7 +163,7 @@ Pre-compiles all 4,145+ schemes and eligibility rules into in-memory integer bit
 ======================================================================
 ```
 
-#### Multi-Core Scaling (16 CPU Cores / `make benchmark`):
+#### Multi-Core Scaling Benchmark (16 CPU Cores / `make benchmark`):
 ```text
 ======================================================================
 🔥 MULTI-CORE BITMASK ENGINE BENCHMARK (16 CPU CORES)
@@ -160,16 +178,25 @@ Pre-compiles all 4,145+ schemes and eligibility rules into in-memory integer bit
 ======================================================================
 ```
 
-### 4. Citizen Document Vault & Readiness Meter (`/vault`)
-- Encrypted upload of citizen credentials (Aadhaar, PAN Card, Bank Passbooks, Land Records) to MinIO/S3 object storage.
-- Issues time-limited presigned download URLs.
-- **Readiness Meter**: Evaluates uploaded documents against a target scheme's required documents list and returns an actionable checklist (e.g. `2/3 mandatory documents ready (67%)`, identifying missing items).
+### 3. 👨‍👩‍👧 Family Graph & Multi-Member Household Matrix (`/household`)
+- **Household Modeling**: Links primary citizen with spouse, dependent children, elderly parents, and siblings.
+- **Joint Eligibility Pooling**: Evaluates welfare schemes at both individual member level and collective household level (e.g. Ayushman Bharat ₹5 Lakh family cover, PM Awas Yojana housing subsidies, state girl-child education grants).
+- **Consolidated Benefit Matrix**: Summarizes total annual monetary value available across the entire household.
 
-### 5. 4-Gate Automated Government Ingestion Pipeline (`/admin/ingestion`)
+### 4. 📁 Document Vault & OCR Fact Extraction (`/vault`)
+- Encrypted storage of citizen documents (Aadhaar, PAN Card, Income Certificates, Marksheets, Ration Cards) in MinIO/S3 object storage.
+- **OCR Fact Scanner**: Automatically extracts key demographics (DOB, State, Annual Income, Category, Father's Name) from uploaded images/PDFs and syncs them into the citizen's verified facts.
+- **Readiness Meter**: Evaluates uploaded documents against target schemes to identify missing application requirements.
+
+### 5. 🔍 Faceted Scheme Discovery (`/results`)
+- Full-text search and filtering across 4,160+ Central and State welfare schemes.
+- Filter by category (Agriculture, Education, Health, MSME, Housing, Social Welfare) and State jurisdiction.
+
+### 6. 🛡️ 4-Gate Automated Government Ingestion Pipeline (`/admin/ingestion`)
 - **Gate 1 (RFC 7232 Zero-Bandwidth Caching)**: Sends `If-None-Match` and `If-Modified-Since` headers to skip unchanged feeds in 0.05s.
 - **Gate 2 (Raw MinIO Archival)**: Stores untouched payloads as unedited audit trails.
-- **Gate 3 (Circuit Breaker Quarantine)**: Halts ingestion if an upstream API returns malformed structures or >40% missing schemes.
-- **Gate 4 (Semantic Hash Diffing & Triage)**: Automatically updates unchanged or non-breaking metadata; routes breaking changes (e.g. income limit changes) to the admin review queue.
+- **Gate 3 (Circuit Breaker Quarantine)**: Halts ingestion if an upstream feed structure breaks.
+- **Gate 4 (Semantic Hash Diffing & Triage)**: Automatically applies non-breaking changes; routes breaking changes (e.g. income limit modifications) to administrative review.
 
 ---
 
@@ -177,53 +204,34 @@ Pre-compiles all 4,145+ schemes and eligibility rules into in-memory integer bit
 
 | Command | Description |
 | :--- | :--- |
-| **`make dev`** | Starts FastAPI server at `http://localhost:8000` with hot-reload. |
-| **`make test`** | Runs all 49 integration and unit tests via `pytest`. |
-| **`make test-cov`** | Runs tests and prints code coverage report. |
+| **`make dev`** | Starts FastAPI backend at `http://localhost:8000` with hot-reload. |
+| **`make test`** | Runs full test suite via `pytest`. |
+| **`make test-cov`** | Runs tests and outputs code coverage. |
 | **`make seed`** | Seeds default Admin (`admin@gov.in`) and 4,160+ welfare schemes. |
 | **`make db-up`** | Starts local PostgreSQL 16 and MinIO background containers. |
 | **`make db-down`** | Stops Docker background containers. |
-| **`make lint`** | Runs Ruff linting and formatting across all files. |
+| **`make lint`** | Runs Ruff linting and formatting. |
 
 ---
 
 ## 🧪 Testing & Verification
 
-The test suite emphasizes **black-box integration testing** of complete citizen workflows:
+Run the test suite using `pytest`:
 
 ```bash
-uv run pytest -v
+.venv/bin/pytest tests/ -v
 ```
 
-### Verified Scenarios in Test Suite:
+### Verified Test Scenarios:
 1. **Persona 1 (Farmer Ramesh)**: Madhya Pradesh farmer receives PM-Kisan (₹6,000) + MP CM Kisan Kalyan (₹4,000) + PM Fasal Bima.
 2. **Persona 2 (Girl Child Priya)**: 14yo student matches Beti Bachao Beti Padhao + Post-Matric Scholarship.
 3. **Persona 3 (Senior Citizen Murugan)**: 65yo Tamil Nadu resident qualifies for National Social Assistance Old Age Pension.
 4. **Persona 4 (Rural Artisan Sunita)**: Female weaver qualifies for PM Vishwakarma + Mahila Samman Savings.
-5. **Persona 5 (High-Income Vikram)**: IT professional (₹24L income) correctly filtered out of BPL welfare schemes.
-6. **Application Readiness Meter**: Uploading a PAN Card updates application readiness score from `0%` to `50%`.
-7. **Ingestion 4-Gates**: HTTP 304 skipping, circuit breaker quarantine, and admin triage approval.
-
----
-
-## 🚀 How to Add a New Feature in 4 Steps
-
-Adding a feature to this modular monolith is predictable:
-
-1. **Create Feature Folder**: `app/modules/<feature_name>/`
-2. **Define Data Model**: Create `models.py` with SQLAlchemy ORM tables.
-3. **Define Pydantic DTOs**: Create `schemas.py` with request/response schemas (`from_attributes=True`).
-4. **Write Business Logic**: Create `service.py` with pure domain operations.
-5. **Expose Routes**: Create `router.py` with FastAPI endpoints and mount in `app/main.py` using `app.include_router(...)`.
-
-## 🔮 Future Roadmap: Universal Multi-Country Expansion
-
-Planned evolution to support any nation or municipality (UN / GovStack standard):
-
-- **ISO 3166-1 Country Code & Jurisdiction**: Add `country_code` (`"US"`, `"GB"`, `"CA"`, `"IN"`, `"DE"`) and `jurisdiction_level` (`"federal"`, `"state"`, `"municipal"`).
-- **Dynamic Multi-Currency**: Locale-aware formatting for `$`, `£`, `€`, `¥`, `₹`, `CAD`.
-- **Extensible Country Demographics**: Universal core fields (`income`, `age`, `household_size`) paired with flexible country-specific attributes (e.g. US: `veteran_status`, `medicaid_enrolled`; UK: `universal_credit_claimant`).
-- **Global Document Taxonomies**: Out-of-the-box readiness checklists for US (SSN, W-2, 1040), UK (NINO, P60), and Canada (SIN, CRA Notice of Assessment).
+5. **Persona 5 (High-Income Vikram)**: IT professional (₹24L income) filtered out of BPL welfare schemes.
+6. **Multi-Turn Chat & SSE Streaming**: Validates chat session lifecycle, memory continuity, and token streaming.
+7. **Voice Interface Integration**: Validates voice transcription and audio synthesis pipelines.
+8. **Document Vault OCR & Readiness**: Verifies document upload, OCR extraction, and readiness calculation.
+9. **Ingestion 4-Gates**: HTTP 304 skipping, circuit breaker quarantine, and triage approval.
 
 ---
 
