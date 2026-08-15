@@ -4,7 +4,6 @@ import {
   Loader2,
   Mic,
   MicOff,
-  Radio,
   Plus,
   ShieldCheck,
 } from 'lucide-react'
@@ -16,7 +15,6 @@ interface ChatComposerProps {
   isStreaming: boolean
   isDictating: boolean
   onToggleDictation: () => void
-  onOpenVoiceModal: () => void
   placeholder?: string
   citizenState?: string
   autoFocus?: boolean
@@ -30,7 +28,6 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
   isStreaming,
   isDictating,
   onToggleDictation,
-  onOpenVoiceModal,
   placeholder = 'Ask about scholarships, housing, healthcare, pensions...',
   citizenState = 'India',
   autoFocus = false,
@@ -86,7 +83,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
               onClick={() => {
                 window.location.href = '/vault'
               }}
-              className="h-8 px-2.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/80 text-xs font-medium flex items-center gap-1.5 transition-colors"
+              className="h-8 px-2.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/80 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
               title="Attach document or open vault"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -94,31 +91,21 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
             </button>
           </div>
 
-          {/* Right Actions: Mic, Live Voice, Send */}
+          {/* Right Actions: Mic, Send */}
           <div className="flex items-center gap-1.5">
-            {/* Dictation Mic */}
+            {/* Dictation Mic (Voice to Text Input) */}
             <button
               type="button"
               onClick={onToggleDictation}
-              className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${
+              className={`h-8 px-2.5 rounded-lg flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer ${
                 isDictating
                   ? 'bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse'
                   : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/80'
               }`}
-              title={isDictating ? 'Stop dictation' : 'Dictate with voice'}
+              title={isDictating ? 'Stop recording' : 'Speak to input text'}
             >
               {isDictating ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
-            </button>
-
-            {/* Live Conversational Voice Button */}
-            <button
-              type="button"
-              onClick={onOpenVoiceModal}
-              className="h-8 px-2.5 rounded-lg bg-zinc-800/80 hover:bg-zinc-750 border border-zinc-700/60 hover:border-zinc-600 text-zinc-200 hover:text-white text-xs font-medium flex items-center gap-1.5 transition-colors"
-              title="Open Voice Mode"
-            >
-              <Radio className="h-3.5 w-3.5 text-blue-400" />
-              <span className="hidden sm:inline">Voice Mode</span>
+              <span className="hidden sm:inline">{isDictating ? 'Listening...' : 'Voice'}</span>
             </button>
 
             {/* Send Button */}

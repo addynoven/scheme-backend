@@ -3,7 +3,6 @@ import { Outlet, useLocation } from 'react-router'
 import { Link, useNavigate } from '@/router'
 import {
   Menu,
-  Radio,
   User as UserIcon,
   Shield,
 } from 'lucide-react'
@@ -15,7 +14,6 @@ import {
   createChatSession,
   type ChatSession,
 } from '@/lib/api'
-import { LiveVoiceModal } from '@/components/LiveVoiceModal'
 import { AppSidebar } from '@/components/AppSidebar'
 
 export default function App() {
@@ -32,7 +30,6 @@ export default function App() {
   // Sidebar & Sessions State
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [sessions, setSessions] = useState<ChatSession[]>([])
-  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false)
 
   const isPublicRoute = location.pathname === '/login' || location.pathname === '/register'
   const isProfileRoute = location.pathname === '/profile'
@@ -147,18 +144,6 @@ export default function App() {
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#0a0a0c] text-zinc-100 flex flex-row selection:bg-blue-600/30 selection:text-blue-200">
       
-      {/* Global Live Voice Modal */}
-      <LiveVoiceModal
-        isOpen={isVoiceModalOpen}
-        onClose={() => setIsVoiceModalOpen(false)}
-        sessionId={activeSessionId}
-        userName={userName}
-        onMessageAdded={() => {
-          loadSessions()
-          window.dispatchEvent(new CustomEvent('scheme:session-updated'))
-        }}
-      />
-
       {/* Flagship App Sidebar */}
       {hasToken && citizenUid && (
         <AppSidebar
@@ -172,7 +157,6 @@ export default function App() {
           citizenUid={citizenUid}
           householdUid={householdUid}
           onNewChat={handleNewChat}
-          onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
           onLogout={handleLogout}
           currentPath={location.pathname}
         />
@@ -196,13 +180,7 @@ export default function App() {
               <span>Scheme AI</span>
             </Link>
 
-            <button
-              onClick={() => setIsVoiceModalOpen(true)}
-              className="p-1.5 rounded-lg text-blue-400 hover:bg-zinc-800"
-              title="Voice Mode"
-            >
-              <Radio className="h-4 w-4" />
-            </button>
+            <div className="w-8" />
           </header>
         )}
 

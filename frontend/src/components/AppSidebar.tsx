@@ -5,7 +5,6 @@ import {
   Search,
   FolderLock,
   Users,
-  Radio,
   Plus,
   PanelLeftClose,
   PanelLeft,
@@ -30,7 +29,6 @@ interface AppSidebarProps {
   citizenUid: string | null
   householdUid?: string | null
   onNewChat: () => void
-  onOpenVoiceModal: () => void
   onLogout: () => void
   currentPath: string
 }
@@ -45,7 +43,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   userProfile,
   citizenUid,
   onNewChat,
-  onOpenVoiceModal,
   onLogout,
   currentPath,
 }) => {
@@ -219,22 +216,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 </Link>
               )
             })}
-
-            {/* Voice Mode Action */}
-            <button
-              type="button"
-              onClick={() => {
-                onOpenVoiceModal()
-                if (window.innerWidth < 1024) setIsOpen(false)
-              }}
-              className={`flex items-center rounded-lg text-xs transition-colors text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40 cursor-pointer ${
-                isOpen ? 'gap-2.5 px-2.5 py-1.5' : 'justify-center h-8 w-8 mx-auto'
-              }`}
-              title="Voice Mode"
-            >
-              <Radio className="h-4 w-4 shrink-0 text-blue-400" />
-              {isOpen && <span>Voice Mode</span>}
-            </button>
           </nav>
 
           {/* Secondary: Recent Conversations */}

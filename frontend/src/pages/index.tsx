@@ -13,7 +13,6 @@ import {
   Tractor,
   Home,
   HeartPulse,
-  Radio,
   ChevronDown,
 } from 'lucide-react'
 import {
@@ -26,7 +25,6 @@ import {
   transcribeAudio,
 } from '@/lib/api'
 import { MarkdownMessage } from '@/components/MarkdownMessage'
-import { LiveVoiceModal } from '@/components/LiveVoiceModal'
 import { ChatComposer } from '@/components/ChatComposer'
 import { SuggestionChip } from '@/components/SuggestionChip'
 
@@ -72,8 +70,7 @@ export default function HomePage() {
   const [selectedModel, setSelectedModel] = useState<'flash' | 'bitmask' | 'deep'>('flash')
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false)
 
-  // Voice States
-  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false)
+  // Mic Dictation State
   const [isDictating, setIsDictating] = useState(false)
   const dictationRecorderRef = useRef<MediaRecorder | null>(null)
   const dictationChunksRef = useRef<Blob[]>([])
@@ -150,7 +147,7 @@ export default function HomePage() {
     return newSession.id
   }
 
-  // Quick Dictation Mic
+  // Quick Dictation Mic (Voice directly inside Chat)
   async function toggleDictation() {
     if (isDictating) {
       if (dictationRecorderRef.current) {
@@ -311,19 +308,8 @@ export default function HomePage() {
   return (
     <div className="flex flex-col h-full w-full overflow-hidden bg-[#0a0a0c] text-zinc-100 relative">
       
-      {/* Live Voice Modal Overlay */}
-      <LiveVoiceModal
-        isOpen={isVoiceModalOpen}
-        onClose={() => setIsVoiceModalOpen(false)}
-        sessionId={activeSessionId}
-        userName={userName}
-        onMessageAdded={() => {
-          if (activeSessionId) loadSessionMessages(activeSessionId)
-        }}
-      />
-
-      {/* Top Floating App Bar */}
-      <header className="h-12 px-4 sm:px-6 border-b border-zinc-800/50 bg-[#0a0a0c]/80 backdrop-blur-xs flex items-center justify-between gap-3 z-10 shrink-0">
+      {/* Top App Bar */}
+      <header className="h-11 px-4 sm:px-6 border-b border-zinc-800/50 bg-[#0a0a0c]/80 backdrop-blur-xs flex items-center justify-between gap-3 z-10 shrink-0">
         <div className="flex items-center gap-2">
           
           {/* Model Selector Pill */}
@@ -333,7 +319,7 @@ export default function HomePage() {
                 e.stopPropagation()
                 setModelDropdownOpen(!modelDropdownOpen)
               }}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-xs text-zinc-300 transition-all"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-xs text-zinc-300 transition-all cursor-pointer"
             >
               <Sparkles className="h-3 w-3 text-blue-400" />
               <span>
@@ -391,17 +377,6 @@ export default function HomePage() {
             )}
           </div>
         </div>
-
-        {/* Right Header Action */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsVoiceModalOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-zinc-100 text-xs transition-colors"
-          >
-            <Radio className="h-3.5 w-3.5 text-blue-400" />
-            <span>Voice Mode</span>
-          </button>
-        </div>
       </header>
 
       {/* Main Conversation / Empty State Area */}
@@ -420,7 +395,7 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Minimal Conversational Empty State (Sections 2 & 3 of Brief) */}
+        {/* Minimal Conversational Empty State */}
         {isGreetingEmptyState && (
           <div className="max-w-2xl mx-auto w-full my-auto py-8 sm:py-12 flex flex-col items-center text-center space-y-6 animate-in fade-in duration-200">
             
@@ -447,7 +422,6 @@ export default function HomePage() {
               isStreaming={isStreaming}
               isDictating={isDictating}
               onToggleDictation={toggleDictation}
-              onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
               citizenState={citizen?.profile?.state || 'India'}
               autoFocus
             />
@@ -583,7 +557,7 @@ export default function HomePage() {
         )}
       </main>
 
-      {/* Pinned Bottom Chat Composer (Only in Active Conversation State) */}
+      {/* Pinned Bottom Chat Composer */}
       {!isGreetingEmptyState && (
         <footer className="p-3 sm:p-4 bg-[#0a0a0c]/90 backdrop-blur-xs border-t border-zinc-800/60 shrink-0">
           <div className="max-w-3xl mx-auto w-full">
@@ -594,7 +568,6 @@ export default function HomePage() {
               isStreaming={isStreaming}
               isDictating={isDictating}
               onToggleDictation={toggleDictation}
-              onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
               citizenState={citizen?.profile?.state || 'India'}
             />
           </div>
