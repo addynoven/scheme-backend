@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from '@/router'
-import { ExternalLink, Sparkles, BookOpen, ChevronRight, CheckCircle2 } from 'lucide-react'
+import { ExternalLink, Sparkles, BookOpen, ChevronRight } from 'lucide-react'
 
 interface MarkdownMessageProps {
   content: string
@@ -16,8 +16,9 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => 
     let lastIndex = 0
 
     // Match Markdown Links: [label](url), Bold: **text**, Code: `text`, Italic: *text*
-    const regex = /(\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|`([^`]+)`|\*([^*]+)\*)/g
-    let match
+    // Handles links with parentheses inside the label: [Name (Acronym)](/url)
+    const regex = /(\[((?:\[[^\]]*\]|[^\]])+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|`([^`]+)`|\*([^*]+)\*)/g
+    let match: RegExpExecArray | null
 
     while ((match = regex.exec(text)) !== null) {
       if (match.index > lastIndex) {
@@ -25,11 +26,9 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => 
       }
 
       if (match[0].startsWith('[')) {
-        // Link match: match[2] = label, match[3] = url
         const label = match[2]
         let url = match[3].trim()
 
-        // Transform internal knowledge file paths to /schemes/:slug
         if (url.startsWith('knowledge/schemes/') && url.endsWith('.md')) {
           const slug = url.replace('knowledge/schemes/', '').replace('.md', '')
           url = `/schemes/${slug}`
@@ -38,13 +37,12 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => 
         const isInternal = url.startsWith('/') || url.startsWith('#') || url.includes('/schemes/')
 
         if (isInternal) {
-          // Normalize scheme path if necessary
           const cleanUrl = url.startsWith('http') ? url : url.startsWith('/') ? url : `/${url}`
           parts.push(
             <Link
               key={match.index}
               to={cleanUrl as any}
-              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 my-0.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-300 hover:text-blue-200 font-semibold text-xs transition-all shadow-sm hover:shadow-blue-500/10 group"
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 my-0.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-300 hover:text-blue-200 font-semibold text-xs transition-all shadow-sm group"
             >
               <BookOpen className="h-3 w-3 text-blue-400 shrink-0 group-hover:scale-110 transition-transform" />
               <span>{label}</span>
@@ -66,14 +64,12 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => 
           )
         }
       } else if (match[0].startsWith('**')) {
-        // Bold: match[4]
         parts.push(
-          <strong key={match.index} className="font-bold text-zinc-100">
+          <strong key={match.index} className="font-semibold text-zinc-100">
             {match[4]}
           </strong>
         )
       } else if (match[0].startsWith('`')) {
-        // Inline Code: match[5]
         parts.push(
           <code
             key={match.index}
@@ -83,7 +79,6 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => 
           </code>
         )
       } else if (match[0].startsWith('*')) {
-        // Italic: match[6]
         parts.push(
           <em key={match.index} className="italic text-zinc-300">
             {match[6]}
@@ -102,7 +97,7 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => 
   }
 
   return (
-    <div className="space-y-2 text-sm leading-relaxed text-zinc-200">
+    <div className="space-y-2.5 text-sm leading-relaxed text-zinc-200">
       {lines.map((line, idx) => {
         const trimmed = line.trim()
 
@@ -118,7 +113,7 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => 
         // Headings: H1, H2, H3, H4
         if (trimmed.startsWith('# ')) {
           return (
-            <h2 key={idx} className="text-base sm:text-lg font-black text-white mt-4 mb-2 flex items-center gap-2">
+            <h2 key={idx} className="text-base sm:text-lg font-bold text-white mt-4 mb-2 flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-blue-400 shrink-0" />
               <span>{renderInline(trimmed.replace('# ', ''))}</span>
             </h2>
@@ -136,9 +131,8 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => 
           return (
             <h4
               key={idx}
-              className="text-xs sm:text-sm font-bold text-zinc-100 mt-3 mb-1.5 flex items-center gap-2 pb-1 border-b border-zinc-800/60"
+              className="text-xs sm:text-sm font-semibold text-zinc-100 mt-3 mb-1.5 flex items-center gap-2 pb-1 border-b border-zinc-800/60"
             >
-              <CheckCircle2 className="h-3.5 w-3.5 text-blue-400 shrink-0" />
               <span>{renderInline(trimmed.replace('### ', ''))}</span>
             </h4>
           )
@@ -166,9 +160,9 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => 
             <div
               key={idx}
               className="flex items-start gap-2.5 my-1"
-              style={{ marginLeft: `${Math.max(4, indent * 12)}px` }}
+              style={{ marginLeft: `${Math.max(0, indent * 12)}px` }}
             >
-              <span className="flex items-center justify-center h-4 w-4 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-300 text-[10px] font-bold shrink-0 mt-0.5">
+              <span className="flex items-center justify-center h-5 w-5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-300 text-[11px] font-bold shrink-0 mt-0.5">
                 {num}
               </span>
               <div className="flex-1 leading-relaxed text-zinc-200">{renderInline(rest)}</div>
@@ -187,7 +181,7 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => 
               className="flex items-start gap-2.5 my-1"
               style={{ marginLeft: `${Math.max(4, indent * 12)}px` }}
             >
-              <span className="text-blue-400 font-bold shrink-0 text-xs mt-0.5">•</span>
+              <span className="text-blue-400 font-bold shrink-0 text-sm mt-0.5">•</span>
               <div className="flex-1 leading-relaxed text-zinc-200">{renderInline(rest)}</div>
             </div>
           )

@@ -14,10 +14,21 @@ import {
   Menu,
   PanelLeftClose,
   PanelLeft,
+  Edit2,
+  Trash2,
+  Check,
+  X,
 } from 'lucide-react'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { getCitizenToken, clearCitizenToken } from '@/lib/session'
-import { citizenGetMe, listChatSessions, type ChatSession } from '@/lib/api'
+import {
+  citizenGetMe,
+  listChatSessions,
+  createChatSession,
+  updateChatSessionTitle,
+  deleteChatSession,
+  type ChatSession,
+} from '@/lib/api'
 import { LiveVoiceModal } from '@/components/LiveVoiceModal'
 
 export default function App() {
@@ -31,13 +42,20 @@ export default function App() {
   const [hasProfile, setHasProfile] = useState<boolean | null>(null)
   const [isChecking, setIsChecking] = useState(true)
 
-  // Sidebar & Navigation State (ChatGPT / Gemini style)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [recentSessions, setRecentSessions] = useState<ChatSession[]>([])
+  // Sidebar & Sessions State (ChatGPT / Claude / Gemini style)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sessions, setSessions] = useState<ChatSession[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
   const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false)
+  const [editingSessionId, setEditingSessionId] = useState<number | null>(null)
+  const [editingTitle, setEditingTitle] = useState('')
 
   const isPublicRoute = location.pathname === '/login' || location.pathname === '/register'
   const isProfileRoute = location.pathname === '/profile'
+
+  // Get active session ID from URL search params
+  const searchParams = new URLSearchParams(location.search)
+  const activeSessionId = searchParams.get('session') ? parseInt(searchParams.get('session')!, 10) : null
 
   const checkAuth = () => {
     const token = getCitizenToken()
@@ -69,10 +87,7 @@ export default function App() {
         if (isPublicRoute) {
           navigate('/')
         }
-        // Load recent sessions for the global rail drawer
-        listChatSessions()
-          .then((s) => setRecentSessions(s.slice(0, 10)))
-          .catch(() => {})
+        loadSessions()
       })
       .catch(() => {
         clearCitizenToken()
@@ -93,6 +108,68 @@ export default function App() {
     checkAuth()
   }, [location.pathname])
 
+  // Listen to session update events
+  useEffect(() => {
+    const handleSessionsRefresh = () => loadSessions()
+    window.addEventListener('scheme:session-updated', handleSessionsRefresh)
+    return () => window.removeEventListener('scheme:session-updated', handleSessionsRefresh)
+  }, [])
+
+  async function loadSessions() {
+    try {
+      const data = await listChatSessions()
+      setSessions(data)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  async function handleNewChat() {
+    try {
+      const session = await createChatSession('New Welfare Conversation')
+      setSessions((prev) => [session, ...prev])
+      navigate(`/?session=${session.id}` as any)
+      window.dispatchEvent(new CustomEvent('scheme:new-chat', { detail: { session } }))
+      if (window.innerWidth < 768) setSidebarOpen(false)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  async function handleRenameSession(id: number, e?: React.FormEvent) {
+    if (e) e.preventDefault()
+    if (!editingTitle.trim()) {
+      setEditingSessionId(null)
+      return
+    }
+    try {
+      const updated = await updateChatSessionTitle(id, editingTitle.trim())
+      setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, title: updated.title } : s)))
+      setEditingSessionId(null)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  async function handleDeleteSession(id: number, e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!confirm('Are you sure you want to delete this chat conversation?')) return
+    try {
+      await deleteChatSession(id)
+      const remaining = sessions.filter((s) => s.id !== id)
+      setSessions(remaining)
+      if (activeSessionId === id) {
+        if (remaining.length > 0) {
+          navigate(`/?session=${remaining[0].id}` as any)
+        } else {
+          navigate('/')
+        }
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   const handleLogout = () => {
     clearCitizenToken()
     setHasToken(false)
@@ -103,6 +180,10 @@ export default function App() {
     navigate('/login')
   }
 
+  const filteredSessions = sessions.filter((s) =>
+    (s.title || '').toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#09090b] text-zinc-100 flex flex-row selection:bg-blue-600/30 selection:text-blue-200">
       
@@ -110,17 +191,18 @@ export default function App() {
       <LiveVoiceModal
         isOpen={isVoiceModalOpen}
         onClose={() => setIsVoiceModalOpen(false)}
+        sessionId={activeSessionId}
         userName={userName}
         onMessageAdded={() => {
-          // If on home, let home refresh
+          loadSessions()
           window.dispatchEvent(new CustomEvent('scheme:session-updated'))
         }}
       />
 
-      {/* Flagship Left Icon Rail / Sidebar (ChatGPT / Claude / Gemini / Grok Style) */}
+      {/* Flagship Single Sidebar / Rail (ChatGPT / Claude / Gemini Style) */}
       {hasToken && citizenUid && (
         <>
-          {/* Mobile Overlay Backdrop */}
+          {/* Mobile Overlay */}
           {sidebarOpen && (
             <div
               onClick={() => setSidebarOpen(false)}
@@ -128,25 +210,24 @@ export default function App() {
             />
           )}
 
-          {/* Collapsible Left Drawer / Rail */}
           <aside
             className={`fixed md:static inset-y-0 left-0 z-50 flex flex-col justify-between border-r border-zinc-800/80 bg-[#0c0c0e] transition-all duration-300 ease-in-out ${
               sidebarOpen ? 'w-64 sm:w-72' : 'w-16 hidden md:flex'
             }`}
           >
-            {/* Top Section: Logo & Main Navigation Icons */}
-            <div className="flex flex-col p-2.5 space-y-3">
+            {/* Top Section */}
+            <div className="flex flex-col p-3 space-y-3 overflow-hidden flex-1">
               
-              {/* Header: Logo & Sidebar Toggle */}
-              <div className="flex items-center justify-between px-1 h-10">
+              {/* Header Logo & Collapse Toggle */}
+              <div className="flex items-center justify-between px-1 h-9">
                 <Link to="/" className="flex items-center gap-2.5 group">
-                  <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-blue-500/20 text-white shrink-0 group-hover:scale-105 transition-transform">
-                    <ShieldCheck className="h-5 w-5" />
+                  <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-blue-500/20 text-white shrink-0 group-hover:scale-105 transition-transform">
+                    <ShieldCheck className="h-4 w-4" />
                   </div>
                   {sidebarOpen && (
                     <div className="flex flex-col text-left truncate">
                       <span className="font-bold text-sm text-white tracking-tight leading-none">Scheme AI</span>
-                      <span className="text-[10px] text-zinc-500 font-medium tracking-wide uppercase mt-0.5">Sovereign Engine</span>
+                      <span className="text-[9px] text-zinc-500 font-medium tracking-wide uppercase mt-0.5">Sovereign Engine</span>
                     </div>
                   )}
                 </Link>
@@ -171,30 +252,29 @@ export default function App() {
               </div>
 
               {/* Primary Action: New Chat */}
-              <Link
-                to="/"
-                onClick={() => {
-                  window.dispatchEvent(new CustomEvent('scheme:new-chat'))
-                  if (window.innerWidth < 768) setSidebarOpen(false)
-                }}
+              <button
+                onClick={handleNewChat}
                 className={`flex items-center rounded-xl transition-all ${
                   sidebarOpen
-                    ? 'gap-2.5 px-3 py-2 bg-blue-600/15 hover:bg-blue-600/25 border border-blue-500/30 text-blue-300 font-semibold text-xs shadow-sm'
+                    ? 'gap-2.5 px-3 py-2 bg-zinc-900 hover:bg-zinc-800/90 border border-zinc-700/60 hover:border-zinc-600 text-zinc-100 font-medium text-xs shadow-sm justify-between group'
                     : 'justify-center p-2.5 hover:bg-zinc-800/80 text-zinc-300 hover:text-white'
                 }`}
                 title="New Welfare Conversation"
               >
-                <Plus className="h-4 w-4 text-blue-400 shrink-0" />
-                {sidebarOpen && <span>New Chat</span>}
-              </Link>
+                <span className="flex items-center gap-2">
+                  <Plus className="h-4 w-4 text-blue-400 group-hover:scale-110 transition-transform" />
+                  {sidebarOpen && <span>New Chat</span>}
+                </span>
+                {sidebarOpen && <span className="text-[10px] text-zinc-500 font-mono">⌘K</span>}
+              </button>
 
-              {/* Core Feature Rail Links */}
-              <nav className="flex flex-col space-y-1 pt-1 border-t border-zinc-800/60">
+              {/* Quick Navigation Links */}
+              <nav className="flex flex-col space-y-0.5 pt-1 border-t border-zinc-800/60">
                 <Link
                   to="/"
                   onClick={() => { if (window.innerWidth < 768) setSidebarOpen(false) }}
                   className={`flex items-center rounded-xl text-xs transition-colors ${
-                    location.pathname === '/' || location.pathname === '/chat'
+                    location.pathname === '/' && !activeSessionId
                       ? 'bg-zinc-800 text-white font-medium'
                       : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
                   } ${sidebarOpen ? 'gap-3 px-3 py-2' : 'justify-center p-2.5'}`}
@@ -212,7 +292,7 @@ export default function App() {
                       ? 'bg-zinc-800 text-white font-medium'
                       : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
                   } ${sidebarOpen ? 'gap-3 px-3 py-2' : 'justify-center p-2.5'}`}
-                  title="Family Graph & Multi-Member Matrix"
+                  title="Family Graph"
                 >
                   <Users className="h-4 w-4 text-indigo-400 shrink-0" />
                   {sidebarOpen && <span>Family Graph</span>}
@@ -240,13 +320,12 @@ export default function App() {
                       ? 'bg-zinc-800 text-white font-medium'
                       : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
                   } ${sidebarOpen ? 'gap-3 px-3 py-2' : 'justify-center p-2.5'}`}
-                  title="Browse 4,148 Schemes"
+                  title="Explore All Schemes"
                 >
                   <Search className="h-4 w-4 text-amber-400 shrink-0" />
                   {sidebarOpen && <span>Explore Schemes</span>}
                 </Link>
 
-                {/* Live Voice Trigger */}
                 <button
                   type="button"
                   onClick={() => {
@@ -263,32 +342,125 @@ export default function App() {
                 </button>
               </nav>
 
-              {/* Sidebar Expanded: Recent Conversations */}
+              {/* Sidebar Expanded: Search & Recent Conversations */}
               {sidebarOpen && (
-                <div className="flex-1 overflow-y-auto space-y-1 pt-3 border-t border-zinc-800/60 max-h-64">
-                  <span className="px-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-1">
-                    Recent Conversations
+                <div className="flex-1 flex flex-col pt-3 border-t border-zinc-800/60 overflow-hidden">
+                  <div className="mb-2">
+                    <div className="relative">
+                      <Search className="h-3 w-3 absolute left-2.5 top-2.5 text-zinc-500" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search conversations..."
+                        className="w-full bg-zinc-900/90 border border-zinc-800/80 rounded-xl pl-7 pr-3 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-blue-500/60"
+                      />
+                    </div>
+                  </div>
+
+                  <span className="px-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-1">
+                    Recent Chats
                   </span>
-                  {recentSessions.length === 0 ? (
-                    <div className="px-2 py-3 text-[11px] text-zinc-500 italic">No recent chats</div>
-                  ) : (
-                    recentSessions.map((s) => (
-                      <Link
-                        key={s.id}
-                        to={`/?session=${s.id}` as any}
-                        onClick={() => { if (window.innerWidth < 768) setSidebarOpen(false) }}
-                        className="p-2 rounded-xl text-xs text-zinc-400 hover:text-white hover:bg-zinc-900/90 truncate block text-left transition-colors"
-                      >
-                        {s.title || 'Welfare Session'}
-                      </Link>
-                    ))
-                  )}
+
+                  <div className="flex-1 overflow-y-auto space-y-0.5 pr-1">
+                    {filteredSessions.length === 0 ? (
+                      <div className="px-2 py-3 text-[11px] text-zinc-500 italic">No conversations</div>
+                    ) : (
+                      filteredSessions.map((s) => {
+                        const isActive = activeSessionId === s.id
+                        const isEditing = editingSessionId === s.id
+
+                        return (
+                          <div
+                            key={s.id}
+                            onClick={() => {
+                              if (!isEditing) {
+                                navigate(`/?session=${s.id}` as any)
+                                if (window.innerWidth < 768) setSidebarOpen(false)
+                              }
+                            }}
+                            className={`group relative rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-1.5 cursor-pointer text-xs transition-all ${
+                              isActive
+                                ? 'bg-zinc-800 text-white font-medium'
+                                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/80'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 truncate flex-1 min-w-0">
+                              <MessageSquare className={`h-3 w-3 shrink-0 ${isActive ? 'text-blue-400' : 'text-zinc-500'}`} />
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  value={editingTitle}
+                                  onChange={(e) => setEditingTitle(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleRenameSession(s.id, e)
+                                    if (e.key === 'Escape') setEditingSessionId(null)
+                                  }}
+                                  className="bg-zinc-950 border border-blue-500 text-xs text-white rounded px-1.5 py-0.5 w-full focus:outline-none"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              ) : (
+                                <span className="truncate">{s.title || 'Welfare Session'}</span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {isEditing ? (
+                                <>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleRenameSession(s.id)
+                                    }}
+                                    className="p-1 hover:text-emerald-400 text-zinc-400"
+                                  >
+                                    <Check className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setEditingSessionId(null)
+                                    }}
+                                    className="p-1 hover:text-red-400 text-zinc-400"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setEditingSessionId(s.id)
+                                      setEditingTitle(s.title)
+                                    }}
+                                    className="p-1 hover:text-zinc-200 text-zinc-500"
+                                    title="Rename"
+                                  >
+                                    <Edit2 className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleDeleteSession(s.id, e)}
+                                    className="p-1 hover:text-red-400 text-zinc-500"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Bottom Section: Profile Avatar & Controls */}
-            <div className="p-2.5 border-t border-zinc-800/80 bg-[#09090b]/80 space-y-1">
+            <div className="p-2.5 border-t border-zinc-800/80 bg-[#09090b]/80 space-y-1 shrink-0">
               <Link
                 to="/profile"
                 onClick={() => { if (window.innerWidth < 768) setSidebarOpen(false) }}
