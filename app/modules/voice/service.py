@@ -93,21 +93,79 @@ class VoiceSpeechService:
         audio_bytes: bytes,
         filename: str = "audio.mp3",
         mime_type: str = "audio/mp3",
+        session_id: int | None = None,
     ) -> VoiceChatResponse:
+        from app.modules.chat.models import ChatMessage, ChatSession
+        from app.modules.chat.service import _build_user_context
+
         # 1. Transcribe Audio Note
         transcription = self.transcribe_audio(audio_bytes, filename, mime_type)
+        raw_query = transcription.transcribed_text or "Scheme eligibility check"
 
-        # 2. Query Router Execution
+        # 2. Build Citizen Grounding Context
+        user_profile = _build_user_context(db, user_id)
+
+        # 3. Retrieve Session & Chat History for Conversational Continuity
+        chat_history = []
+        target_session = None
+        if session_id:
+            target_session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+            if target_session and (target_session.user_id is None or target_session.user_id == user_id):
+                # Retrieve last 6 messages for context
+                recent_msgs = (
+                    db.query(ChatMessage)
+                    .filter(ChatMessage.session_id == target_session.id)
+                    .order_by(ChatMessage.id.desc())
+                    .limit(6)
+                    .all()
+                )
+                for m in reversed(recent_msgs):
+                    chat_history.append({"role": m.sender, "content": m.content})
+        elif user_id:
+            # Create a new session if user is logged in
+            title = transcription.transcribed_text[:40] if transcription.transcribed_text else "Voice Welfare Session"
+            target_session = ChatSession(
+                user_id=user_id,
+                title=f"🎙️ {title}",
+                language_code=transcription.detected_language or "hi",
+            )
+            db.add(target_session)
+            db.commit()
+            db.refresh(target_session)
+
+        # 4. Query Router Execution with Full Profile + History Grounding
         routing_result = query_router.route_and_execute(
-            raw_query=transcription.transcribed_text,
+            raw_query=raw_query,
             db=db,
-            user_profile=None,
+            user_profile=user_profile if user_profile else None,
+            chat_history=chat_history if chat_history else None,
         )
 
-        # 3. Extract Matched Schemes
+        # 5. Persist to Session if exists
+        if target_session:
+            user_msg = ChatMessage(
+                session_id=target_session.id,
+                sender="user",
+                content=raw_query,
+                intent="voice_query",
+                citations=[],
+            )
+            db.add(user_msg)
+
+            assistant_msg = ChatMessage(
+                session_id=target_session.id,
+                sender="assistant",
+                content=routing_result.response_text,
+                intent=routing_result.plan.canonical_english_intent if routing_result.plan else "voice_response",
+                citations=routing_result.citations or [],
+            )
+            db.add(assistant_msg)
+            db.commit()
+
+        # 6. Extract Matched Schemes
         matched_schemes = []
-        if routing_result.synthesizer_context and routing_result.synthesizer_context.sql_eligibility_matches:
-            for s in routing_result.synthesizer_context.sql_eligibility_matches[:4]:
+        if routing_result.matched_schemes:
+            for s in routing_result.matched_schemes[:4]:
                 matched_schemes.append({
                     "name": s.get("name", "Government Scheme"),
                     "slug": s.get("slug", "scheme"),
@@ -115,13 +173,14 @@ class VoiceSpeechService:
                     "application_url": s.get("application_url", f"/schemes/{s.get('slug', '')}"),
                 })
 
-        # 4. Synthesize spoken response audio
+        # 7. Synthesize spoken response audio
         tts_res = self.synthesize_speech(
             text=routing_result.response_text[:300],
             language_code=transcription.detected_language or "hi",
         )
 
         return VoiceChatResponse(
+            session_id=target_session.id if target_session else session_id,
             transcribed_query=transcription.transcribed_text,
             transcribed_text=transcription.transcribed_text,
             detected_language=transcription.detected_language,

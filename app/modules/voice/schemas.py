@@ -16,6 +16,7 @@ class VoiceChatMatchedScheme(BaseModel):
 
 
 class VoiceChatResponse(BaseModel):
+    session_id: int | None = None
     transcribed_query: str
     transcribed_text: str
     detected_language: str

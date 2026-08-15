@@ -192,7 +192,13 @@ export default function App() {
       </header>
 
       {/* Main Content with Layout-Level Auth & Profile Gate */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <main
+        className={`flex-1 w-full flex flex-col ${
+          location.pathname === '/chat'
+            ? 'overflow-hidden p-0'
+            : 'max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8'
+        }`}
+      >
         <ErrorBoundary>
           {isChecking ? (
             <div className="flex flex-col items-center justify-center py-24 text-center">

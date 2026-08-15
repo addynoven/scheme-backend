@@ -62,6 +62,7 @@ async def transcribe_audio_endpoint(
 @router.post("/chat", response_model=VoiceChatResponse)
 async def voice_chat_endpoint(
     file: UploadFile = File(...),
+    session_id: int | None = Query(None, description="Optional chat session ID for multi-turn voice memory"),
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_current_user_optional),
 ):
@@ -76,6 +77,7 @@ async def voice_chat_endpoint(
         audio_bytes=content,
         filename=file.filename or "audio.mp3",
         mime_type=file.content_type or "audio/mp3",
+        session_id=session_id,
     )
 
 

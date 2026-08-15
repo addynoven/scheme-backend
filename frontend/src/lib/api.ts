@@ -994,6 +994,7 @@ export interface VoiceTranscriptionResponse {
 }
 
 export interface VoiceChatResponse {
+  session_id?: number
   transcribed_text: string
   detected_language: string
   answer: string
@@ -1030,11 +1031,12 @@ export async function transcribeAudio(file: File): Promise<VoiceTranscriptionRes
   return res.json()
 }
 
-export async function voiceChat(file: File): Promise<VoiceChatResponse> {
+export async function voiceChat(file: File, sessionId?: number): Promise<VoiceChatResponse> {
   const formData = new FormData()
   formData.append('file', file)
 
-  const res = await fetch(`${API_BASE}/voice/chat`, {
+  const url = sessionId ? `${API_BASE}/voice/chat?session_id=${sessionId}` : `${API_BASE}/voice/chat`
+  const res = await fetch(url, {
     method: 'POST',
     headers: getCitizenAuthHeaders(),
     body: formData,
