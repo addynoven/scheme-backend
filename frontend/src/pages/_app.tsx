@@ -5,7 +5,6 @@ import {
   ShieldCheck,
   Search,
   FolderLock,
-  User,
   LogOut,
   Plus,
   MessageSquare,
@@ -18,6 +17,7 @@ import {
   Trash2,
   Check,
   X,
+  User as UserIcon,
 } from 'lucide-react'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { getCitizenToken, clearCitizenToken } from '@/lib/session'
@@ -42,7 +42,7 @@ export default function App() {
   const [hasProfile, setHasProfile] = useState<boolean | null>(null)
   const [isChecking, setIsChecking] = useState(true)
 
-  // Sidebar & Sessions State (ChatGPT / Claude / Gemini style)
+  // Sidebar & Sessions State (Default open on desktop)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [sessions, setSessions] = useState<ChatSession[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -108,6 +108,20 @@ export default function App() {
     checkAuth()
   }, [location.pathname])
 
+  // Responsive sidebar: collapse on small screens
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setSidebarOpen(false)
+      } else {
+        setSidebarOpen(true)
+      }
+    }
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   // Listen to session update events
   useEffect(() => {
     const handleSessionsRefresh = () => loadSessions()
@@ -130,7 +144,7 @@ export default function App() {
       setSessions((prev) => [session, ...prev])
       navigate(`/?session=${session.id}` as any)
       window.dispatchEvent(new CustomEvent('scheme:new-chat', { detail: { session } }))
-      if (window.innerWidth < 768) setSidebarOpen(false)
+      if (window.innerWidth < 1024) setSidebarOpen(false)
     } catch (e) {
       console.error(e)
     }
@@ -199,153 +213,130 @@ export default function App() {
         }}
       />
 
-      {/* Flagship Single Sidebar / Rail (ChatGPT / Claude / Gemini Style) */}
+      {/* Flagship Unified Sidebar / Rail */}
       {hasToken && citizenUid && (
         <>
           {/* Mobile Overlay */}
           {sidebarOpen && (
             <div
               onClick={() => setSidebarOpen(false)}
-              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 md:hidden animate-in fade-in"
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 lg:hidden animate-in fade-in"
             />
           )}
 
           <aside
-            className={`fixed md:static inset-y-0 left-0 z-50 flex flex-col justify-between border-r border-zinc-800/80 bg-[#0c0c0e] transition-all duration-300 ease-in-out ${
-              sidebarOpen ? 'w-64 sm:w-72' : 'w-16 hidden md:flex'
+            className={`fixed lg:static inset-y-0 left-0 z-50 flex flex-col justify-between border-r border-zinc-800/80 bg-[#0c0c0e] transition-all duration-200 ease-in-out ${
+              sidebarOpen ? 'w-64 sm:w-72' : 'w-16 hidden lg:flex'
             }`}
           >
-            {/* Top Section */}
-            <div className="flex flex-col p-3 space-y-3 overflow-hidden flex-1">
-              
-              {/* Header Logo & Collapse Toggle */}
-              <div className="flex items-center justify-between px-1 h-9">
-                <Link to="/" className="flex items-center gap-2.5 group">
-                  <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-blue-500/20 text-white shrink-0 group-hover:scale-105 transition-transform">
-                    <ShieldCheck className="h-4 w-4" />
-                  </div>
-                  {sidebarOpen && (
+            {/* Expanded Sidebar View */}
+            {sidebarOpen ? (
+              <div className="flex flex-col p-3 space-y-3 overflow-hidden flex-1">
+                
+                {/* Header: Logo & Collapse Button */}
+                <div className="flex items-center justify-between px-1 h-9 shrink-0">
+                  <Link to="/" className="flex items-center gap-2.5 group truncate">
+                    <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-500 flex items-center justify-center shadow-md shadow-blue-500/20 text-white shrink-0 group-hover:scale-105 transition-transform">
+                      <ShieldCheck className="h-4 w-4" />
+                    </div>
                     <div className="flex flex-col text-left truncate">
                       <span className="font-bold text-sm text-white tracking-tight leading-none">Scheme AI</span>
-                      <span className="text-[9px] text-zinc-500 font-medium tracking-wide uppercase mt-0.5">Sovereign Engine</span>
+                      <span className="text-[9px] text-zinc-500 font-medium tracking-wide uppercase mt-0.5">Sovereign Welfare</span>
                     </div>
-                  )}
-                </Link>
+                  </Link>
 
-                {sidebarOpen ? (
                   <button
                     onClick={() => setSidebarOpen(false)}
-                    className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                    className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors shrink-0"
                     title="Collapse sidebar"
                   >
                     <PanelLeftClose className="h-4 w-4" />
                   </button>
-                ) : (
-                  <button
-                    onClick={() => setSidebarOpen(true)}
-                    className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors hidden md:block"
-                    title="Expand sidebar"
-                  >
-                    <PanelLeft className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
+                </div>
 
-              {/* Primary Action: New Chat */}
-              <button
-                onClick={handleNewChat}
-                className={`flex items-center rounded-xl transition-all ${
-                  sidebarOpen
-                    ? 'gap-2.5 px-3 py-2 bg-zinc-900 hover:bg-zinc-800/90 border border-zinc-700/60 hover:border-zinc-600 text-zinc-100 font-medium text-xs shadow-sm justify-between group'
-                    : 'justify-center p-2.5 hover:bg-zinc-800/80 text-zinc-300 hover:text-white'
-                }`}
-                title="New Welfare Conversation"
-              >
-                <span className="flex items-center gap-2">
-                  <Plus className="h-4 w-4 text-blue-400 group-hover:scale-110 transition-transform" />
-                  {sidebarOpen && <span>New Chat</span>}
-                </span>
-                {sidebarOpen && <span className="text-[10px] text-zinc-500 font-mono">⌘K</span>}
-              </button>
-
-              {/* Quick Navigation Links */}
-              <nav className="flex flex-col space-y-0.5 pt-1 border-t border-zinc-800/60">
-                <Link
-                  to="/"
-                  onClick={() => { if (window.innerWidth < 768) setSidebarOpen(false) }}
-                  className={`flex items-center rounded-xl text-xs transition-colors ${
-                    location.pathname === '/' && !activeSessionId
-                      ? 'bg-zinc-800 text-white font-medium'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
-                  } ${sidebarOpen ? 'gap-3 px-3 py-2' : 'justify-center p-2.5'}`}
-                  title="AI Chat Center (Home)"
-                >
-                  <MessageSquare className="h-4 w-4 text-blue-400 shrink-0" />
-                  {sidebarOpen && <span>Chat Center</span>}
-                </Link>
-
-                <Link
-                  to="/household"
-                  onClick={() => { if (window.innerWidth < 768) setSidebarOpen(false) }}
-                  className={`flex items-center rounded-xl text-xs transition-colors ${
-                    location.pathname === '/household'
-                      ? 'bg-zinc-800 text-white font-medium'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
-                  } ${sidebarOpen ? 'gap-3 px-3 py-2' : 'justify-center p-2.5'}`}
-                  title="Family Graph"
-                >
-                  <Users className="h-4 w-4 text-indigo-400 shrink-0" />
-                  {sidebarOpen && <span>Family Graph</span>}
-                </Link>
-
-                <Link
-                  to="/vault"
-                  onClick={() => { if (window.innerWidth < 768) setSidebarOpen(false) }}
-                  className={`flex items-center rounded-xl text-xs transition-colors ${
-                    location.pathname === '/vault'
-                      ? 'bg-zinc-800 text-white font-medium'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
-                  } ${sidebarOpen ? 'gap-3 px-3 py-2' : 'justify-center p-2.5'}`}
-                  title="Document Vault & OCR Scanner"
-                >
-                  <FolderLock className="h-4 w-4 text-emerald-400 shrink-0" />
-                  {sidebarOpen && <span>Document Vault</span>}
-                </Link>
-
-                <Link
-                  to="/results"
-                  onClick={() => { if (window.innerWidth < 768) setSidebarOpen(false) }}
-                  className={`flex items-center rounded-xl text-xs transition-colors ${
-                    location.pathname === '/results'
-                      ? 'bg-zinc-800 text-white font-medium'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
-                  } ${sidebarOpen ? 'gap-3 px-3 py-2' : 'justify-center p-2.5'}`}
-                  title="Explore All Schemes"
-                >
-                  <Search className="h-4 w-4 text-amber-400 shrink-0" />
-                  {sidebarOpen && <span>Explore Schemes</span>}
-                </Link>
-
+                {/* New Chat Primary Action */}
                 <button
-                  type="button"
-                  onClick={() => {
-                    setIsVoiceModalOpen(true)
-                    if (window.innerWidth < 768) setSidebarOpen(false)
-                  }}
-                  className={`flex items-center rounded-xl text-xs transition-colors text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 ${
-                    sidebarOpen ? 'gap-3 px-3 py-2' : 'justify-center p-2.5'
-                  }`}
-                  title="Live Voice Mode"
+                  onClick={handleNewChat}
+                  className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/60 hover:border-zinc-600 text-zinc-100 font-medium text-xs shadow-sm transition-all group shrink-0"
+                  title="New Conversation"
                 >
-                  <Radio className="h-4 w-4 text-orange-400 animate-pulse shrink-0" />
-                  {sidebarOpen && <span>Live Voice Mode</span>}
+                  <span className="flex items-center gap-2">
+                    <Plus className="h-4 w-4 text-blue-400 group-hover:scale-110 transition-transform" />
+                    <span>New Chat</span>
+                  </span>
+                  <span className="text-[10px] text-zinc-500 font-mono">⌘K</span>
                 </button>
-              </nav>
 
-              {/* Sidebar Expanded: Search & Recent Conversations */}
-              {sidebarOpen && (
-                <div className="flex-1 flex flex-col pt-3 border-t border-zinc-800/60 overflow-hidden">
-                  <div className="mb-2">
+                {/* Primary Features Navigation */}
+                <nav className="flex flex-col space-y-0.5 pt-1 border-t border-zinc-800/60 shrink-0">
+                  <Link
+                    to="/"
+                    onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false) }}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-colors ${
+                      location.pathname === '/' && !activeSessionId
+                        ? 'bg-zinc-800 text-white font-medium'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                    }`}
+                  >
+                    <MessageSquare className="h-4 w-4 text-blue-400 shrink-0" />
+                    <span>Chat Center</span>
+                  </Link>
+
+                  <Link
+                    to="/household"
+                    onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false) }}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-colors ${
+                      location.pathname === '/household'
+                        ? 'bg-zinc-800 text-white font-medium'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                    }`}
+                  >
+                    <Users className="h-4 w-4 text-indigo-400 shrink-0" />
+                    <span>Family Graph</span>
+                  </Link>
+
+                  <Link
+                    to="/vault"
+                    onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false) }}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-colors ${
+                      location.pathname === '/vault'
+                        ? 'bg-zinc-800 text-white font-medium'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                    }`}
+                  >
+                    <FolderLock className="h-4 w-4 text-emerald-400 shrink-0" />
+                    <span>Document Vault</span>
+                  </Link>
+
+                  <Link
+                    to="/results"
+                    onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false) }}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-colors ${
+                      location.pathname === '/results'
+                        ? 'bg-zinc-800 text-white font-medium'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                    }`}
+                  >
+                    <Search className="h-4 w-4 text-amber-400 shrink-0" />
+                    <span>Explore Schemes</span>
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsVoiceModalOpen(true)
+                      if (window.innerWidth < 1024) setSidebarOpen(false)
+                    }}
+                    className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-colors text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 text-left"
+                  >
+                    <Radio className="h-4 w-4 text-orange-400 animate-pulse shrink-0" />
+                    <span>Live Voice Mode</span>
+                  </button>
+                </nav>
+
+                {/* Recent Chats Section */}
+                <div className="flex-1 flex flex-col pt-3 border-t border-zinc-800/60 overflow-hidden min-h-0">
+                  <div className="mb-2 shrink-0">
                     <div className="relative">
                       <Search className="h-3 w-3 absolute left-2.5 top-2.5 text-zinc-500" />
                       <input
@@ -358,7 +349,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  <span className="px-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-1">
+                  <span className="px-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-1 shrink-0">
                     Recent Chats
                   </span>
 
@@ -376,7 +367,7 @@ export default function App() {
                             onClick={() => {
                               if (!isEditing) {
                                 navigate(`/?session=${s.id}` as any)
-                                if (window.innerWidth < 768) setSidebarOpen(false)
+                                if (window.innerWidth < 1024) setSidebarOpen(false)
                               }
                             }}
                             className={`group relative rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-1.5 cursor-pointer text-xs transition-all ${
@@ -456,14 +447,96 @@ export default function App() {
                     )}
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              /* Collapsed Rail View (Clean 60px centered icons) */
+              <div className="flex flex-col items-center py-3 space-y-4 flex-1">
+                
+                {/* Expand Button at Top */}
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="h-9 w-9 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/60 flex items-center justify-center text-zinc-300 hover:text-white transition-colors"
+                  title="Expand sidebar"
+                >
+                  <PanelLeft className="h-4 w-4 text-blue-400" />
+                </button>
 
-            {/* Bottom Section: Profile Avatar & Controls */}
+                {/* New Chat Icon */}
+                <button
+                  onClick={handleNewChat}
+                  className="h-9 w-9 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 flex items-center justify-center text-blue-300 hover:text-white transition-colors"
+                  title="New Chat"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+
+                {/* Feature Icons */}
+                <nav className="flex flex-col items-center space-y-2 pt-2 border-t border-zinc-800/60">
+                  <Link
+                    to="/"
+                    className={`h-9 w-9 rounded-xl flex items-center justify-center transition-colors ${
+                      location.pathname === '/' && !activeSessionId
+                        ? 'bg-zinc-800 text-white'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                    }`}
+                    title="Chat Center"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                  </Link>
+
+                  <Link
+                    to="/household"
+                    className={`h-9 w-9 rounded-xl flex items-center justify-center transition-colors ${
+                      location.pathname === '/household'
+                        ? 'bg-zinc-800 text-white'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                    }`}
+                    title="Family Graph"
+                  >
+                    <Users className="h-4 w-4 text-indigo-400" />
+                  </Link>
+
+                  <Link
+                    to="/vault"
+                    className={`h-9 w-9 rounded-xl flex items-center justify-center transition-colors ${
+                      location.pathname === '/vault'
+                        ? 'bg-zinc-800 text-white'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                    }`}
+                    title="Document Vault"
+                  >
+                    <FolderLock className="h-4 w-4 text-emerald-400" />
+                  </Link>
+
+                  <Link
+                    to="/results"
+                    className={`h-9 w-9 rounded-xl flex items-center justify-center transition-colors ${
+                      location.pathname === '/results'
+                        ? 'bg-zinc-800 text-white'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                    }`}
+                    title="Explore Schemes"
+                  >
+                    <Search className="h-4 w-4 text-amber-400" />
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsVoiceModalOpen(true)}
+                    className="h-9 w-9 rounded-xl flex items-center justify-center text-orange-400 hover:bg-zinc-900 transition-colors"
+                    title="Live Voice Mode"
+                  >
+                    <Radio className="h-4 w-4 animate-pulse" />
+                  </button>
+                </nav>
+              </div>
+            )}
+
+            {/* Bottom User Profile Section */}
             <div className="p-2.5 border-t border-zinc-800/80 bg-[#09090b]/80 space-y-1 shrink-0">
               <Link
                 to="/profile"
-                onClick={() => { if (window.innerWidth < 768) setSidebarOpen(false) }}
+                onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false) }}
                 className={`flex items-center rounded-xl transition-all ${
                   location.pathname === '/profile'
                     ? 'bg-zinc-800 text-white'
@@ -503,7 +576,7 @@ export default function App() {
         
         {/* Mobile Header Bar */}
         {hasToken && citizenUid && (
-          <header className="h-12 border-b border-zinc-800/60 bg-[#09090b]/90 backdrop-blur-md flex md:hidden items-center justify-between px-3 z-30 shrink-0">
+          <header className="h-12 border-b border-zinc-800/60 bg-[#09090b]/90 backdrop-blur-md flex lg:hidden items-center justify-between px-3 z-30 shrink-0">
             <button
               onClick={() => setSidebarOpen(true)}
               className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
@@ -526,7 +599,7 @@ export default function App() {
           </header>
         )}
 
-        {/* Dynamic Outlet with Layout-Level Profile Gate */}
+        {/* Dynamic Outlet */}
         <main className="flex-1 h-full w-full overflow-hidden flex flex-col">
           <ErrorBoundary>
             {isChecking ? (
@@ -547,7 +620,7 @@ export default function App() {
               <div className="flex-1 flex items-center justify-center p-6">
                 <div className="max-w-md w-full p-8 rounded-3xl bg-gradient-to-b from-zinc-900/95 to-zinc-950/95 border border-amber-500/30 shadow-2xl text-center">
                   <div className="h-16 w-16 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-6 shadow-lg shadow-amber-500/10">
-                    <User className="h-8 w-8" />
+                    <UserIcon className="h-8 w-8" />
                   </div>
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-[11px] font-mono text-blue-400 mb-3">
                     <span>{citizenUid}</span>
