@@ -8,12 +8,15 @@ from app.modules.chat.schemas import (
     ChatMessageCreate,
     ChatMessageResponse,
     ChatSessionCreate,
+    ChatSessionUpdate,
     ChatSessionResponse,
 )
 from app.modules.chat.service import (
     create_chat_session,
     get_chat_session,
     list_chat_sessions,
+    update_chat_session_title,
+    delete_chat_session,
     send_chat_message,
     stream_chat_response,
 )
@@ -52,6 +55,30 @@ def get_session_endpoint(
     """Retrieve full chat history for a session."""
     user_id = current_user.id if current_user else None
     return get_chat_session(db, session_id, user_id)
+
+
+@router.patch("/sessions/{session_id}", response_model=ChatSessionResponse)
+def update_session_endpoint(
+    session_id: int,
+    payload: ChatSessionUpdate,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+):
+    """Rename a chat session title."""
+    user_id = current_user.id if current_user else None
+    return update_chat_session_title(db, session_id, user_id, payload.title)
+
+
+@router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_session_endpoint(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+):
+    """Delete a chat session and all associated messages."""
+    user_id = current_user.id if current_user else None
+    delete_chat_session(db, session_id, user_id)
+    return None
 
 
 @router.post("/sessions/{session_id}/messages", response_model=ChatMessageResponse)

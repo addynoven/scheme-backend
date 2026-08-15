@@ -24,6 +24,10 @@ class ChatSessionCreate(BaseModel):
     language_code: str | None = "en"
 
 
+class ChatSessionUpdate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=120)
+
+
 class ChatSessionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

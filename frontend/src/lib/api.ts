@@ -889,6 +889,27 @@ export async function getChatSession(sessionId: number): Promise<ChatSession> {
   return res.json()
 }
 
+export async function updateChatSessionTitle(sessionId: number, title: string): Promise<ChatSession> {
+  const res = await fetch(`${API_BASE}/chat/sessions/${sessionId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getCitizenAuthHeaders(),
+    },
+    body: JSON.stringify({ title }),
+  })
+  if (!res.ok) throw new Error('Failed to update chat session title')
+  return res.json()
+}
+
+export async function deleteChatSession(sessionId: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/chat/sessions/${sessionId}`, {
+    method: 'DELETE',
+    headers: getCitizenAuthHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to delete chat session')
+}
+
 export async function sendChatMessage(sessionId: number, content: string): Promise<ChatMessage> {
   const res = await fetch(`${API_BASE}/chat/sessions/${sessionId}/messages`, {
     method: 'POST',

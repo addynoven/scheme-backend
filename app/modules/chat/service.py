@@ -50,6 +50,20 @@ def get_chat_session(db: Session, session_id: int, user_id: int | None) -> ChatS
     return session
 
 
+def update_chat_session_title(db: Session, session_id: int, user_id: int | None, title: str) -> ChatSession:
+    session = get_chat_session(db, session_id, user_id)
+    session.title = title.strip()
+    db.commit()
+    db.refresh(session)
+    return session
+
+
+def delete_chat_session(db: Session, session_id: int, user_id: int | None) -> None:
+    session = get_chat_session(db, session_id, user_id)
+    db.delete(session)
+    db.commit()
+
+
 def _build_user_context(db: Session, user_id: int | None) -> dict:
     if not user_id:
         return {}
