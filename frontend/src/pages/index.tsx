@@ -169,7 +169,7 @@ export default function HomePage() {
         recognitionRef.current = recognition
         recognition.continuous = false
         recognition.interimResults = true
-        recognition.lang = 'hi-IN'
+        recognition.lang = 'en-IN'
 
         let baseInput = input
 
