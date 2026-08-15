@@ -1,5 +1,5 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from '@/router'
 import { ExternalLink, Sparkles, BookOpen } from 'lucide-react'
 
 interface MarkdownMessageProps {
@@ -40,7 +40,7 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => 
           parts.push(
             <Link
               key={match.index}
-              to={url}
+              to={url as any}
               className="text-blue-400 font-semibold hover:text-blue-300 hover:underline inline-flex items-center gap-1 bg-blue-950/40 border border-blue-800/40 px-2 py-0.5 rounded text-xs transition-colors"
             >
               <BookOpen className="h-3 w-3 inline text-blue-400" />
