@@ -61,14 +61,25 @@ class VoiceSpeechService:
                     confidence=0.96,
                 )
             except Exception as e:
-                logger.warning(f"Gemini Audio Transcription failed: {e}. Using deterministic audio fallback.")
+                logger.warning(f"Gemini Audio Transcription failed: {e}")
+                return VoiceTranscriptionResponse(
+                    transcribed_text="",
+                    detected_language="en",
+                    confidence=0.0,
+                )
 
-        # Deterministic / Mock fallback for tests & offline dev
+        if settings.TESTING:
+            return VoiceTranscriptionResponse(
+                transcribed_text="Mukhya Mantri Medhavi Vidyarthi Yojana ke liye kya documents chahiye",
+                detected_language="hi",
+                confidence=0.92,
+                duration_seconds=3.5,
+            )
+
         return VoiceTranscriptionResponse(
-            transcribed_text="Mukhya Mantri Medhavi Vidyarthi Yojana ke liye kya documents chahiye",
-            detected_language="hi",
-            confidence=0.92,
-            duration_seconds=3.5,
+            transcribed_text="",
+            detected_language="en",
+            confidence=0.0,
         )
 
     def synthesize_speech(self, text: str, language_code: str = "hi") -> VoiceSynthesisResponse:

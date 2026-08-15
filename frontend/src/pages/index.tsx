@@ -70,8 +70,9 @@ export default function HomePage() {
   const [selectedModel, setSelectedModel] = useState<'flash' | 'bitmask' | 'deep'>('flash')
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false)
 
-  // Mic Dictation State
+  // Mic Dictation State (Real Web Speech Recognition)
   const [isDictating, setIsDictating] = useState(false)
+  const recognitionRef = useRef<any>(null)
   const dictationRecorderRef = useRef<MediaRecorder | null>(null)
   const dictationChunksRef = useRef<Blob[]>([])
 
@@ -147,16 +148,63 @@ export default function HomePage() {
     return newSession.id
   }
 
-  // Quick Dictation Mic (Voice directly inside Chat)
+  // Real Speech Recognition (Converts actual voice to text in real time)
   async function toggleDictation() {
     if (isDictating) {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop() } catch {}
+      }
       if (dictationRecorderRef.current) {
-        dictationRecorderRef.current.stop()
+        try { dictationRecorderRef.current.stop() } catch {}
       }
       setIsDictating(false)
       return
     }
 
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+
+    if (SpeechRecognition) {
+      try {
+        const recognition = new SpeechRecognition()
+        recognitionRef.current = recognition
+        recognition.continuous = false
+        recognition.interimResults = true
+        recognition.lang = 'hi-IN'
+
+        let baseInput = input
+
+        recognition.onstart = () => {
+          setIsDictating(true)
+          setError(null)
+        }
+
+        recognition.onresult = (event: any) => {
+          let transcript = ''
+          for (let i = 0; i < event.results.length; ++i) {
+            transcript += event.results[i][0].transcript
+          }
+          if (transcript) {
+            setInput(baseInput ? `${baseInput} ${transcript}` : transcript)
+          }
+        }
+
+        recognition.onerror = (event: any) => {
+          console.warn('Speech recognition status:', event.error)
+          setIsDictating(false)
+        }
+
+        recognition.onend = () => {
+          setIsDictating(false)
+        }
+
+        recognition.start()
+        return
+      } catch (err) {
+        console.warn('Speech recognition initialization fallback:', err)
+      }
+    }
+
+    // Fallback: MediaRecorder sending to Gemini API
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const recorder = new MediaRecorder(stream)
@@ -176,14 +224,14 @@ export default function HomePage() {
             setInput((prev) => (prev ? `${prev} ${res.transcribed_text}` : res.transcribed_text))
           }
         } catch (err) {
-          setError('Speech dictation failed')
+          setError('Microphone speech could not be recognized')
         }
       }
 
       recorder.start()
       setIsDictating(true)
     } catch (err) {
-      setError('Microphone permission required for dictation')
+      setError('Microphone permission required for speech dictation')
     }
   }
 
