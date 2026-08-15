@@ -14,6 +14,7 @@ import {
   synthesizeSpeech,
   type VoiceChatResponse,
 } from '@/lib/api'
+import { MarkdownMessage } from '@/components/MarkdownMessage'
 
 export default function VoicePage() {
   const [isRecording, setIsRecording] = useState(false)
@@ -210,7 +211,7 @@ export default function VoicePage() {
                 Transcribed Question
               </span>
               <p className="text-zinc-200 mt-1 italic bg-zinc-950/80 p-3.5 rounded-xl border border-zinc-800/80">
-                "{result.transcribed_text}"
+                "{result.transcribed_text || (result as any).transcribed_query || ''}"
               </p>
             </div>
 
@@ -218,9 +219,9 @@ export default function VoicePage() {
               <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                 Synthesized Assistant Response
               </span>
-              <p className="text-zinc-100 mt-1 bg-zinc-950/80 p-4 rounded-xl border border-zinc-800/80 leading-relaxed">
-                {result.answer}
-              </p>
+              <div className="text-zinc-100 mt-1 bg-zinc-950/80 p-4 rounded-xl border border-zinc-800/80 leading-relaxed">
+                <MarkdownMessage content={result.answer || (result as any).response_text || ''} />
+              </div>
             </div>
 
             {/* Audio Playback Player */}
@@ -235,7 +236,7 @@ export default function VoicePage() {
             )}
 
             {/* Matched Schemes List */}
-            {result.matched_schemes.length > 0 && (
+            {result.matched_schemes && result.matched_schemes.length > 0 && (
               <div className="space-y-2 pt-2">
                 <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                   Recommended Schemes

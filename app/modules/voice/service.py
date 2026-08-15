@@ -104,12 +104,34 @@ class VoiceSpeechService:
             user_profile=None,
         )
 
+        # 3. Extract Matched Schemes
+        matched_schemes = []
+        if routing_result.synthesizer_context and routing_result.synthesizer_context.sql_eligibility_matches:
+            for s in routing_result.synthesizer_context.sql_eligibility_matches[:4]:
+                matched_schemes.append({
+                    "name": s.get("name", "Government Scheme"),
+                    "slug": s.get("slug", "scheme"),
+                    "benefit_title": s.get("benefit_title", "Financial & Welfare Support"),
+                    "application_url": s.get("application_url", f"/schemes/{s.get('slug', '')}"),
+                })
+
+        # 4. Synthesize spoken response audio
+        tts_res = self.synthesize_speech(
+            text=routing_result.response_text[:300],
+            language_code=transcription.detected_language or "hi",
+        )
+
         return VoiceChatResponse(
             transcribed_query=transcription.transcribed_text,
+            transcribed_text=transcription.transcribed_text,
             detected_language=transcription.detected_language,
             response_text=routing_result.response_text,
+            answer=routing_result.response_text,
             citations=routing_result.citations,
+            matched_schemes=matched_schemes,
             audio_url=None,
+            audio_base64=tts_res.audio_base64,
+            synthesized_speech_base64=tts_res.audio_base64,
         )
 
 
