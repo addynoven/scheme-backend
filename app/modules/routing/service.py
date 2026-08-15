@@ -336,14 +336,19 @@ class IntelligentQueryRouter:
             },
         }
 
-        models_to_try = [
-            "gemini-flash-lite-latest",
-            "gemini-3.1-flash-lite",
-            "gemini-3.5-flash-lite",
-            "gemini-2.5-flash-lite",
+        configured_model = settings.GEMINI_MODEL or "gemini-3.7-flash"
+        models_to_try = [configured_model]
+        for fallback in [
             "gemini-3.7-flash",
             "gemini-flash-latest",
-        ]
+            "gemini-3.1-flash-lite",
+            "gemini-flash-lite-latest",
+            "gemini-3.5-flash-lite",
+            "gemini-2.5-flash-lite",
+        ]:
+            if fallback not in models_to_try:
+                models_to_try.append(fallback)
+
         for model_name in models_to_try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
             req = urllib.request.Request(

@@ -29,7 +29,7 @@ class Settings(BaseSettings):
 
     # Google Gemini Vision LLM
     GEMINI_API_KEY: str | None = None
-    GEMINI_MODEL: str = "gemini-3.5-flash"
+    GEMINI_MODEL: str = "gemini-3.7-flash"
 
     model_config = SettingsConfigDict(
         env_file=".env",
