@@ -145,6 +145,21 @@ Pre-compiles all 4,145+ schemes and eligibility rules into in-memory integer bit
 ======================================================================
 ```
 
+#### Multi-Core Scaling (16 CPU Cores / `make benchmark`):
+```text
+======================================================================
+🔥 MULTI-CORE BITMASK ENGINE BENCHMARK (16 CPU CORES)
+======================================================================
+• Active Worker Processes:    16 (1 per CPU core)
+• Total Processed Queries:   100,000 Citizen Profiles
+• Schemes Evaluated per Run: 4,145 Schemes in RAM
+• Total Execution Time:      13.840 seconds
+• Combined Multi-Core QPS:   7,225 queries/second
+• Average Latency per Query: 138.40 microseconds (µs)
+• Total Matches Evaluated:   38,220,000 evaluations
+======================================================================
+```
+
 ### 4. Citizen Document Vault & Readiness Meter (`/vault`)
 - Encrypted upload of citizen credentials (Aadhaar, PAN Card, Bank Passbooks, Land Records) to MinIO/S3 object storage.
 - Issues time-limited presigned download URLs.
