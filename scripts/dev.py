@@ -18,7 +18,7 @@ from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 BACKEND_DIR = ROOT_DIR / "backend"
-FRONTEND_DIR = ROOT_DIR / "frontend"
+WEB_DIR = ROOT_DIR / "web"
 
 
 def print_banner(msg: str, emoji: str = "⚡"):
@@ -121,22 +121,22 @@ def main():
         cwd=str(BACKEND_DIR),
     )
 
-    # Start Frontend
-    frontend_proc = subprocess.Popen(
+    # Start Web App
+    web_proc = subprocess.Popen(
         ["npm", "run", "dev"],
-        cwd=str(FRONTEND_DIR),
+        cwd=str(WEB_DIR),
     )
 
     def shutdown(signum, frame):
         print("\n\033[1;33mShutting down development servers...\033[0m")
         backend_proc.terminate()
-        frontend_proc.terminate()
+        web_proc.terminate()
         try:
             backend_proc.wait(timeout=3)
-            frontend_proc.wait(timeout=3)
+            web_proc.wait(timeout=3)
         except Exception:
             backend_proc.kill()
-            frontend_proc.kill()
+            web_proc.kill()
         print("\033[1;32mAll dev processes stopped cleanly.\033[0m")
         sys.exit(0)
 
@@ -147,7 +147,7 @@ def main():
         while True:
             time.sleep(0.5)
             # If any process exited unexpectedly, stop
-            if backend_proc.poll() is not None or frontend_proc.poll() is not None:
+            if backend_proc.poll() is not None or web_proc.poll() is not None:
                 shutdown(None, None)
     except KeyboardInterrupt:
         shutdown(None, None)

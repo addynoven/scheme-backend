@@ -82,30 +82,30 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./app:/app/app
-      - ./knowledge:/app/knowledge
-      - ./alembic:/app/alembic
+      - ./backend/app:/app/app
+      - ./backend/knowledge:/app/knowledge
+      - ./backend/alembic:/app/alembic
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  frontend:
+  web:
     build:
-      context: ./frontend
+      context: ./web
       dockerfile: Dockerfile
-    container_name: scheme-frontend
+    container_name: scheme-web
     restart: unless-stopped
     depends_on:
       backend:
         condition: service_healthy
     environment:
-      - VITE_BACKEND_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=http://backend:8000
     ports:
-      - "5173:5173"
+      - "3000:3000"
     volumes:
-      - ./frontend:/app
+      - ./web:/app
       - /app/node_modules
 
 volumes:

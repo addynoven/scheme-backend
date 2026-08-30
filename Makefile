@@ -46,8 +46,11 @@ benchmark-multicore:
 benchmark:
 	NUM_CORES=$(NUM_CORES) uv run python scripts/benchmark_multicore.py
 
+dev-web:
+	cd web && npm run dev
+
 dev-frontend:
-	cd frontend && npm run dev
+	cd web && npm run dev
 
 test:
 	cd backend && uv run pytest -v
