@@ -52,6 +52,13 @@ dev-frontend:
 test:
 	uv run pytest -v
 
+test-feature:
+	@if [ -z "$(FEAT)" ]; then echo "Error: Please specify feature, e.g. make test-feature FEAT=chat"; exit 1; fi
+	uv run pytest app/modules/$(FEAT)/ -v
+
+test-e2e:
+	uv run pytest tests/e2e/ -v
+
 test-cov:
 	uv run pytest -v --cov=app
 
