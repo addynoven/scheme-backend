@@ -17,6 +17,7 @@ import time
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
+BACKEND_DIR = ROOT_DIR / "backend"
 FRONTEND_DIR = ROOT_DIR / "frontend"
 
 
@@ -51,7 +52,7 @@ def wait_for_db(max_retries: int = 30):
     for attempt in range(1, max_retries + 1):
         proc = subprocess.run(
             ["uv", "run", "python", "-c", check_script],
-            cwd=str(ROOT_DIR),
+            cwd=str(BACKEND_DIR),
             capture_output=True,
         )
         if proc.returncode == 0:
@@ -64,11 +65,11 @@ def wait_for_db(max_retries: int = 30):
 
 def run_migrations_and_seed():
     print_banner("3/4: Applying Database Migrations (Alembic)...", "🔄")
-    run_cmd(["uv", "run", "alembic", "upgrade", "head"])
+    run_cmd(["uv", "run", "alembic", "upgrade", "head"], cwd=BACKEND_DIR)
 
     # Check if database has schemes
     check_db_script = (
-        "from app.core.database import SessionLocal\n"
+        "from app.database import SessionLocal\n"
         "from app.modules.schemes.models import Scheme\n"
         "from app.modules.auth.models import User\n"
         "with SessionLocal() as db:\n"
@@ -78,7 +79,7 @@ def run_migrations_and_seed():
     )
     proc = subprocess.run(
         ["uv", "run", "python", "-c", check_db_script],
-        cwd=str(ROOT_DIR),
+        cwd=str(BACKEND_DIR),
         capture_output=True,
         text=True,
     )
@@ -89,11 +90,11 @@ def run_migrations_and_seed():
 
         if not admin_ok:
             print("Creating default admin account (admin@gov.in)...")
-            run_cmd(["uv", "run", "python", "-m", "app.seeds.create_admin", "--email", "admin@gov.in", "--password", "AdminPass123!"])
+            run_cmd(["uv", "run", "python", "-m", "app.seeds.create_admin", "--email", "admin@gov.in", "--password", "AdminPass123!"], cwd=BACKEND_DIR)
 
         if count == 0:
             print_banner("Empty database detected: Seeding initial welfare schemes...", "🌱")
-            run_cmd(["uv", "run", "python", "-m", "app.seeds.seed_schemes"])
+            run_cmd(["uv", "run", "python", "-m", "app.seeds.seed_schemes"], cwd=BACKEND_DIR)
         else:
             print(f"\033[1;32m✓ Database ready with {count} schemes loaded.\033[0m")
 
@@ -117,7 +118,7 @@ def main():
     # Start Backend
     backend_proc = subprocess.Popen(
         ["uv", "run", "uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
-        cwd=str(ROOT_DIR),
+        cwd=str(BACKEND_DIR),
     )
 
     # Start Frontend

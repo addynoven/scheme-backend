@@ -4,9 +4,10 @@ import sys
 from pathlib import Path
 from multiprocessing import Pool, cpu_count
 
-# Ensure project root is in sys.path
+# Ensure backend directory is in sys.path
 ROOT_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT_DIR))
+BACKEND_DIR = ROOT_DIR / "backend"
+sys.path.insert(0, str(BACKEND_DIR))
 
 from app.database import SessionLocal
 from app.modules.eligibility.bitmask_engine import bitmask_engine

@@ -32,13 +32,13 @@ start:
 	uv run python scripts/dev.py
 
 dev-backend:
-	uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	cd backend && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 dev-backend-multicore:
-	uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $(NUM_CORES)
+	cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $(NUM_CORES)
 
 prod-backend:
-	uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $(NUM_CORES)
+	cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $(NUM_CORES)
 
 benchmark-multicore:
 	NUM_CORES=$(NUM_CORES) uv run python scripts/benchmark_multicore.py
@@ -50,26 +50,26 @@ dev-frontend:
 	cd frontend && npm run dev
 
 test:
-	uv run pytest -v
+	cd backend && uv run pytest -v
 
 test-feature:
 	@if [ -z "$(FEAT)" ]; then echo "Error: Please specify feature, e.g. make test-feature FEAT=chat"; exit 1; fi
-	uv run pytest app/modules/$(FEAT)/ -v
+	cd backend && uv run pytest app/modules/$(FEAT)/ -v
 
 test-e2e:
-	uv run pytest tests/e2e/ -v
+	cd backend && uv run pytest tests/e2e/ -v
 
 test-cov:
-	uv run pytest -v --cov=app
+	cd backend && uv run pytest -v --cov=app
 
 seed:
-	uv run python -m app.seeds.seed_schemes
+	cd backend && uv run python -m app.seeds.seed_schemes
 
 seed-admin:
-	uv run python -m app.seeds.create_admin --email admin@gov.in --password AdminPass123!
+	cd backend && uv run python -m app.seeds.create_admin --email admin@gov.in --password AdminPass123!
 
 migrate:
-	uv run alembic upgrade head
+	cd backend && uv run alembic upgrade head
 
 db-up:
 	docker compose up -d postgres minio minio-createbuckets
