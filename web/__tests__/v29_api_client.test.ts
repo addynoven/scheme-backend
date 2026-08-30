@@ -110,7 +110,7 @@ describe('V2.6 - V2.9 Frontend API Client Test Suite', () => {
 
     const scan = await getFamilyEligibility()
     expect(scan.total_collective_schemes).toBe(3)
-    expect(scan.family_members_reports[0].eligible_schemes).toHaveLength(1)
+    expect(scan.family_members_reports?.[0].eligible_schemes).toHaveLength(1)
   })
 
   it('V2.8: Conversational Citizen Chat sessions and message exchange', async () => {
