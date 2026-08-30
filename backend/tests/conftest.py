@@ -5,8 +5,11 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.config import settings
 from app.database import Base, get_db
 from app.main import app
+
+settings.TESTING = True
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
