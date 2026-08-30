@@ -107,7 +107,7 @@ def main():
     print("\n" + "=" * 60)
     print("  🏛️  SCHEME NAVIGATOR ALL-IN-ONE DEV ENVIRONMENT")
     print("=" * 60)
-    print("  🌐 Frontend App:     \033[1;34mhttp://localhost:5173\033[0m")
+    print("  🌐 Frontend App:     \033[1;34mhttp://localhost:3000\033[0m")
     print("  ⚡ Backend API:      \033[1;32mhttp://localhost:8000\033[0m")
     print("  📖 Swagger Docs:     \033[1;33mhttp://localhost:8000/docs\033[0m")
     print("  🗄️ MinIO S3 Console: \033[1;35mhttp://localhost:9001\033[0m (minioadmin/minioadmin)")

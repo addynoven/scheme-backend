@@ -23,7 +23,8 @@ import {
 import { getSavedEligibilityReport, getCitizenToken } from '@/lib/session'
 
 export default function SchemeDetailPage() {
-  const { slug } = useParams('/schemes/:slug' as any)
+  const params = useParams('/schemes/:slug' as any)
+  const slug = typeof params?.slug === 'string' ? params.slug : Array.isArray(params?.slug) ? params.slug[0] : ''
   const [scheme, setScheme] = useState<Scheme | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

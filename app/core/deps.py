@@ -23,19 +23,27 @@ def get_current_user(
         raise AuthenticationError("Could not validate credentials")
 
     token_type = payload.get("type")
-    if token_type != "access":
+    if token_type and token_type == "refresh":
         raise AuthenticationError("Invalid token type for authorization")
 
-    user_id_str = payload.get("sub")
-    if user_id_str is None:
+    user_id_str = payload.get("sub") or payload.get("id") or payload.get("userId")
+    email = payload.get("email")
+    if user_id_str is None and email is None:
         raise AuthenticationError("Invalid token payload")
 
-    try:
-        user_id = int(user_id_str)
-    except ValueError:
-        raise AuthenticationError("Invalid user identification in token")
+    user = None
+    if user_id_str is not None:
+        try:
+            user_id = int(user_id_str)
+            user = get_user_by_id(db, user_id=user_id)
+        except ValueError:
+            # Better Auth string UUID or OAuth ID
+            if email:
+                user = db.query(User).filter(User.email == email).first()
 
-    user = get_user_by_id(db, user_id=user_id)
+    if user is None and email:
+        user = db.query(User).filter(User.email == email).first()
+
     if user is None:
         raise AuthenticationError("User associated with token no longer exists")
 

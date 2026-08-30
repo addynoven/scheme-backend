@@ -6,7 +6,7 @@
 ---
 
 ## 🔐 1. Authentication & Identity Management
-- [ ] **Multi-Provider Auth Gateway**: Support Social OAuth (Google, Apple, GitHub) and Email/Password with full token refresh lifecycles.
+- [x] **Multi-Provider Auth Gateway**: Support Social OAuth (Google, Apple, GitHub) and Email/Password with full token refresh lifecycles.
 - [x] **Strict Route / Gateway Guard**: Upfront auth gate that completely locks protected domains/routes when unauthenticated (no partial/broken guest states).
 - [x] **Tiered Credential Security**: Isolate sensitive tokens in hardware-encrypted storage (OS Keychain / Keystore / Vault / KMS) with biometric/2FA challenges, keeping non-sensitive state in fast storage.
 - [x] **User Profile & Preference Management**: Manage contact details, multi-address books, wishlist persistence, and membership tiers.

@@ -1,6 +1,7 @@
+import '@/index.css'
+import type { AppProps } from 'next/app'
 import { useEffect, useState } from 'react'
-import { Outlet, useLocation } from 'react-router'
-import { Link, useNavigate } from '@/router'
+import { useRouter } from 'next/router'
 import {
   Menu,
   User as UserIcon,
@@ -15,10 +16,10 @@ import {
   type ChatSession,
 } from '@/lib/api'
 import { AppSidebar } from '@/components/AppSidebar'
+import { Link } from '@/router'
 
-export default function App() {
-  const location = useLocation()
-  const navigate = useNavigate()
+export default function App({ Component, pageProps }: AppProps) {
+  const router = useRouter()
   const [citizenUid, setCitizenUid] = useState<string | null>(null)
   const [householdUid, setHouseholdUid] = useState<string | null>(null)
   const [userName, setUserName] = useState<string | null>(null)
@@ -31,12 +32,11 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [sessions, setSessions] = useState<ChatSession[]>([])
 
-  const isPublicRoute = location.pathname === '/login' || location.pathname === '/register'
-  const isProfileRoute = location.pathname === '/profile'
+  const isPublicRoute = router.pathname === '/login' || router.pathname === '/register'
+  const isProfileRoute = router.pathname === '/profile'
 
   // Get active session ID from URL search params
-  const searchParams = new URLSearchParams(location.search)
-  const activeSessionId = searchParams.get('session') ? parseInt(searchParams.get('session')!, 10) : null
+  const activeSessionId = router.query.session ? parseInt(router.query.session as string, 10) : null
 
   const checkAuth = () => {
     const token = getCitizenToken()
@@ -50,7 +50,7 @@ export default function App() {
       setHasProfile(null)
       setIsChecking(false)
       if (!isPublicRoute) {
-        navigate('/login')
+        router.push('/login')
       }
       return
     }
@@ -66,7 +66,7 @@ export default function App() {
         setHasProfile(profileOk)
         setIsChecking(false)
         if (isPublicRoute) {
-          navigate('/')
+          router.push('/')
         }
         loadSessions()
       })
@@ -80,14 +80,14 @@ export default function App() {
         setHasProfile(null)
         setIsChecking(false)
         if (!isPublicRoute) {
-          navigate('/login')
+          router.push('/login')
         }
       })
   }
 
   useEffect(() => {
     checkAuth()
-  }, [location.pathname])
+  }, [router.pathname])
 
   // Responsive sidebar: collapse on small screens
   useEffect(() => {
@@ -123,7 +123,7 @@ export default function App() {
     try {
       const session = await createChatSession('New Welfare Conversation')
       setSessions((prev) => [session, ...prev])
-      navigate(`/?session=${session.id}` as any)
+      router.push(`/?session=${session.id}`)
       window.dispatchEvent(new CustomEvent('scheme:new-chat', { detail: { session } }))
       if (window.innerWidth < 1024) setSidebarOpen(false)
     } catch (e) {
@@ -138,7 +138,7 @@ export default function App() {
     setHouseholdUid(null)
     setUserName(null)
     setUserProfile(null)
-    navigate('/login')
+    router.push('/login')
   }
 
   return (
@@ -158,7 +158,7 @@ export default function App() {
           householdUid={householdUid}
           onNewChat={handleNewChat}
           onLogout={handleLogout}
-          currentPath={location.pathname}
+          currentPath={router.pathname}
         />
       )}
 
@@ -184,7 +184,7 @@ export default function App() {
           </header>
         )}
 
-        {/* Dynamic Outlet */}
+        {/* Dynamic Page Content */}
         <main className="flex-1 h-full w-full overflow-hidden flex flex-col">
           <ErrorBoundary>
             {isChecking ? (
@@ -194,7 +194,7 @@ export default function App() {
               </div>
             ) : !hasToken ? (
               isPublicRoute ? (
-                <Outlet />
+                <Component {...pageProps} />
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
                   <div className="h-8 w-8 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin mb-3" />
@@ -220,11 +220,11 @@ export default function App() {
                 </div>
               </div>
             ) : (
-              location.pathname === '/' ? (
-                <Outlet />
+              router.pathname === '/' ? (
+                <Component {...pageProps} />
               ) : (
                 <div className="flex-1 w-full h-full overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
-                  <Outlet />
+                  <Component {...pageProps} />
                 </div>
               )
             )}
