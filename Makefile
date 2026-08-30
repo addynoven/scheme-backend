@@ -6,13 +6,15 @@ NUM_CORES ?= $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 
 help:
 	@echo "🏛️ Scheme Navigator — Developer Commands"
 	@echo "--------------------------------------------------"
-	@echo "  make dev                 : 🚀 ONE-COMMAND ALL-IN-ONE: Starts DB + S3 + Migrations + Backend + Frontend"
+	@echo "  make dev                 : 🚀 ONE-COMMAND ALL-IN-ONE: Starts DB + S3 + Migrations + Backend + Next.js Frontend"
 	@echo "  make start               : Alias for make dev"
+	@echo "  make dev-concurrent      : Run Backend (:8000) and Next.js Frontend (:3000) simultaneously with make -j2"
 	@echo "  make dev-backend         : Run FastAPI backend in dev mode with reload (port 8000)"
 	@echo "  make dev-backend-multicore: Run FastAPI with ALL $(NUM_CORES) CPU cores/workers for maximum throughput"
 	@echo "  make prod-backend        : Production Uvicorn server with ALL $(NUM_CORES) CPU worker processes"
 	@echo "  make benchmark-multicore : Benchmark in-memory bitmask engine across all $(NUM_CORES) CPU cores (100k queries)"
-	@echo "  make dev-frontend        : Run React frontend only (port 5173)"
+	@echo "  make dev-web             : Run Next.js frontend only (port 3000)"
+	@echo "  make dev-frontend        : Alias for make dev-web"
 	@echo "  make test                : Run all backend integration & unit tests"
 	@echo "  make test-cov            : Run tests with code coverage summary"
 	@echo "  make seed                : Seed Admin + 4,160 National & State schemes"
@@ -26,10 +28,13 @@ help:
 	@echo "  make clean               : Clean temporary cache & pytest artifacts"
 
 dev:
-	uv run python scripts/dev.py
+	python3 scripts/dev.py
 
 start:
-	uv run python scripts/dev.py
+	python3 scripts/dev.py
+
+dev-concurrent:
+	@$(MAKE) -j2 dev-backend dev-web
 
 dev-backend:
 	cd backend && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000

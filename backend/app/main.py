@@ -109,6 +109,8 @@ TAGS_METADATA = [
     },
 ]
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(
     title="Government Welfare Scheme Navigator API",
     description=API_DESCRIPTION,
@@ -122,6 +124,22 @@ app = FastAPI(
     license_info={
         "name": "MIT License",
     },
+)
+
+# Enable CORS for Next.js and frontend dev servers
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Register centralized exception handlers
@@ -139,6 +157,7 @@ def health_check():
 
 
 app.include_router(auth_router)
+app.include_router(auth_router, prefix="/api")
 app.include_router(schemes_router)
 app.include_router(eligibility_router)
 app.include_router(ocr_router)
@@ -149,4 +168,3 @@ app.include_router(admin_router)
 app.include_router(routing_router)
 app.include_router(chat_router)
 app.include_router(voice_router)
-app.include_router(household_router)
