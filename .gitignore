@@ -5,12 +5,28 @@ build/
 dist/
 wheels/
 *.egg-info
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Virtual environments
-.venv
+.venv/
+env/
+venv/
 
 # Environment variables & secrets
 .env
 .env.local
 .env.*.local
 
+# IDE & Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Frontend dependencies and build outputs
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
