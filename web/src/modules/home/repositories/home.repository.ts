@@ -1,0 +1,47 @@
+import {
+  createChatSession as apiCreateChatSession,
+  listChatSessions as apiListChatSessions,
+  getChatSession as apiGetChatSession,
+  sendChatMessage as apiSendChatMessage,
+  streamChatMessage as apiStreamChatMessage,
+  transcribeAudio as apiTranscribeAudio,
+  citizenGetMe as apiCitizenGetMe,
+  type ChatMessage,
+  type ChatSession,
+} from '@/core'
+
+export const homeRepository = {
+  async getMe() {
+    return apiCitizenGetMe()
+  },
+
+  async createSession(title?: string): Promise<ChatSession> {
+    return apiCreateChatSession(title)
+  },
+
+  async listSessions(): Promise<ChatSession[]> {
+    return apiListChatSessions()
+  },
+
+  async getSession(id: number): Promise<ChatSession> {
+    return apiGetChatSession(id)
+  },
+
+  async sendMessage(sessionId: number, content: string): Promise<ChatMessage> {
+    return apiSendChatMessage(sessionId, content)
+  },
+
+  async streamMessage(
+    sessionId: number,
+    content: string,
+    onToken: (token: string, citations?: string[]) => void,
+    onDone: (messageId: number) => void,
+    onError: (err: any) => void
+  ): Promise<void> {
+    return apiStreamChatMessage(sessionId, content, onToken, onDone, onError)
+  },
+
+  async transcribe(file: File) {
+    return apiTranscribeAudio(file)
+  },
+}
