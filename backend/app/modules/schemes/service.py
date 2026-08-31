@@ -116,12 +116,17 @@ def list_schemes(
     if ministry:
         query = query.where(Scheme.ministry.ilike(f"%{ministry}%"))
     if category:
-        query = query.where(Scheme.category.ilike(f"%{category}%"))
+        from sqlalchemy import or_
+        terms = [t.strip() for t in category.replace("&", " ").split() if len(t.strip()) > 2]
+        cat_filters = [Scheme.category.ilike(f"%{category}%")]
+        for t in terms:
+            cat_filters.append(Scheme.category.ilike(f"%{t}%"))
+        query = query.where(or_(*cat_filters))
     if state:
         if state.upper() in ("ALL_INDIA", "NATIONAL"):
             query = query.where(Scheme.state == "ALL_INDIA")
         else:
-            query = query.where((Scheme.state == "ALL_INDIA") | (Scheme.state.ilike(f"%{state}%")))
+            query = query.where(Scheme.state.ilike(f"%{state}%"))
     if status:
         query = query.where(Scheme.status == status)
     if search:
@@ -149,9 +154,6 @@ def list_schemes(
         order_clauses.append(Scheme.category.asc())
         order_clauses.append(Scheme.name.asc())
     else:
-        if state and state.upper() not in ("ALL_INDIA", "NATIONAL"):
-            from sqlalchemy import case
-            order_clauses.append(case((Scheme.state.ilike(f"%{state}%"), 0), else_=1))
         order_clauses.append(Scheme.id.desc())
 
     stmt = (
