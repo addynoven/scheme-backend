@@ -2,6 +2,7 @@ from collections.abc import AsyncGenerator
 import json
 import logging
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import time
@@ -137,12 +138,32 @@ def create_chat_session(
 
 
 def list_chat_sessions(db: Session, user_id: int | None = None, limit: int = 50) -> list[ChatSession]:
-    """List chat sessions ordered by last update."""
+    """List chat sessions ordered by last update with automatic title generation."""
     query = select(ChatSession)
     if user_id is not None:
         query = query.where(ChatSession.user_id == user_id)
     query = query.order_by(ChatSession.updated_at.desc()).limit(limit)
-    return list(db.scalars(query).all())
+    sessions = list(db.scalars(query).all())
+
+    generic_names = ("New Welfare Conversation", "New Citizen Consultation", "New Welfare Consultation", "New Consultation")
+    updated = False
+    for s in sessions:
+        if s.title in generic_names or not s.title or s.title.startswith("New "):
+            if s.messages:
+                first_user_msg = next((m for m in s.messages if m.sender == "user"), None)
+                if first_user_msg and first_user_msg.content:
+                    clean = re.sub(r'[\r\n\t]+', ' ', first_user_msg.content).strip()
+                    stripped = re.sub(r'^(hello|hi|namaste|hey|who are you|tell me about|what about)\s*,?\s*', '', clean, flags=re.IGNORECASE).strip()
+                    chosen = stripped if len(stripped) >= 3 else clean
+                    s.title = chosen[:40] + ("..." if len(chosen) > 40 else "")
+                    updated = True
+    if updated:
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+
+    return sessions
 
 
 def update_chat_session_title(
@@ -689,8 +710,12 @@ def send_chat_message(
     db.add(assistant_msg)
 
     # Update session title if first turn
-    if session.title == "New Welfare Conversation" or not session.title:
-        session.title = content[:40] + ("..." if len(content) > 40 else "")
+    generic_names = ("New Welfare Conversation", "New Citizen Consultation", "New Welfare Consultation", "New Consultation")
+    if session.title in generic_names or not session.title or session.title.startswith("New "):
+        clean_title = re.sub(r'[\r\n\t]+', ' ', content).strip()
+        stripped = re.sub(r'^(hello|hi|namaste|hey|who are you|tell me about|what about)\s*,?\s*', '', clean_title, flags=re.IGNORECASE).strip()
+        chosen = stripped if len(stripped) >= 3 else clean_title
+        session.title = chosen[:40] + ("..." if len(chosen) > 40 else "")
 
     db.commit()
     db.refresh(assistant_msg)
