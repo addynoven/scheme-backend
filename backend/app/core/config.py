@@ -27,9 +27,11 @@ class Settings(BaseSettings):
     S3_REGION: str = "us-east-1"
     S3_PRESIGNED_EXPIRY_SECONDS: int = 3600
 
-    # Google Gemini Vision LLM
+    # Google Gemini Vision LLM / agy CLI provider
     GEMINI_API_KEY: str | None = None
     GEMINI_MODEL: str = "gemini-3.7-flash"
+    LLM_PROVIDER: str = "gemini"  # "gemini" | "agy"
+    AGY_MODEL: str = "gemini-3.7-flash-low"
     TESTING: bool = False
 
     model_config = SettingsConfigDict(

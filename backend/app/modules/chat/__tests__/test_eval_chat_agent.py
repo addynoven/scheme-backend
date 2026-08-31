@@ -1,4 +1,6 @@
 from datetime import date
+from unittest.mock import patch
+import uuid
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -454,3 +456,70 @@ def test_eval_obc_scholarship_query_filters_out_unrelated_schemes(
         assert "pm-mudra-yojana" not in data["citations"]
         assert "atal-pension-yojana" not in data["citations"]
         assert "pm-kisan" not in data["citations"]
+
+
+def test_eval_agy_cli_provider_switch(client: TestClient, eval_user_and_token: tuple[User, str], seed_eval_schemes: None):
+    """
+    Asserts that LLM_PROVIDER="agy" invokes the agy provider adapter and completes an agentic turn.
+    """
+    user, token = eval_user_and_token
+    headers = {"Authorization": f"Bearer {token}"}
+
+    sess_res = client.post("/chat/sessions", json={"title": "Agy Provider Test"}, headers=headers)
+    session_id = sess_res.json()["id"]
+
+    mock_agy_output_turn_1 = {
+        "candidates": [
+            {
+                "content": {
+                    "parts": [
+                        {
+                            "functionCall": {
+                                "name": "check_eligibility",
+                                "args": {
+                                    "category": "Education",
+                                    "topic": "scholarship",
+                                    "state": "Madhya Pradesh",
+                                    "occupation": "student",
+                                    "age": 20,
+                                },
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "usageMetadata": {"promptTokenCount": 120, "candidatesTokenCount": 25, "totalTokenCount": 145},
+    }
+
+    mock_agy_output_turn_2 = {
+        "candidates": [
+            {
+                "content": {
+                    "parts": [
+                        {
+                            "text": (
+                                "Here are the top scholarship schemes for you:\n"
+                                "• [Mukhyamantri Medhavi Vidyarthi Yojana](/schemes/mp-medhavi-vidyarthi-yojana): Tuition waiver."
+                            )
+                        }
+                    ]
+                }
+            }
+        ],
+        "usageMetadata": {"promptTokenCount": 160, "candidatesTokenCount": 40, "totalTokenCount": 200},
+    }
+
+    with patch("app.core.config.settings.LLM_PROVIDER", "agy"):
+        with patch("app.modules.chat.service._call_agy_cli", side_effect=[mock_agy_output_turn_1, mock_agy_output_turn_2]) as mock_agy:
+            msg_res = client.post(
+                f"/chat/sessions/{session_id}/messages",
+                json={"content": "What scholarships can I get in MP?"},
+                headers=headers,
+            )
+            assert msg_res.status_code == 200
+            data = msg_res.json()
+            assert data["status"] == "success"
+            assert mock_agy.call_count == 2
+            assert "mp-medhavi-vidyarthi-yojana" in data["citations"]
+
