@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { SchemesBrowseScreen } from '@/modules/schemes'
 
 export const metadata = {
@@ -6,5 +7,9 @@ export const metadata = {
 }
 
 export default function SchemesPage() {
-  return <SchemesBrowseScreen />
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-400">Loading schemes catalog...</div>}>
+      <SchemesBrowseScreen />
+    </Suspense>
+  )
 }

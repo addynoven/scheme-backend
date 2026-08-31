@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import {
   Search,
   Filter,
@@ -55,17 +56,16 @@ const INDIAN_STATES = [
   'West Bengal',
 ]
 
-const POPULAR_CATEGORIES = [
-  'All',
-  'Agriculture & Rural',
-  'Healthcare & Wellness',
-  'Education & Learning',
-  'Social Welfare & Empowerment',
-  'Financial Services & Banking',
-  'Employment & Skill Training',
-  'Housing & Shelter',
-  'Women & Child Welfare',
-  'Pensions & Senior Citizens',
+const DEFAULT_CATEGORIES = [
+  { category: 'Agriculture', count: 802 },
+  { category: 'Business & Finance', count: 305 },
+  { category: 'Education', count: 668 },
+  { category: 'Employment & Skills', count: 418 },
+  { category: 'Healthcare', count: 446 },
+  { category: 'Housing', count: 312 },
+  { category: 'Social Welfare', count: 429 },
+  { category: 'Women & Child', count: 545 },
+  { category: 'General', count: 220 },
 ]
 
 const SORT_OPTIONS = [
@@ -77,18 +77,35 @@ const SORT_OPTIONS = [
 ]
 
 export function SchemesBrowseScreen() {
+  const searchParams = useSearchParams()
+  const initialCategory = searchParams?.get('category') || 'All'
+  const initialState = searchParams?.get('state') || 'All'
+  const initialSearch = searchParams?.get('q') || searchParams?.get('search') || ''
+
   const [schemes, setSchemes] = useState<Scheme[]>([])
+  const [categoriesList, setCategoriesList] = useState<Array<{ category: string; count?: number }>>(DEFAULT_CATEGORIES)
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
 
   // Filters State
-  const [search, setSearch] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [category, setCategory] = useState('All')
-  const [stateFilter, setStateFilter] = useState('All')
+  const [search, setSearch] = useState(initialSearch)
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch)
+  const [category, setCategory] = useState(initialCategory)
+  const [stateFilter, setStateFilter] = useState(initialState)
   const [sortBy, setSortBy] = useState('')
   const [page, setPage] = useState(1)
   const pageSize = 12
+
+  // Load real categories from backend on mount
+  useEffect(() => {
+    schemesRepository.getCategories()
+      .then((cats) => {
+        if (cats && cats.length > 0) {
+          setCategoriesList(cats)
+        }
+      })
+      .catch((err) => console.warn('Using default categories fallback:', err))
+  }, [])
 
   // Debounce search input
   useEffect(() => {
@@ -211,9 +228,10 @@ export function SchemesBrowseScreen() {
                 }}
                 className="w-full px-3 py-2.5 bg-zinc-950 border border-zinc-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 rounded-xl text-xs sm:text-sm text-zinc-200 outline-none transition-all"
               >
-                {POPULAR_CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c === 'All' ? 'All Categories / Sectors' : c}
+                <option value="All">All Categories / Sectors</option>
+                {categoriesList.map((c) => (
+                  <option key={c.category} value={c.category}>
+                    {c.category} {c.count !== undefined ? `(${c.count.toLocaleString()})` : ''}
                   </option>
                 ))}
               </select>

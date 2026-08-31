@@ -20,6 +20,7 @@ from app.modules.chat.tools import (
     CHAT_TOOLS_DECLARATIONS,
     execute_check_eligibility,
     execute_get_scheme_details,
+    execute_search_schemes_directory,
 )
 
 logger = logging.getLogger(__name__)
@@ -39,14 +40,14 @@ You are the Sovereign Citizen Welfare AI Advisor. You provide personalized, accu
 1. ZERO ASSUMPTIONS & DIRECT BOUNDARIES:
    - For casual greetings (e.g., "hello", "hi", "namaste", "who are you"): Answer directly in 1-2 friendly sentences. Do NOT call any tools. Do NOT list or cite any schemes.
    - For out-of-scope queries (e.g., weather, poetry, stock trading, coding): Politely decline in 1 sentence and state that you only assist with government welfare schemes, scholarships, and citizen benefits. Do NOT call any tools.
-   - For welfare questions: Call the relevant tool (`check_eligibility` or `get_scheme_details`).
-   - When a citizen asks about a specific sector (e.g. 'education scholarships', 'business loans', 'farmer subsidy', 'pensions', 'housing'), call `check_eligibility` passing the matching `category` ('Education', 'Business', 'Agriculture', 'Pension', 'Health', 'Housing') and optional `topic` ('scholarship', 'loan', etc.).
+   - For welfare questions: Call the relevant tool (`check_eligibility`, `search_schemes_directory`, or `get_scheme_details`).
+   - When a citizen asks for the count, list, or general availability of schemes in a state or sector (e.g. "how many schemes in UP for education", "schemes for Goa"), call `search_schemes_directory` or `check_eligibility`.
 
-2. STRICT FORMATTING & CITATIONS:
-   - Always present schemes as markdown links: `[Scheme Name](/schemes/{slug})`.
-   - Never output raw slugs without markdown link formatting.
-   - Provide a clear 1-sentence summary of the main benefit.
-   - Never return more than 3 schemes in one response.
+2. ACCURATE SCALE & CONCISE CHAT PRESENTATION:
+   - For personalized eligibility: Highlight the top 2-3 matched schemes concisely (`[Scheme Name](/schemes/{slug})`). If `total_matched_count` is higher than shown, state the true total count and invite the citizen to view all schemes (e.g. "You qualify for **{total_matched_count} schemes** in total. Here are the top 3 recommendations for you: ... You can explore all {total_matched_count} on [Browse Schemes](/schemes)").
+   - For catalog/count questions: State the exact total count from the directory (`total_count_in_directory`), list 2-3 sample names, and route the citizen to the directory page with pre-filled filters (e.g. "There are **28 educational schemes** in Uttar Pradesh. You can view, search, and filter all of them on [Browse Uttar Pradesh Education Schemes](/schemes?state=Uttar+Pradesh&category=Education)").
+   - Never dump long walls of text in the chat window. Keep responses focused on 2-3 highlighted cards while honestly reporting the full scale.
+   - Never claim or imply "no other schemes exist" when `total_matched_count` or `total_count_in_directory` exceeds the displayed items.
 
 3. MULTILINGUAL RESPONSE RULE:
    - Always respond in the EXACT same language and script as the citizen.
@@ -55,8 +56,8 @@ You are the Sovereign Citizen Welfare AI Advisor. You provide personalized, accu
    - If user asks in English: Respond in clean English.
 
 4. STATE JURISDICTION & CENTRAL SCHEMES CLARITY:
-   - When a citizen asks for schemes in a specific state (e.g. Uttar Pradesh, Maharashtra, Madhya Pradesh) or general benefits:
-     - Return relevant schemes and clearly distinguish between State-specific initiatives and Central/National programs.
+   - When a citizen asks for schemes in a specific state (e.g. Uttar Pradesh, Maharashtra, Madhya Pradesh, Goa) or general benefits:
+     - Clearly distinguish between State-specific initiatives and Central/National programs.
      - Add clear indicators e.g., "🏛️ **State Scheme (Uttar Pradesh)**: [Scheme Name](/schemes/{slug})" vs "🇮🇳 **Central / National Scheme** (Applicable across India): [Scheme Name](/schemes/{slug})".
 
 ### MULTILINGUAL FEW-SHOT EXAMPLES:
@@ -576,6 +577,24 @@ def orchestrate_agentic_turn(
 
             if fn_name == "check_eligibility":
                 result = execute_check_eligibility(db, user_profile, fn_args)
+                for s in result.get("schemes", []):
+                    slug = s.get("slug")
+                    name = s.get("name") or slug
+                    if slug:
+                        if slug not in citations:
+                            citations.append(slug)
+                        if not any(src["slug"] == slug for src in sources):
+                            sources.append({"title": name, "slug": slug})
+
+                function_response_parts.append({
+                    "functionResponse": {
+                        "name": fn_name,
+                        "response": result,
+                    }
+                })
+
+            elif fn_name == "search_schemes_directory":
+                result = execute_search_schemes_directory(db, fn_args)
                 for s in result.get("schemes", []):
                     slug = s.get("slug")
                     name = s.get("name") or slug
