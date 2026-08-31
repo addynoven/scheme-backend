@@ -38,9 +38,9 @@ export function useSchemeDetail(slug: string) {
   let userExplanation: SchemeExplanation | undefined
   if (savedReport && slug) {
     userExplanation =
-      savedReport.eligible_schemes?.find((s) => s.scheme_slug === slug) ||
-      savedReport.nearly_eligible_schemes?.find((s) => s.scheme_slug === slug) ||
-      savedReport.ineligible_schemes?.find((s) => s.scheme_slug === slug)
+      savedReport.eligible_schemes?.find((s: SchemeExplanation) => s.scheme_slug === slug) ||
+      savedReport.nearly_eligible_schemes?.find((s: SchemeExplanation) => s.scheme_slug === slug) ||
+      savedReport.ineligible_schemes?.find((s: SchemeExplanation) => s.scheme_slug === slug)
   }
 
   return { scheme, docReadiness, userExplanation, loading, error }

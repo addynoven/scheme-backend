@@ -6,7 +6,7 @@ import { useChatStore } from '../store'
 import { type ChatMessage, type ChatSession } from '@/core'
 import { captureDevError } from '@/core/errors/devErrorStore'
 
-export function useChat() {
+export function useChat(initialSessionId?: number) {
   const {
     currentSessionId,
     sessions,
@@ -43,11 +43,6 @@ export function useChat() {
     } catch {}
   }, [])
 
-  useEffect(() => {
-    loadSessions()
-    loadUser()
-  }, [loadSessions, loadUser])
-
   const selectSession = useCallback(async (sessionId: number) => {
     setLoading(true)
     setCurrentSessionId(sessionId)
@@ -60,6 +55,15 @@ export function useChat() {
       setLoading(false)
     }
   }, [setCurrentSessionId, setMessages])
+
+  useEffect(() => {
+    loadSessions()
+    loadUser()
+    if (initialSessionId) {
+      selectSession(initialSessionId)
+    }
+  }, [loadSessions, loadUser, initialSessionId, selectSession])
+
 
   const ensureSession = useCallback(async () => {
     if (currentSessionId) return currentSessionId

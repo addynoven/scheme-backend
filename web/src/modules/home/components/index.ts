@@ -1,3 +1,5 @@
 export * from './ChatComposer'
+export * from './ChatMessageList'
+export * from './ChatWelcomeHero'
 export * from './MarkdownMessage'
 export * from './SuggestionChip'

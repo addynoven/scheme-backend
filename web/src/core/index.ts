@@ -1,3 +1,4 @@
+export * from '../types'
 export * from './api'
 export * from './components'
 export * from './config'
@@ -6,3 +7,4 @@ export * from './query'
 export * from './auth'
 export * from './storage'
 export * from './theme'
+

@@ -28,7 +28,7 @@ import { VoiceAssistantModal } from '@/modules/voice'
 import { useAuth } from '@/modules/auth'
 import { DevErrorModal } from '@/core/components/DevErrorModal'
 
-export function HomeScreen() {
+export function HomeScreen({ initialSessionId }: { initialSessionId?: number } = {}) {
   const {
     currentSessionId,
     sessions,
@@ -42,7 +42,7 @@ export function HomeScreen() {
     selectSession,
     sendQuery,
     resetServiceBlock,
-  } = useChat()
+  } = useChat(initialSessionId)
 
   const { logout, user } = useAuth()
   const { isVoiceModalOpen, setIsVoiceModalOpen } = useChatStore()
