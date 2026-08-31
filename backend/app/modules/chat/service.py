@@ -5,6 +5,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import time
+import traceback
 from typing import Any
 import urllib.error
 import urllib.request
@@ -192,13 +193,34 @@ def _build_user_context(db: Session, user_id: int | None) -> dict[str, Any] | No
     return context
 
 
+_LAST_LLM_ERROR: dict[str, Any] = {}
+
+
 def _call_gemini_api(contents: list[dict[str, Any]], system_instruction: str) -> dict[str, Any] | None:
     """
-    Executes raw HTTP POST to Gemini generateContent endpoint with exponential backoff retry.
-    Retries up to 3 times on HTTP 429 and transient 5xx errors.
+    Direct HTTPS caller for Google Gemini GenerateContent endpoint with exponential backoff.
+    Fails LOUDLY with full stack traces on rate-limits (HTTP 429).
     """
+    global _LAST_LLM_ERROR
+    _LAST_LLM_ERROR.clear()
+
     if not settings.GEMINI_API_KEY:
-        logger.warning("GEMINI_API_KEY is not configured.")
+        err_msg = (
+            "GEMINI_API_KEY is missing in environment/backend/.env while LLM_PROVIDER='gemini'. "
+            "Set GEMINI_API_KEY or switch to LLM_PROVIDER=agy for local CLI execution."
+        )
+        logger.error(
+            "\n" + "=" * 80 + "\n"
+            f"🚨 [CRITICAL CONFIG ERROR] GEMINI_API_KEY NOT SET!\n"
+            f"{err_msg}\n"
+            + "=" * 80
+        )
+        _LAST_LLM_ERROR = {
+            "error_code": "GEMINI_API_KEY_MISSING",
+            "message": err_msg,
+            "provider": "gemini",
+            "stack_trace": None,
+        }
         return None
 
     payload = {
@@ -224,6 +246,11 @@ def _call_gemini_api(contents: list[dict[str, Any]], system_instruction: str) ->
     deduped_models = [m for m in models_to_try if not (m in seen or seen.add(m))]
     backoff_delays = [1.0, 2.0, 4.0]
 
+    last_exc = None
+    last_status = None
+    last_body = ""
+    last_stack = None
+
     for model_name in deduped_models:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={settings.GEMINI_API_KEY}"
         req = urllib.request.Request(
@@ -237,17 +264,51 @@ def _call_gemini_api(contents: list[dict[str, Any]], system_instruction: str) ->
                 with urllib.request.urlopen(req, timeout=15) as resp:
                     return json.loads(resp.read().decode("utf-8"))
             except urllib.error.HTTPError as http_err:
+                last_status = http_err.code
+                last_exc = http_err
+                last_stack = traceback.format_exc()
+                try:
+                    last_body = http_err.read().decode("utf-8")
+                except Exception:
+                    last_body = str(http_err)
+
                 if http_err.code in (429, 500, 502, 503, 504) and attempt < len(backoff_delays):
-                    delay = backoff_delays[attempt]
-                    logger.warning(f"Gemini API model {model_name} HTTP {http_err.code}, retrying in {delay}s (attempt {attempt + 1})...")
+                    delay = 0.01 if getattr(settings, "TESTING", False) else backoff_delays[attempt]
+                    logger.warning(f"⚠️ [Gemini API] model {model_name} HTTP {http_err.code}, retrying in {delay}s (attempt {attempt + 1})...")
                     time.sleep(delay)
                     continue
-                logger.warning(f"Gemini API model {model_name} HTTP error: {http_err}")
+
+                logger.error(
+                    "\n" + "=" * 80 + "\n"
+                    f"🚨 [CRITICAL LLM FAILURE] RATE LIMIT / HTTP ERROR ({http_err.code})\n"
+                    f"• Provider: Gemini REST API\n"
+                    f"• Model: {model_name}\n"
+                    f"• Response Body:\n{last_body}\n\n"
+                    f"• Full Python Stack Trace:\n{last_stack}\n"
+                    f"💡 HOW TO UNBLOCK DEV:\n"
+                    f"Set LLM_PROVIDER=agy in backend/.env to bypass API quotas using local CLI.\n"
+                    + "=" * 80
+                )
                 break
             except Exception as e:
-                logger.warning(f"Gemini API model {model_name} failed: {e}")
+                last_exc = e
+                last_stack = traceback.format_exc()
+                logger.error(
+                    "\n" + "=" * 80 + "\n"
+                    f"🚨 [CRITICAL LLM EXCEPTION] {type(e).__name__}: {e}\n"
+                    f"• Model: {model_name}\n"
+                    f"• Full Python Stack Trace:\n{last_stack}\n"
+                    + "=" * 80
+                )
                 break
 
+    _LAST_LLM_ERROR = {
+        "error_code": "AI_RATE_LIMIT_EXCEEDED" if last_status == 429 else "LLM_PROVIDER_FAILURE",
+        "status_code": last_status,
+        "message": f"Gemini API HTTP {last_status}: {last_body}" if last_body else str(last_exc),
+        "provider": "gemini",
+        "stack_trace": last_stack or (traceback.format_exc() if last_exc else None),
+    }
     return None
 
 
@@ -313,6 +374,7 @@ def _call_agy_cli(contents: list[dict[str, Any]], system_instruction: str) -> di
     )
 
     model_name = getattr(settings, "AGY_MODEL", "gemini-3.7-flash-low") or "gemini-3.7-flash-low"
+    logger.info(f"🤖 [agy CLI] Executing prompt using model: {model_name} (sandbox=True)")
     cmd = [
         agy_bin,
         "--model", model_name,
@@ -325,7 +387,7 @@ def _call_agy_cli(contents: list[dict[str, Any]], system_instruction: str) -> di
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         if res.returncode != 0:
-            logger.warning(f"agy CLI error (code {res.returncode}): {res.stderr}")
+            logger.warning(f"❌ [agy CLI] Process returned non-zero code {res.returncode}: {res.stderr}")
             return None
 
         raw = json.loads(res.stdout)
@@ -336,10 +398,13 @@ def _call_agy_cli(contents: list[dict[str, Any]], system_instruction: str) -> di
             try:
                 structured = json.loads(resp_str)
             except Exception:
+                logger.warning(f"❌ [agy CLI] Failed to parse structured output from raw response: {res.stdout[:200]}")
                 return None
 
+        logger.info(f"✅ [agy CLI] Successfully received structured action: '{structured.get('action')}'")
         action = structured.get("action")
         if action == "tool_call":
+            logger.info(f"🔧 [agy CLI] Model requested tool call: {structured.get('tool_name')} with args: {structured.get('tool_args')}")
             parts = [
                 {
                     "functionCall": {
@@ -349,6 +414,7 @@ def _call_agy_cli(contents: list[dict[str, Any]], system_instruction: str) -> di
                 }
             ]
         else:
+            logger.info(f"💬 [agy CLI] Model returned direct text response ({len(structured.get('text', ''))} chars)")
             parts = [{"text": structured.get("text", "")}]
 
         usage = raw.get("usage", {})
@@ -361,12 +427,13 @@ def _call_agy_cli(contents: list[dict[str, Any]], system_instruction: str) -> di
             },
         }
     except Exception as e:
-        logger.warning(f"Failed to execute agy CLI provider: {e}")
+        logger.warning(f"❌ [agy CLI] Execution exception: {e}")
         return None
 
 
 def call_llm_provider(contents: list[dict[str, Any]], system_instruction: str) -> dict[str, Any] | None:
     provider = (getattr(settings, "LLM_PROVIDER", None) or "gemini").lower()
+    logger.info(f"⚡ [LLM Dispatcher] Using provider: '{provider}'")
     if provider == "agy":
         return _call_agy_cli(contents, system_instruction)
     return _call_gemini_api(contents, system_instruction)
@@ -377,17 +444,10 @@ def orchestrate_agentic_turn(
     user_message: str,
     history_messages: list[ChatMessage],
     user_profile: dict[str, Any] | None,
-) -> tuple[str, list[str], list[dict[str, str]], dict[str, int], str]:
+) -> tuple[str, list[str], list[dict[str, str]], dict[str, int], str, str | None, str | None]:
     """
     Executes the Native Agentic Tool-Calling Loop.
-    Enforces:
-    - Rule 1: Zero intent classification in Python (no hardcoded fallback intent classifiers).
-    - Rule 2: Max tool iterations cap (3).
-    - Rule 4: Parallel tool batch execution with partial failure resilience.
-    - Rule 5: Unified citation schema {title, slug}.
-    - Rule 8: Sliding window history.
-    - Rule 14: PII-redacted structured observability logging.
-    - Explicit failure state ("service_unavailable") when LLM is unreachable.
+    Fails LOUDLY with full stack trace and actionable dev instructions if rate limits or provider failures occur.
     """
     start_time = time.perf_counter()
     citations: list[str] = []
@@ -424,14 +484,61 @@ def orchestrate_agentic_turn(
         api_res = call_llm_provider(contents, SYSTEM_INSTRUCTION)
 
         if not api_res:
-            # Explicit failure state when retries are exhausted (Rule 1 & Rule 12)
-            logger.error("LLM Provider call failed after retries.")
+            err_info = _LAST_LLM_ERROR or {}
+            err_code = err_info.get("error_code", "LLM_PROVIDER_FAILURE")
+            st_trace = err_info.get("stack_trace")
+            provider = (getattr(settings, "LLM_PROVIDER", None) or "gemini").lower()
+
+            logger.error(f"❌ [Agentic Turn] LLM Provider '{provider}' failed completely. Error Code: {err_code}")
+
+            if getattr(settings, "DEV_MODE", True):
+                if err_code == "AI_RATE_LIMIT_EXCEEDED":
+                    dev_message = (
+                        "🚨 **[Dev Mode: Upstream AI Rate Limit Exceeded — HTTP 429]**\n\n"
+                        "The upstream Google Gemini API rejected the request because API quota/rate limits were exhausted.\n\n"
+                        f"• **Provider**: `gemini` (Google REST API)\n"
+                        f"• **Model**: `{settings.GEMINI_MODEL}`\n"
+                        f"• **Status**: `HTTP 429: Too Many Requests`\n"
+                        f"• **Detail**: {err_info.get('message', 'Rate limit reached')}\n\n"
+                        "💡 **How to unblock immediately without API quota:**\n"
+                        "1. Set `LLM_PROVIDER=agy` in `backend/.env`\n"
+                        "2. Restart the backend: `uv run uvicorn app.main:app --reload`"
+                    )
+                elif err_code == "GEMINI_API_KEY_MISSING":
+                    dev_message = (
+                        "🚨 **[Dev Mode: GEMINI_API_KEY Missing]**\n\n"
+                        "`LLM_PROVIDER` is set to `gemini` but no `GEMINI_API_KEY` was found in `backend/.env`.\n\n"
+                        "💡 **How to fix:**\n"
+                        "1. Add `GEMINI_API_KEY=your_key` in `backend/.env`\n"
+                        "2. OR set `LLM_PROVIDER=agy` to use local AI without an API key."
+                    )
+                else:
+                    dev_message = (
+                        f"🚨 **[Dev Mode Error: {err_code}]**\n\n"
+                        f"LLM Provider `{provider}` failed: {err_info.get('message', 'Unknown failure')}\n\n"
+                        f"```python\n{st_trace or 'No stack trace available'}\n```"
+                    )
+
+                turn_status = "rate_limit_exceeded" if err_code == "AI_RATE_LIMIT_EXCEEDED" else "service_unavailable"
+                return (
+                    dev_message,
+                    [],
+                    [],
+                    {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+                    turn_status,
+                    err_code,
+                    st_trace,
+                )
+
+            # Production fallback
             return (
                 "I'm having trouble connecting right now. Please try again in a moment.",
                 [],
                 [],
                 {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
                 "service_unavailable",
+                "SERVICE_UNAVAILABLE",
+                None,
             )
 
         # Capture token usage metrics (Rule 14)
@@ -517,7 +624,7 @@ def orchestrate_agentic_turn(
     if not final_response_text:
         final_response_text = "I am ready to assist you with government welfare programs. Please let me know what you need."
 
-    return final_response_text, citations, sources, token_usage, "success"
+    return final_response_text, citations, sources, token_usage, "success", None, None
 
 
 def send_chat_message(
@@ -540,7 +647,7 @@ def send_chat_message(
     user_profile = _build_user_context(db, user_id)
 
     # 3. Execute Native Agentic Tool Loop
-    response_text, citations, sources, token_usage, turn_status = orchestrate_agentic_turn(
+    response_text, citations, sources, token_usage, turn_status, error_code, stack_trace = orchestrate_agentic_turn(
         db=db,
         user_message=content,
         history_messages=session.messages,
@@ -552,7 +659,7 @@ def send_chat_message(
         session_id=session.id,
         sender="assistant",
         content=response_text,
-        intent="SERVICE_UNAVAILABLE" if turn_status == "service_unavailable" else "AGENTIC_CHAT",
+        intent="SERVICE_UNAVAILABLE" if turn_status in ("service_unavailable", "rate_limit_exceeded") else "AGENTIC_CHAT",
         citations=citations,
     )
     db.add(assistant_msg)
@@ -568,6 +675,8 @@ def send_chat_message(
     setattr(assistant_msg, "sources", sources)
     setattr(assistant_msg, "token_usage", token_usage)
     setattr(assistant_msg, "status", turn_status)
+    setattr(assistant_msg, "error_code", error_code)
+    setattr(assistant_msg, "stack_trace", stack_trace)
 
     return assistant_msg
 
@@ -575,14 +684,24 @@ def send_chat_message(
 async def stream_chat_response(
     db: Session, session_id: int, user_id: int | None, content: str
 ) -> AsyncGenerator[str, None]:
-    """Server-Sent Events (SSE) generator for real-time token streaming."""
+    """Server-Sent Events (SSE) generator for real-time token streaming with fail-loud error telemetry."""
     assistant_msg = send_chat_message(db, session_id, user_id, content)
 
-    if getattr(assistant_msg, "status", "success") == "service_unavailable":
+    turn_status = getattr(assistant_msg, "status", "success")
+    if turn_status in ("service_unavailable", "rate_limit_exceeded"):
+        chunk = {
+            "type": "token",
+            "token": assistant_msg.content,
+            "citations": [],
+            "sources": [],
+        }
+        yield f"data: {json.dumps(chunk)}\n\n"
         error_chunk = {
             "type": "error",
-            "status": "service_unavailable",
+            "status": turn_status,
+            "error_code": getattr(assistant_msg, "error_code", "AI_RATE_LIMIT_EXCEEDED"),
             "message": assistant_msg.content,
+            "stack_trace": getattr(assistant_msg, "stack_trace", None),
         }
         yield f"data: {json.dumps(error_chunk)}\n\n"
         yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_msg.id})}\n\n"

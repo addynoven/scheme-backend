@@ -7,6 +7,17 @@ class ChatMessageCreate(BaseModel):
     language_code: str | None = "en"
 
 
+class SchemeCitation(BaseModel):
+    title: str
+    slug: str
+
+
+class TokenUsageMetrics(BaseModel):
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+
+
 class ChatMessageResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -14,8 +25,13 @@ class ChatMessageResponse(BaseModel):
     session_id: int
     sender: str
     content: str
+    status: str = "success"
     intent: str | None = None
+    error_code: str | None = None
+    stack_trace: str | None = None
     citations: list[str] = Field(default_factory=list)
+    sources: list[SchemeCitation] = Field(default_factory=list)
+    token_usage: TokenUsageMetrics | None = None
     created_at: datetime
 
 

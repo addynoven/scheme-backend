@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     GEMINI_MODEL: str = "gemini-3.7-flash"
     LLM_PROVIDER: str = "gemini"  # "gemini" | "agy"
     AGY_MODEL: str = "gemini-3.7-flash-low"
+    DEV_MODE: bool = True
     TESTING: bool = False
 
     model_config = SettingsConfigDict(

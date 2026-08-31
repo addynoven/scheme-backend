@@ -523,3 +523,44 @@ def test_eval_agy_cli_provider_switch(client: TestClient, eval_user_and_token: t
             assert mock_agy.call_count == 2
             assert "mp-medhavi-vidyarthi-yojana" in data["citations"]
 
+
+def test_dev_mode_rate_limit_fail_loud(client: TestClient, eval_user_and_token):
+    """
+    Assert that when upstream Gemini API rate limits (HTTP 429), the backend fails LOUDLY in DEV_MODE:
+    1. Returns status 'rate_limit_exceeded'
+    2. Returns explicit error_code 'AI_RATE_LIMIT_EXCEEDED'
+    3. Contains full stack trace and actionable prompt to switch LLM_PROVIDER=agy
+    """
+    user, token = eval_user_and_token
+    headers = {"Authorization": f"Bearer {token}"}
+
+    session_res = client.post("/chat/sessions", json={"title": "Rate Limit Test"}, headers=headers)
+    session_id = session_res.json()["id"]
+
+    import urllib.error
+    mock_http_429 = urllib.error.HTTPError(
+        url="https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent",
+        code=429,
+        msg="Too Many Requests",
+        hdrs={},
+        fp=None,
+    )
+
+    with patch("app.core.config.settings.LLM_PROVIDER", "gemini"):
+        with patch("app.core.config.settings.GEMINI_API_KEY", "dummy_key"):
+            with patch("app.core.config.settings.DEV_MODE", True):
+                with patch("urllib.request.urlopen", side_effect=mock_http_429):
+                    msg_res = client.post(
+                        f"/chat/sessions/{session_id}/messages",
+                        json={"content": "Hello bot"},
+                        headers=headers,
+                    )
+                    assert msg_res.status_code == 200
+                    data = msg_res.json()
+                    assert data["status"] == "rate_limit_exceeded"
+                    assert data["error_code"] == "AI_RATE_LIMIT_EXCEEDED"
+                    assert data["stack_trace"] is not None
+                    assert "Dev Mode: Upstream AI Rate Limit Exceeded" in data["content"]
+                    assert "LLM_PROVIDER=agy" in data["content"]
+
+
