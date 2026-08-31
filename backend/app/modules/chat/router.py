@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.deps import get_current_user, get_current_user_optional, get_db
 from app.modules.auth.models import User
 from app.modules.chat.schemas import (
@@ -12,6 +13,7 @@ from app.modules.chat.schemas import (
     ChatSessionResponse,
 )
 from app.modules.chat.service import (
+    check_rate_limit,
     create_chat_session,
     get_chat_session,
     list_chat_sessions,
@@ -85,10 +87,18 @@ def delete_session_endpoint(
 def send_message_endpoint(
     session_id: int,
     payload: ChatMessageCreate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_current_user_optional),
 ):
     """Send message in a chat session and get synchronous response with citations."""
+    client_id = f"user_{current_user.id}" if current_user else (request.client.host if request.client else "unknown_ip")
+    if not getattr(settings, "TESTING", False) and not check_rate_limit(client_id):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Rate limit exceeded. Please wait a moment before sending another message.",
+        )
+
     user_id = current_user.id if current_user else None
     return send_chat_message(
         db=db,
@@ -103,12 +113,26 @@ def send_message_endpoint(
 async def stream_message_endpoint(
     session_id: int,
     payload: ChatMessageCreate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_current_user_optional),
 ):
     """Send message and receive real-time Server-Sent Events (SSE) token stream."""
+    client_id = f"user_{current_user.id}" if current_user else (request.client.host if request.client else "unknown_ip")
+    if not getattr(settings, "TESTING", False) and not check_rate_limit(client_id):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Rate limit exceeded. Please wait a moment before sending another message.",
+        )
+
     user_id = current_user.id if current_user else None
     return StreamingResponse(
         stream_chat_response(db, session_id, user_id, payload.content),
         media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
     )
+
