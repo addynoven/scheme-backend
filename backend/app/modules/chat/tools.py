@@ -57,6 +57,11 @@ CHAT_TOOLS_DECLARATIONS = [
                             "type": "STRING",
                             "description": "Gender, e.g. female, male, other.",
                         },
+                        "jurisdiction": {
+                            "type": "STRING",
+                            "enum": ["both", "central_only", "state_only"],
+                            "description": "Optional scheme jurisdiction: 'both' (default: state + central), 'central_only' (central/national schemes only), or 'state_only'.",
+                        },
                     },
                 },
             },
@@ -185,49 +190,34 @@ def execute_check_eligibility(
     """
     Executes in-memory bitmask rule evaluation with sector/category filtering.
     Returns honest total match count while delivering the top 3-4 most relevant schemes.
+    Consistently detects missing demographic fields for dynamic interactive form collection.
     """
     try:
         if not bitmask_engine.is_warmed or len(bitmask_engine.scheme_ids) == 0:
             bitmask_engine.warm_up(db)
 
-        eval_profile: dict[str, Any] = {
-            "age": 25,
-            "state": "ALL_INDIA",
-            "gender": "all",
-            "caste_category": "General",
-            "annual_income": 200000.0,
-            "occupation": "general",
-        }
+        # Layer 1: Build factual profile from authenticated user context and current turn conversational inputs
+        eval_profile: dict[str, Any] = {}
         if user_profile:
             eval_profile.update({k: v for k, v in user_profile.items() if v is not None})
 
-        for k in ["state", "occupation", "age", "annual_income", "caste_category", "gender"]:
+        # Layer 2: Tool arguments override or supply missing facts
+        for k in ["state", "occupation", "age", "annual_income", "caste_category", "gender", "jurisdiction"]:
             if tool_args.get(k) is not None:
                 eval_profile[k] = tool_args[k]
 
-        matches = bitmask_engine.evaluate(eval_profile)
+        # Identify which fields are missing to help frontend dynamic form or LLM ask relevant follow-up
+        standard_fields = ["state", "occupation", "age", "annual_income", "caste_category", "gender"]
+        missing_fields = [f for f in standard_fields if eval_profile.get(f) is None or str(eval_profile.get(f)).strip() == ""]
 
-        if not matches:
-            query_state = eval_profile.get("state")
-            db_schemes = list(
-                db.scalars(
-                    select(Scheme).where(
-                        (Scheme.state == query_state) | (Scheme.state == "ALL_INDIA") | (Scheme.state.is_(None))
-                    ).limit(30)
-                ).all()
-            )
-            matches = [
-                {
-                    "slug": s.slug,
-                    "name": s.name,
-                    "state": s.state or "ALL_INDIA",
-                    "category": s.category or "General Welfare",
-                    "benefit_title": s.description[:80] if s.description else "Government Welfare Assistance",
-                }
-                for s in db_schemes
-            ]
+        # Run conservative bitmask evaluation with diagnostics
+        eval_res = bitmask_engine.evaluate(eval_profile, include_diagnostics=True)
+        if isinstance(eval_res, tuple):
+            matches, diagnostics = eval_res
+        else:
+            matches, diagnostics = eval_res, {}
 
-        # Filter by requested category or topic
+        # Filter by requested category or topic if specified
         target_category = str(tool_args.get("category", "")).strip().lower()
         target_topic = str(tool_args.get("topic", "")).strip().lower()
 
@@ -247,8 +237,7 @@ def execute_check_eligibility(
                 if cat_matched or topic_matched:
                     filtered_matches.append(m)
 
-            if filtered_matches:
-                matches = filtered_matches
+            matches = filtered_matches
 
         target_state = str(eval_profile.get("state", "")).strip()
         is_specific_state = target_state and target_state.upper() not in ("ALL_INDIA", "ALL-INDIA", "NATIONAL", "ALL")
@@ -264,7 +253,6 @@ def execute_check_eligibility(
                 m for m in matches
                 if m.get("state") in ("ALL_INDIA", "All-India", "National") or not m.get("state")
             ]
-            # Order: State schemes first, followed by national programs
             selected_matches = state_specific + national
         else:
             selected_matches = matches
@@ -288,6 +276,59 @@ def execute_check_eligibility(
                 "summary_benefit": m.get("benefit_title") or m.get("description", "")[:100],
             })
 
+        # Classify zero match state: Gating-induced lack of facts vs genuine ineligibility
+        zero_reason = None
+        elim_breakdown = diagnostics.get("elimination_by_field", {})
+
+        if total_matched == 0:
+            provided_fields = [
+                f for f in ["annual_income", "age", "occupation", "gender", "caste_category"]
+                if eval_profile.get(f) is not None and str(eval_profile.get(f)).strip() != ""
+            ]
+            provided_failures = {
+                f: elim_breakdown.get(f, 0)
+                for f in provided_fields
+                if elim_breakdown.get(f, 0) > 0
+            }
+
+            unset_gating_fields = [
+                f for f in ["occupation", "annual_income", "age", "state"]
+                if eval_profile.get(f) is None or str(eval_profile.get(f)).strip() == ""
+            ]
+            unset_eliminations = {
+                f: elim_breakdown.get(f, 0)
+                for f in unset_gating_fields
+                if elim_breakdown.get(f, 0) > 0
+            }
+
+            # If user provided a field that directly disqualified them (e.g. high annual_income or age limit):
+            if provided_failures and ("annual_income" in provided_failures or "age" in provided_failures):
+                zero_reason = "GENUINELY_INELIGIBLE"
+                message = "No schemes matched your specific profile criteria under current government guidelines."
+            elif unset_eliminations:
+                top_unset_field = max(unset_eliminations, key=unset_eliminations.get)
+                zero_reason = "INSUFFICIENT_GATING_FACTS"
+                field_labels = {
+                    "annual_income": "annual income",
+                    "occupation": "occupation / employment status",
+                    "age": "age",
+                    "state": "state of residence",
+                }
+                friendly_name = field_labels.get(top_unset_field, top_unset_field)
+                state_str = f" in {target_state}" if is_specific_state else ""
+                message = (
+                    f"No schemes could be confirmed because most welfare initiatives{state_str} require your {friendly_name}. "
+                    f"Please share your {friendly_name} to unlock matching programs."
+                )
+            elif unset_gating_fields and len(unset_gating_fields) >= 3:
+                zero_reason = "INSUFFICIENT_GATING_FACTS"
+                message = "No schemes could be confirmed with the limited details provided. Please share your occupation or annual income to check eligibility."
+            else:
+                zero_reason = "GENUINELY_INELIGIBLE"
+                message = "No schemes matched your specific profile criteria under current government guidelines."
+        else:
+            message = f"Found {total_matched} matching schemes."
+
         return {
             "status": "success",
             "total_matched_count": total_matched,
@@ -295,8 +336,12 @@ def execute_check_eligibility(
             "national_count": len(national) if is_specific_state else total_matched,
             "showing_count": len(compact_results),
             "schemes": compact_results,
+            "missing_fields": missing_fields,
+            "zero_reason": zero_reason,
+            "elimination_breakdown": elim_breakdown,
             "has_more": total_matched > len(compact_results),
             "directory_url": f"/schemes?state={target_state}" if is_specific_state else "/schemes",
+            "message": message,
         }
     except Exception as e:
         logger.error(f"Error executing check_eligibility: {e}", exc_info=True)
@@ -308,7 +353,7 @@ def execute_check_eligibility(
 
 def execute_get_scheme_details(db: Session, tool_args: dict[str, Any]) -> dict[str, Any]:
     """
-    Fetches canonical markdown scheme documentation or database records.
+    Fetches canonical markdown scheme documentation or database records with strict slug sanitization.
     """
     try:
         raw_slug = str(tool_args.get("scheme_slug", "")).strip().lower()
@@ -319,25 +364,28 @@ def execute_get_scheme_details(db: Session, tool_args: dict[str, Any]) -> dict[s
         if not slug:
             return {"status": "not_found", "message": "No scheme slug specified."}
 
+        # 1. Exact markdown file lookup
         if KNOWLEDGE_SCHEMES_DIR.exists():
             direct_path = KNOWLEDGE_SCHEMES_DIR / f"{slug}.md"
-            found_path = direct_path if direct_path.exists() else None
-            if not found_path:
-                matches = list(KNOWLEDGE_SCHEMES_DIR.rglob(f"*{slug}*.md"))
-                if matches:
-                    found_path = matches[0]
+            if direct_path.exists():
+                content = direct_path.read_text(encoding="utf-8")
+                return {
+                    "status": "success",
+                    "slug": slug,
+                    "content": content[:1400],
+                }
 
-            if found_path and found_path.exists():
-                try:
-                    content = found_path.read_text(encoding="utf-8")
-                    return {
-                        "status": "success",
-                        "slug": slug,
-                        "content": content[:1400],
-                    }
-                except Exception as read_err:
-                    logger.error(f"Failed reading doc for {slug}: {read_err}")
+            # Check state subdirectories for exact slug match
+            exact_match_file = next(KNOWLEDGE_SCHEMES_DIR.glob(f"**/{slug}.md"), None)
+            if exact_match_file and exact_match_file.exists():
+                content = exact_match_file.read_text(encoding="utf-8")
+                return {
+                    "status": "success",
+                    "slug": slug,
+                    "content": content[:1400],
+                }
 
+        # 2. Database Record Lookup
         db_scheme = db.scalar(
             select(Scheme).where(Scheme.slug == slug)
         )

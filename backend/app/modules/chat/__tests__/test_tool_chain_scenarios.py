@@ -13,17 +13,18 @@ from app.seeds.seed_national_schemes import seed_national_schemes
 def setup_schemes(db_session: Session):
     seed_national_schemes(db_session)
     
-    # Ensure UP and Goa sample schemes exist in the test DB
+    # Ensure UP and Goa sample schemes exist in the test DB with realistic demographic constraints
     up_schemes_data = [
-        ("Uttar Pradesh Post-Matric Merit Scholarship", "uttar-pradesh-post-matric-merit-scholarship", "Uttar Pradesh", "Education", "Full tuition waiver and stipend for UP students"),
-        ("Uttar Pradesh Free Digital Tablet & Laptop Distribution", "uttar-pradesh-free-digital-tablet-laptop-distribution", "Uttar Pradesh", "Education", "Free tablet and laptop distribution for youth"),
-        ("Uttar Pradesh Competitive Exam Coaching Assistance", "uttar-pradesh-competitive-exam-coaching-assistance", "Uttar Pradesh", "Education", "100% sponsored coaching for UP civil exams"),
-        ("Uttar Pradesh Technical & Polytechnic Skill Stipend", "uttar-pradesh-technical-polytechnic-skill-stipend", "Uttar Pradesh", "Education", "Monthly allowance for polytechnic students"),
-        ("Goa Skill Training & Apprenticeship Grant", "goa-skill-training-grant", "Goa", "Employment & Skills", "Stipend for Goa youth undergoing skill training"),
-        ("Goa Higher Education Scholarship", "goa-higher-education-scholarship", "Goa", "Education", "Higher education scholarship for Goa residents"),
+        ("Uttar Pradesh Post-Matric Merit Scholarship", "uttar-pradesh-post-matric-merit-scholarship", "Uttar Pradesh", "Education", "Full tuition waiver and stipend for UP students", [("occupation", "eq", "student"), ("annual_income", "lte", "200000")]),
+        ("Uttar Pradesh Free Digital Tablet & Laptop Distribution", "uttar-pradesh-free-digital-tablet-laptop-distribution", "Uttar Pradesh", "Education", "Free tablet and laptop distribution for youth", [("occupation", "eq", "student"), ("age", "lte", "25")]),
+        ("Uttar Pradesh Competitive Exam Coaching Assistance", "uttar-pradesh-competitive-exam-coaching-assistance", "Uttar Pradesh", "Education", "100% sponsored coaching for UP civil exams", [("occupation", "eq", "student"), ("age", "lte", "35"), ("annual_income", "lte", "300000")]),
+        ("Uttar Pradesh Technical & Polytechnic Skill Stipend", "uttar-pradesh-technical-polytechnic-skill-stipend", "Uttar Pradesh", "Education", "Monthly allowance for polytechnic students", [("occupation", "eq", "student"), ("annual_income", "lte", "200000")]),
+        ("Goa Skill Training & Apprenticeship Grant", "goa-skill-training-grant", "Goa", "Employment & Skills", "Stipend for Goa youth undergoing skill training", [("occupation", "eq", "unemployed"), ("age", "lte", "30")]),
+        ("Goa Higher Education Scholarship", "goa-higher-education-scholarship", "Goa", "Education", "Higher education scholarship for Goa residents", [("occupation", "eq", "student"), ("annual_income", "lte", "250000")]),
     ]
     
-    for name, slug, state, category, desc in up_schemes_data:
+    for item in up_schemes_data:
+        name, slug, state, category, desc, rules = item
         existing = db_session.query(Scheme).filter_by(slug=slug).first()
         if not existing:
             s = Scheme(
@@ -39,6 +40,8 @@ def setup_schemes(db_session: Session):
             db_session.flush()
             db_session.add(Benefit(scheme_id=s.id, title=name, description=desc))
             db_session.add(EligibilityRule(scheme_id=s.id, field_name="state", operator="eq", rule_value=state))
+            for f_name, op, val in rules:
+                db_session.add(EligibilityRule(scheme_id=s.id, field_name=f_name, operator=op, rule_value=val))
     
     db_session.commit()
 
@@ -125,6 +128,7 @@ TOOL_SCENARIOS = [
         "input_json": {
             "state": "Goa",
             "category": "Employment & Skills",
+            "occupation": "unemployed",
             "age": 24,
             "annual_income": 120000,
         },
@@ -202,6 +206,7 @@ TOOL_SCENARIOS = [
             "topic": "scholarship",
             "occupation": "student",
             "age": 20,
+            "annual_income": 150000,
         },
         "assertions": lambda res: (
             res["status"] == "success"
@@ -362,3 +367,94 @@ def test_mock_ai_tool_call_scenarios(db_session: Session, scenario: dict):
         pytest.fail(f"Unknown tool_name: {tool_name}")
 
     assert scenario["assertions"](result), f"Assertion failed for {scenario['id']}. Result was: {result}"
+
+
+def test_conservative_missing_gender_excludes_women_only_schemes(db_session: Session):
+    """
+    REGRESSION TEST: If gender is unknown/unspecified, women-only schemes (Ladli Behna, etc.)
+    MUST NOT be returned as confirmed matches.
+    """
+    res = execute_check_eligibility(
+        db_session,
+        user_profile=None,
+        tool_args={"state": "Madhya Pradesh", "age": 28, "annual_income": 120000},
+    )
+    assert res["status"] == "success"
+    slugs = [s["slug"] for s in res["schemes"]]
+    assert "mp-ladli-behna-yojana" not in slugs
+    assert "gender" in res["missing_fields"]
+
+
+def test_honest_zero_match_returns_zero_without_fake_scheme_substitution(db_session: Session):
+    """
+    REGRESSION TEST (Bug A): When a citizen profile qualifies for 0 schemes (e.g. high-income housing inquiry),
+    the engine MUST honestly return total_matched_count=0 and schemes=[] without substituting 30 random schemes.
+    """
+    res = execute_check_eligibility(
+        db_session,
+        user_profile=None,
+        tool_args={"state": "Goa", "category": "Housing", "annual_income": 5000000},
+    )
+    assert res["status"] == "success"
+    assert res["total_matched_count"] == 0
+    assert len(res["schemes"]) == 0
+    assert res["zero_reason"] == "GENUINELY_INELIGIBLE"
+    assert "No schemes matched" in res["message"]
+
+
+def test_jurisdiction_filtering_central_only_and_state_only(db_session: Session):
+    """
+    Tests central_only and state_only jurisdiction scoping.
+    """
+    # 1. Central only: should only return ALL_INDIA schemes
+    res_central = execute_check_eligibility(
+        db_session,
+        user_profile=None,
+        tool_args={"state": "Madhya Pradesh", "age": 28, "annual_income": 120000, "occupation": "farmer", "jurisdiction": "central_only"},
+    )
+    assert res_central["status"] == "success"
+    for s in res_central["schemes"]:
+        assert s["state"] in ("ALL_INDIA", "All-India", "National")
+
+    # 2. State only: should return MP state schemes and not national schemes
+    res_state = execute_check_eligibility(
+        db_session,
+        user_profile=None,
+        tool_args={"state": "Madhya Pradesh", "age": 28, "annual_income": 120000, "occupation": "farmer", "jurisdiction": "state_only"},
+    )
+    assert res_state["status"] == "success"
+    for s in res_state["schemes"]:
+        assert "Madhya Pradesh" in s["state"]
+
+
+def test_gating_induced_zero_classifies_insufficient_gating_facts(db_session: Session):
+    """
+    When a citizen specifies state/category but omits heavy gates (occupation & income),
+    causing heavy elimination, the engine MUST classify zero_reason as INSUFFICIENT_GATING_FACTS.
+    """
+    res = execute_check_eligibility(
+        db_session,
+        user_profile=None,
+        tool_args={"state": "Goa", "category": "Employment & Skills"},
+    )
+    assert res["status"] == "success"
+    if res["total_matched_count"] == 0:
+        assert res["zero_reason"] == "INSUFFICIENT_GATING_FACTS"
+        assert "require your" in res["message"]
+        assert "elimination_breakdown" in res
+
+
+def test_partial_up_farmer_query_matches_immediately_without_blocking(db_session: Session):
+    """
+    Additive Check: '35yo farmer in UP, ₹1L income' should match immediately
+    even if caste and gender are unset.
+    """
+    res = execute_check_eligibility(
+        db_session,
+        user_profile=None,
+        tool_args={"state": "Uttar Pradesh", "occupation": "farmer", "age": 35, "annual_income": 100000},
+    )
+    assert res["status"] == "success"
+    assert res["total_matched_count"] > 0
+    assert "caste_category" in res["missing_fields"]
+    assert "gender" in res["missing_fields"]

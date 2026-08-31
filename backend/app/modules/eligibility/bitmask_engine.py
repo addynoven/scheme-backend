@@ -101,66 +101,111 @@ class BitmaskRuleEngine:
         self.is_warmed = True
         logger.info(f"BitmaskRuleEngine warmed up successfully with {len(schemes)} schemes.")
 
-    def evaluate(self, profile: dict[str, Any]) -> list[dict[str, Any]]:
+    def evaluate(
+        self, profile: dict[str, Any], include_diagnostics: bool = False
+    ) -> list[dict[str, Any]] | tuple[list[dict[str, Any]], dict[str, Any]]:
         """
         Evaluates profile against all schemes in < 0.05ms using bitwise operations.
-        Returns list of matched scheme dictionaries.
+        Consistently enforces conservative matching: any restricted scheme requires confirmed user facts.
+        Optionally returns detailed elimination breakdown diagnostics.
         """
         if not self.is_warmed or self.all_schemes_mask == 0:
+            if include_diagnostics:
+                return [], {"elimination_by_field": {}, "total_schemes_before_filtering": 0, "final_matched_count": 0}
             return []
 
         mask = self.all_schemes_mask
+        total_before = mask.bit_count()
+        elimination_by_field: dict[str, int] = {
+            "state": 0,
+            "gender": 0,
+            "caste_category": 0,
+            "occupation": 0,
+            "age": 0,
+            "annual_income": 0,
+        }
 
-        # 1. State Filter: Citizen matches their own state schemes + all national (central/all_india) schemes
-        user_state = str(profile.get("state", "all_india")).lower().strip()
-        state_match_mask = (
-            self.state_masks.get(user_state, 0)
-            | self.state_masks.get("all_india", 0)
-            | self.state_masks.get("central", 0)
-            | self.state_masks.get("all", 0)
-        )
+        # 1. State / Jurisdiction Filter
+        jurisdiction = str(profile.get("jurisdiction", "both")).lower().strip()
+        raw_state = profile.get("state")
+        user_state = str(raw_state).lower().strip() if raw_state else "all_india"
+
+        if jurisdiction == "central_only":
+            state_match_mask = (
+                self.state_masks.get("all_india", 0)
+                | self.state_masks.get("central", 0)
+                | self.state_masks.get("all", 0)
+            )
+        elif jurisdiction == "state_only" and user_state and user_state != "all_india":
+            state_match_mask = self.state_masks.get(user_state, 0)
+        else:
+            # "both" (default): state specific + central / all_india
+            state_match_mask = (
+                self.state_masks.get(user_state, 0)
+                | self.state_masks.get("all_india", 0)
+                | self.state_masks.get("central", 0)
+                | self.state_masks.get("all", 0)
+            )
+
         if state_match_mask > 0:
+            before = mask.bit_count()
             mask &= state_match_mask
+            elimination_by_field["state"] = before - mask.bit_count()
 
-        # 2. Gender Filter: If scheme has gender restriction, user must match it. If no restriction, scheme is open.
-        user_gender = str(profile.get("gender", "")).lower().strip()
+        # 2. Gender Filter: If scheme has gender restriction, user must match it. If missing/unspecified, only open schemes match.
+        raw_gender = profile.get("gender")
+        user_gender = str(raw_gender).lower().strip() if raw_gender else ""
         gender_restricted_mask = 0
         for g_mask in self.gender_masks.values():
             gender_restricted_mask |= g_mask
         unrestricted_gender_mask = self.all_schemes_mask & ~gender_restricted_mask
 
-        if user_gender:
+        if user_gender and user_gender not in ("all", "any", "unspecified", "all_genders"):
             allowed_gender_mask = self.gender_masks.get(user_gender, 0) | self.gender_masks.get("all", 0) | unrestricted_gender_mask
-            mask &= allowed_gender_mask
+        else:
+            allowed_gender_mask = unrestricted_gender_mask | self.gender_masks.get("all", 0)
 
-        # 3. Caste Category Filter: Schemes with caste restriction must match, otherwise open.
-        user_caste = str(profile.get("caste_category", "")).lower().strip()
+        before = mask.bit_count()
+        mask &= allowed_gender_mask
+        elimination_by_field["gender"] = before - mask.bit_count()
+
+        # 3. Caste Category Filter: Schemes with caste restriction must match, otherwise only open schemes match.
+        raw_caste = profile.get("caste_category")
+        user_caste = str(raw_caste).lower().strip() if raw_caste else ""
         caste_restricted_mask = 0
         for c_mask in self.caste_masks.values():
             caste_restricted_mask |= c_mask
         unrestricted_caste_mask = self.all_schemes_mask & ~caste_restricted_mask
 
-        if user_caste:
+        if user_caste and user_caste not in ("all", "any", "unspecified", "all_categories"):
             allowed_caste_mask = self.caste_masks.get(user_caste, 0) | self.caste_masks.get("all", 0) | unrestricted_caste_mask
-            mask &= allowed_caste_mask
+        else:
+            allowed_caste_mask = unrestricted_caste_mask | self.caste_masks.get("all", 0)
 
-        # 4. Occupation Filter: Schemes with occupation restriction must match, otherwise open.
-        user_occ = str(profile.get("occupation", "")).lower().strip()
+        before = mask.bit_count()
+        mask &= allowed_caste_mask
+        elimination_by_field["caste_category"] = before - mask.bit_count()
+
+        # 4. Occupation Filter: Schemes with occupation restriction must match, otherwise only open schemes match.
+        raw_occ = profile.get("occupation")
+        user_occ = str(raw_occ).lower().strip() if raw_occ else ""
         occ_restricted_mask = 0
         for o_mask in self.occupation_masks.values():
             occ_restricted_mask |= o_mask
         unrestricted_occ_mask = self.all_schemes_mask & ~occ_restricted_mask
 
-        if user_occ:
+        if user_occ and user_occ not in ("all", "any", "general", "unspecified"):
             allowed_occ_mask = self.occupation_masks.get(user_occ, 0) | self.occupation_masks.get("all", 0) | unrestricted_occ_mask
-            mask &= allowed_occ_mask
         else:
-            # If user has no occupation specified, only match unrestricted schemes
-            mask &= unrestricted_occ_mask
+            allowed_occ_mask = unrestricted_occ_mask | self.occupation_masks.get("all", 0)
+
+        before = mask.bit_count()
+        mask &= allowed_occ_mask
+        elimination_by_field["occupation"] = before - mask.bit_count()
 
         # 5. Numeric Rules Filter (Age & Annual Income)
-        user_age = float(profile.get("age", 25)) if profile.get("age") is not None else None
-        user_income = float(profile.get("annual_income", 100000)) if profile.get("annual_income") is not None else None
+        user_age = float(profile["age"]) if profile.get("age") is not None and str(profile.get("age")).strip() != "" else None
+        user_income = float(profile["annual_income"]) if profile.get("annual_income") is not None and str(profile.get("annual_income")).strip() != "" else None
 
         for rule in self.numeric_rules:
             idx = rule["idx"]
@@ -170,6 +215,12 @@ class BitmaskRuleEngine:
 
             current_val = user_age if f_name == "age" else user_income
             if current_val is None:
+                # Conservative: If age/income is unknown and scheme has a strict rule on it, exclude scheme
+                before = mask.bit_count()
+                mask &= ~(1 << idx)
+                diff = before - mask.bit_count()
+                if diff > 0:
+                    elimination_by_field[f_name] = elimination_by_field.get(f_name, 0) + diff
                 continue
 
             passed = True
@@ -181,13 +232,25 @@ class BitmaskRuleEngine:
                 passed = False
 
             if not passed:
+                before = mask.bit_count()
                 mask &= ~(1 << idx)
+                diff = before - mask.bit_count()
+                if diff > 0:
+                    elimination_by_field[f_name] = elimination_by_field.get(f_name, 0) + diff
 
         # Extract matching scheme items
         matches = []
         for i in range(len(self.scheme_ids)):
             if (mask >> i) & 1:
                 matches.append(self.idx_to_scheme[i])
+
+        if include_diagnostics:
+            diagnostics = {
+                "elimination_by_field": elimination_by_field,
+                "total_schemes_before_filtering": total_before,
+                "final_matched_count": len(matches),
+            }
+            return matches, diagnostics
 
         return matches
 
