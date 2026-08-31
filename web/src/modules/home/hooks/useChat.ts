@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { homeRepository } from '../repositories'
 import { useChatStore } from '../store'
 import { type ChatMessage, type ChatSession } from '@/core'
+import { captureDevError } from '@/core/errors/devErrorStore'
 
 export function useChat() {
   const {
@@ -13,12 +14,16 @@ export function useChat() {
     streamBuffer,
     streamCitations,
     isStreaming,
+    isServiceBlocked,
+    serviceErrorMessage,
     setCurrentSessionId,
     setSessions,
     setMessages,
     setStreamBuffer,
     setStreamCitations,
     setIsStreaming,
+    setIsServiceBlocked,
+    resetServiceBlock,
   } = useChatStore()
 
   const [loading, setLoading] = useState(false)
@@ -67,6 +72,7 @@ export function useChat() {
   const sendQuery = useCallback(async (text: string) => {
     if (!text.trim() || isStreaming) return
 
+    console.log('💬 [useChat] User query initiated:', text)
     const userMessage: ChatMessage = {
       id: Date.now(),
       role: 'user',
@@ -84,6 +90,8 @@ export function useChat() {
 
     try {
       const sessionId = await ensureSession()
+      console.log('🎯 [useChat] Active session ID:', sessionId)
+
       await homeRepository.streamMessage(
         sessionId,
         text,
@@ -95,37 +103,109 @@ export function useChat() {
             setStreamCitations(accumulatedCitations)
           }
         },
-        async () => {
+        async (messageId: number) => {
+          console.log('✅ [useChat] Stream finalized for message ID:', messageId, '| Total text length:', accumulatedText.length)
           setIsStreaming(false)
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: Date.now() + 1,
-              role: 'assistant',
-              content: accumulatedText,
-              citations: accumulatedCitations,
-              created_at: new Date().toISOString(),
-            },
-          ])
+          if (accumulatedText.trim().length > 0) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: messageId || Date.now() + 1,
+                role: 'assistant',
+                content: accumulatedText,
+                citations: accumulatedCitations,
+                created_at: new Date().toISOString(),
+              },
+            ])
+          }
           setStreamBuffer('')
           setStreamCitations([])
           await loadSessions()
         },
         async (err: any) => {
-          try {
-            const resp = await homeRepository.sendMessage(sessionId, text)
-            setMessages((prev) => [...prev, resp])
-          } finally {
+          console.warn('⚠️ [useChat] Stream reported error:', err.message)
+          const isRateLimit =
+            err.message?.includes('429') ||
+            err.status === 429 ||
+            accumulatedText.includes('429') ||
+            accumulatedText.includes('Rate Limit')
+
+          setIsServiceBlocked(
+            true,
+            isRateLimit
+              ? 'AI Rate Limit Reached (HTTP 429) — AI queries temporarily locked'
+              : 'Welfare AI Service Temporarily Unavailable'
+          )
+
+          captureDevError({
+            title: isRateLimit ? 'Upstream AI Rate Limit Exceeded (HTTP 429)' : 'Welfare AI Service Error',
+            errorCode: isRateLimit ? 'AI_RATE_LIMIT_EXCEEDED' : 'SERVICE_UNAVAILABLE',
+            httpStatus: isRateLimit ? 429 : 503,
+            origin: 'SSE Stream',
+            endpoint: `/chat/sessions/${sessionId}/messages/stream`,
+            message: accumulatedText || err.message || 'Stream connection failed',
+            solution: isRateLimit
+              ? 'Set LLM_PROVIDER=agy in backend/.env to use local CLI without external Gemini API rate limits.'
+              : 'Check backend server logs.',
+          })
+
+          if (accumulatedText.trim().length > 0) {
+            // We already received error text via token chunk
             setIsStreaming(false)
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now() + 1,
+                role: 'assistant',
+                status: isRateLimit ? 'rate_limit_exceeded' : 'service_unavailable',
+                error_code: isRateLimit ? 'AI_RATE_LIMIT_EXCEEDED' : 'SERVICE_UNAVAILABLE',
+                content: accumulatedText,
+                citations: [],
+                created_at: new Date().toISOString(),
+              },
+            ])
             setStreamBuffer('')
             setStreamCitations([])
+          } else {
+            console.log('🔄 [useChat] Attempting REST fallback sendMessage...')
+            try {
+              const resp = await homeRepository.sendMessage(sessionId, text)
+              console.log('✅ [useChat] Fallback REST message succeeded:', resp)
+              setMessages((prev) => [...prev, resp])
+            } catch (fallbackErr: any) {
+              console.error('❌ [useChat] Fallback REST message failed:', fallbackErr)
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: Date.now() + 1,
+                  role: 'assistant',
+                  status: isRateLimit ? 'rate_limit_exceeded' : 'service_unavailable',
+                  error_code: isRateLimit ? 'AI_RATE_LIMIT_EXCEEDED' : 'SERVICE_UNAVAILABLE',
+                  content: "Sorry, we are facing technical issues reaching the welfare consultation service right now. Please try again in a moment.",
+                  citations: [],
+                  created_at: new Date().toISOString(),
+                },
+              ])
+            } finally {
+              setIsStreaming(false)
+              setStreamBuffer('')
+              setStreamCitations([])
+            }
           }
         }
       )
-    } catch {
+    } catch (e: any) {
+      console.error('❌ [useChat] Unexpected error in sendQuery:', e)
+      setIsServiceBlocked(true, 'Unexpected client error in chat pipeline')
+      captureDevError({
+        title: 'Chat Pipeline Unexpected Client Error',
+        errorCode: 'CLIENT_CHAT_EXCEPTION',
+        origin: 'Frontend Client',
+        message: e.message || String(e),
+      })
       setIsStreaming(false)
     }
-  }, [isStreaming, ensureSession, setMessages, setIsStreaming, setStreamBuffer, setStreamCitations, loadSessions])
+  }, [isStreaming, ensureSession, setMessages, setIsStreaming, setStreamBuffer, setStreamCitations, loadSessions, setIsServiceBlocked])
 
   return {
     currentSessionId,
@@ -134,10 +214,13 @@ export function useChat() {
     streamBuffer,
     streamCitations,
     isStreaming,
+    isServiceBlocked,
+    serviceErrorMessage,
     userName,
     loading,
     selectSession,
     sendQuery,
     reloadSessions: loadSessions,
+    resetServiceBlock,
   }
 }

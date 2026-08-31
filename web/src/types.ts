@@ -205,38 +205,79 @@ export interface CitizenFactsAuditResponse {
 
 export interface HouseholdMember {
   id: number
-  user_id: number
-  member_name: string
+  primary_user_id?: number
+  user_id?: number
+  citizen_uid?: string
+  member_uid?: string
+  household_uid?: string
+  full_name: string
+  member_name?: string
   relationship: string
+  life_stage?: 'MINOR' | 'ADULT' | 'SENIOR' | string
+  verification_status?: 'UNVERIFIED' | 'PENDING_DOCS' | 'DOCUMENT_VERIFIED' | string
+  date_of_birth?: string | null
   age: number
   gender: string
   occupation?: string | null
-  annual_income: number
   caste_category?: string | null
-  is_differently_abled: boolean
-  state: string
-  district: string
+  annual_income?: number | null
+  is_student?: boolean
+  is_disabled?: boolean
+  has_disability?: boolean
+  is_differently_abled?: boolean
+  aadhaar_last_four?: string | null
+  state?: string
+  district?: string
   marital_status?: string | null
   residence_area?: string | null
   has_land?: boolean | null
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface HouseholdMemberCreatePayload {
-  member_name: string
+  member_name?: string
+  full_name?: string
   relationship: string
   age: number
   gender: string
   occupation?: string | null
-  annual_income?: number
+  annual_income?: number | null
   caste_category?: string | null
   is_differently_abled?: boolean
-  state: string
-  district: string
+  state?: string
+  district?: string
   marital_status?: string | null
   residence_area?: string | null
   has_land?: boolean | null
+}
+
+export interface HouseholdMemberReport {
+  member_id: number
+  citizen_uid: string
+  member_uid: string
+  full_name: string
+  relationship: string
+  life_stage: string
+  verification_status: string
+  age: number
+  gender: string
+  eligible_schemes_count: number
+  eligible_schemes: Array<{
+    name: string
+    slug: string
+    benefit_title?: string
+    application_url?: string
+  }>
+}
+
+export interface FamilyEligibilityReport {
+  household_uid: string
+  total_family_members: number
+  total_eligible_schemes_found?: number
+  total_collective_schemes?: number
+  family_members_reports?: HouseholdMemberReport[]
+  household_results?: HouseholdMemberReport[] | HouseholdEligibilityMemberResult[]
 }
 
 export interface HouseholdEligibilityMemberResult {
@@ -258,26 +299,54 @@ export interface HouseholdEligibilityResponse {
 
 export interface ChatMessage {
   id: number
-  session_id: number
+  session_id?: number
   role: 'user' | 'assistant' | 'system'
   content: string
+  status?: 'success' | 'service_unavailable' | 'rate_limit_exceeded' | 'error'
+  error_code?: string | null
+  stack_trace?: string | null
+  citations?: string[]
   created_at: string
 }
 
 export interface ChatSession {
   id: number
-  user_id: number
+  user_id?: number
   title: string
   created_at: string
-  updated_at: string
+  updated_at?: string
   messages: ChatMessage[]
 }
 
+export interface VoiceTranscriptionResponse {
+  transcribed_text: string
+  detected_language: string
+  confidence: number
+}
+
 export interface VoiceChatResponse {
-  transcript: string
-  text_response: string
-  matched_schemes: Scheme[]
+  session_id?: number
+  transcribed_text?: string
+  detected_language?: string
+  answer?: string
+  transcript?: string
+  text_response?: string
+  citations?: string[]
+  matched_schemes?: Array<{
+    name: string
+    slug: string
+    benefit_title?: string
+    application_url?: string
+  }> | Scheme[]
+  synthesized_speech_base64?: string | null
   synthesized_audio_base64?: string | null
   audio_mime_type?: string | null
   execution_time_ms?: number
+}
+
+export interface VoiceSynthesisResponse {
+  language_code: string
+  audio_format: string
+  audio_base64: string
+  synthesized_text: string
 }

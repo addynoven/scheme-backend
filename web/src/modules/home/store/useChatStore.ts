@@ -9,6 +9,8 @@ interface ChatState {
   streamCitations: string[]
   isStreaming: boolean
   isVoiceModalOpen: boolean
+  isServiceBlocked: boolean
+  serviceErrorMessage: string | null
   setCurrentSessionId: (id: number | null) => void
   setSessions: (sessions: ChatSession[]) => void
   setMessages: (messages: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => void
@@ -16,6 +18,8 @@ interface ChatState {
   setStreamCitations: (citations: string[]) => void
   setIsStreaming: (isStreaming: boolean) => void
   setIsVoiceModalOpen: (open: boolean) => void
+  setIsServiceBlocked: (blocked: boolean, message?: string | null) => void
+  resetServiceBlock: () => void
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -26,6 +30,8 @@ export const useChatStore = create<ChatState>((set) => ({
   streamCitations: [],
   isStreaming: false,
   isVoiceModalOpen: false,
+  isServiceBlocked: false,
+  serviceErrorMessage: null,
   setCurrentSessionId: (currentSessionId) => set({ currentSessionId }),
   setSessions: (sessions) => set({ sessions }),
   setMessages: (messages) =>
@@ -36,4 +42,7 @@ export const useChatStore = create<ChatState>((set) => ({
   setStreamCitations: (streamCitations) => set({ streamCitations }),
   setIsStreaming: (isStreaming) => set({ isStreaming }),
   setIsVoiceModalOpen: (isVoiceModalOpen) => set({ isVoiceModalOpen }),
+  setIsServiceBlocked: (isServiceBlocked, serviceErrorMessage = null) =>
+    set({ isServiceBlocked, serviceErrorMessage }),
+  resetServiceBlock: () => set({ isServiceBlocked: false, serviceErrorMessage: null }),
 }))

@@ -1,629 +1,230 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
+import Link from 'next/link'
 import {
-  Sparkles,
+  MessageSquare,
+  Plus,
+  Mic,
   ShieldCheck,
-  Loader2,
-  Check,
-  X,
-  Volume2,
-  Copy,
-  CheckCheck,
-  GraduationCap,
-  Briefcase,
-  Tractor,
-  Home,
-  HeartPulse,
-  ChevronDown,
+  FolderLock,
+  Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  LogOut,
+  User as UserIcon,
+  Users,
 } from 'lucide-react'
 import {
-  type ChatMessage,
-  createChatSession,
-  getChatSession,
-  streamChatMessage,
-  sendChatMessage,
-  citizenGetMe,
-  transcribeAudio,
-} from '@/lib/api'
-import { MarkdownMessage } from '../components/MarkdownMessage'
-import { ChatComposer } from '../components/ChatComposer'
-import { SuggestionChip } from '../components/SuggestionChip'
-
-const SUGGESTIONS = [
-  {
-    icon: GraduationCap,
-    label: 'Scholarships',
-    prompt: 'What higher education scholarships am I eligible for?',
-  },
-  {
-    icon: Tractor,
-    label: 'Farmer benefits',
-    prompt: 'Tell me about agricultural subsidies and PM-Kisan benefits.',
-  },
-  {
-    icon: Briefcase,
-    label: 'Business & MSME',
-    prompt: 'What loans and subsidies (like PMEGP or Mudra) can I get to start a business?',
-  },
-  {
-    icon: Home,
-    label: 'Housing',
-    prompt: 'Am I eligible for PM Awas Yojana (PMAY) housing assistance?',
-  },
-  {
-    icon: HeartPulse,
-    label: 'Healthcare',
-    prompt: 'How do I check if my family has Ayushman Bharat ₹5 Lakh cashless hospital cover?',
-  },
-]
+  ChatWelcomeHero,
+  ChatMessageList,
+  ChatComposer,
+} from '../components'
+import { useChat } from '../hooks'
+import { useChatStore } from '../store'
+import { VoiceAssistantModal } from '@/modules/voice'
+import { useAuth } from '@/modules/auth'
+import { DevErrorModal } from '@/core/components/DevErrorModal'
 
 export function HomeScreen() {
-  const [activeSessionId, setActiveSessionId] = useState<number | null>(null)
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const {
+    currentSessionId,
+    sessions,
+    messages,
+    streamBuffer,
+    streamCitations,
+    isStreaming,
+    isServiceBlocked,
+    serviceErrorMessage,
+    userName,
+    selectSession,
+    sendQuery,
+    resetServiceBlock,
+  } = useChat()
+
+  const { logout, user } = useAuth()
+  const { isVoiceModalOpen, setIsVoiceModalOpen } = useChatStore()
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [input, setInput] = useState('')
-  const [isStreaming, setIsStreaming] = useState(false)
-  const [streamBuffer, setStreamBuffer] = useState('')
-  const [streamCitations, setStreamCitations] = useState<string[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [citizen, setCitizen] = useState<any | null>(null)
-
-  // Model Selector
-  const [selectedModel, setSelectedModel] = useState<'flash' | 'bitmask' | 'deep'>('flash')
-  const [modelDropdownOpen, setModelDropdownOpen] = useState(false)
-
-  // Mic Dictation State (Real Web Speech Recognition)
   const [isDictating, setIsDictating] = useState(false)
-  const recognitionRef = useRef<any>(null)
-  const dictationRecorderRef = useRef<MediaRecorder | null>(null)
-  const dictationChunksRef = useRef<Blob[]>([])
 
-  // Audio Playback & Copy State
-  const [speakingMsgId, setSpeakingMsgId] = useState<number | null>(null)
-  const [copiedMsgId, setCopiedMsgId] = useState<number | null>(null)
-
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-
-  // Sync active session from URL
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const params = new URLSearchParams(window.location.search)
-    const urlSessionId = params.get('session') ? parseInt(params.get('session')!, 10) : null
-    if (urlSessionId) {
-      setActiveSessionId(urlSessionId)
-      loadSessionMessages(urlSessionId)
-    } else {
-      setActiveSessionId(null)
-      setMessages([])
-    }
-  }, [])
-
-  // Listen to global new-chat event
-  useEffect(() => {
-    const handleNewChat = (e: any) => {
-      const session = e.detail?.session
-      if (session) {
-        setActiveSessionId(session.id)
-        setMessages([])
-        setInput('')
-      }
-    }
-    window.addEventListener('scheme:new-chat', handleNewChat)
-    return () => window.removeEventListener('scheme:new-chat', handleNewChat)
-  }, [])
-
-  useEffect(() => {
-    citizenGetMe()
-      .then(setCitizen)
-      .catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, streamBuffer])
-
-  // Close dropdown on click outside
-  useEffect(() => {
-    const handleClickOutside = () => setModelDropdownOpen(false)
-    if (modelDropdownOpen) {
-      window.addEventListener('click', handleClickOutside)
-    }
-    return () => window.removeEventListener('click', handleClickOutside)
-  }, [modelDropdownOpen])
-
-  async function loadSessionMessages(id: number) {
-    try {
-      const session = await getChatSession(id)
-      setMessages(session.messages || [])
-    } catch (e) {
-      console.error(e)
+  function handleSend(text?: string) {
+    const query = text || input
+    if (query.trim()) {
+      sendQuery(query)
+      setInput('')
     }
   }
-
-  async function ensureSession(): Promise<number> {
-    if (activeSessionId) return activeSessionId
-    const newSession = await createChatSession('New Welfare Conversation')
-    setActiveSessionId(newSession.id)
-    const url = new URL(window.location.href)
-    url.searchParams.set('session', newSession.id.toString())
-    window.history.replaceState({}, '', url.toString())
-    window.dispatchEvent(new CustomEvent('scheme:session-updated'))
-    return newSession.id
-  }
-
-  // Real Speech Recognition (Converts actual voice to text in real time)
-  async function toggleDictation() {
-    if (isDictating) {
-      if (recognitionRef.current) {
-        try { recognitionRef.current.stop() } catch {}
-      }
-      if (dictationRecorderRef.current) {
-        try { dictationRecorderRef.current.stop() } catch {}
-      }
-      setIsDictating(false)
-      return
-    }
-
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-
-    if (SpeechRecognition) {
-      try {
-        const recognition = new SpeechRecognition()
-        recognitionRef.current = recognition
-        recognition.continuous = false
-        recognition.interimResults = true
-        recognition.lang = 'en-IN'
-
-        let baseInput = input
-
-        recognition.onstart = () => {
-          setIsDictating(true)
-          setError(null)
-        }
-
-        recognition.onresult = (event: any) => {
-          let transcript = ''
-          for (let i = 0; i < event.results.length; ++i) {
-            transcript += event.results[i][0].transcript
-          }
-          if (transcript) {
-            setInput(baseInput ? `${baseInput} ${transcript}` : transcript)
-          }
-        }
-
-        recognition.onerror = (event: any) => {
-          console.warn('Speech recognition status:', event.error)
-          setIsDictating(false)
-        }
-
-        recognition.onend = () => {
-          setIsDictating(false)
-        }
-
-        recognition.start()
-        return
-      } catch (err) {
-        console.warn('Speech recognition initialization fallback:', err)
-      }
-    }
-
-    // Fallback: MediaRecorder sending to Gemini API
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const recorder = new MediaRecorder(stream)
-      dictationRecorderRef.current = recorder
-      dictationChunksRef.current = []
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) dictationChunksRef.current.push(e.data)
-      }
-
-      recorder.onstop = async () => {
-        const audioBlob = new Blob(dictationChunksRef.current, { type: 'audio/mp3' })
-        const audioFile = new File([audioBlob], 'dictation.mp3', { type: 'audio/mp3' })
-        try {
-          const res = await transcribeAudio(audioFile)
-          if (res.transcribed_text) {
-            setInput((prev) => (prev ? `${prev} ${res.transcribed_text}` : res.transcribed_text))
-          }
-        } catch (err) {
-          setError('Microphone speech could not be recognized')
-        }
-      }
-
-      recorder.start()
-      setIsDictating(true)
-    } catch (err) {
-      setError('Microphone permission required for speech dictation')
-    }
-  }
-
-  async function handleSend(textToSend?: string) {
-    const text = (textToSend || input).trim()
-    if (!text || isStreaming) return
-
-    setInput('')
-    setError(null)
-
-    const userMsg: ChatMessage = {
-      id: Date.now(),
-      role: 'user',
-      content: text,
-      citations: [],
-      created_at: new Date().toISOString(),
-    }
-    setMessages((prev) => [...prev, userMsg])
-    setIsStreaming(true)
-    setStreamBuffer('')
-    setStreamCitations([])
-
-    let accumulatedText = ''
-    let accumulatedCitations: string[] = []
-
-    try {
-      const sessionId = await ensureSession()
-
-      await streamChatMessage(
-        sessionId,
-        text,
-        (token, citations) => {
-          accumulatedText += token
-          setStreamBuffer(accumulatedText)
-          if (citations && citations.length > 0) {
-            accumulatedCitations = Array.from(new Set([...accumulatedCitations, ...citations]))
-            setStreamCitations(accumulatedCitations)
-          }
-        },
-        async () => {
-          setIsStreaming(false)
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: Date.now() + 1,
-              role: 'assistant',
-              content: accumulatedText,
-              citations: accumulatedCitations,
-              created_at: new Date().toISOString(),
-            },
-          ])
-          setStreamBuffer('')
-          setStreamCitations([])
-          await loadSessionMessages(sessionId)
-          window.dispatchEvent(new CustomEvent('scheme:session-updated'))
-        },
-        async (err) => {
-          console.warn('SSE fallback to standard HTTP POST:', err)
-          try {
-            const resp = await sendChatMessage(sessionId, text)
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: resp.id,
-                role: 'assistant',
-                content: resp.content,
-                citations: resp.citations || [],
-                created_at: resp.created_at,
-              },
-            ])
-            await loadSessionMessages(sessionId)
-            window.dispatchEvent(new CustomEvent('scheme:session-updated'))
-          } catch (postErr: any) {
-            setError(postErr.message || 'Failed to send message')
-          } finally {
-            setIsStreaming(false)
-            setStreamBuffer('')
-          }
-        }
-      )
-    } catch (err: any) {
-      setError(err.message || 'Error communicating with assistant')
-      setIsStreaming(false)
-    }
-  }
-
-  function handleCopyMessage(id: number, content: string) {
-    navigator.clipboard.writeText(content)
-    setCopiedMsgId(id)
-    setTimeout(() => setCopiedMsgId(null), 2000)
-  }
-
-  function handleSpeakMessage(id: number, content: string) {
-    if (speakingMsgId === id) {
-      if (window.speechSynthesis) window.speechSynthesis.cancel()
-      setSpeakingMsgId(null)
-      return
-    }
-
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
-      const cleanText = content.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/[*#_`]/g, '')
-      const utterance = new SpeechSynthesisUtterance(cleanText.slice(0, 450))
-      utterance.lang = 'hi-IN'
-      utterance.rate = 1.05
-
-      utterance.onend = () => setSpeakingMsgId(null)
-      utterance.onerror = () => setSpeakingMsgId(null)
-
-      setSpeakingMsgId(id)
-      window.speechSynthesis.speak(utterance)
-    }
-  }
-
-  const userName = citizen?.profile?.full_name || citizen?.email?.split('@')[0] || 'Citizen'
-  const isGreetingEmptyState = messages.length === 0 && !isStreaming
-
-  // Time of day greeting
-  const hour = new Date().getHours()
-  const timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden bg-[#0a0a0c] text-zinc-100 relative">
-      
-      {/* Top App Bar */}
-      <header className="h-11 px-4 sm:px-6 border-b border-zinc-800/50 bg-[#0a0a0c]/80 backdrop-blur-xs flex items-center justify-between gap-3 z-10 shrink-0">
-        <div className="flex items-center gap-2">
-          
-          {/* Model Selector Pill */}
-          <div className="relative">
+    <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden">
+      {/* Sessions Sidebar */}
+      <aside
+        className={`bg-zinc-950 border-r border-zinc-800 transition-all duration-300 flex flex-col justify-between shrink-0 ${
+          sidebarOpen ? 'w-64' : 'w-0 -translate-x-full md:w-16 md:translate-x-0'
+        }`}
+      >
+        <div className="p-3 border-b border-zinc-800 flex items-center justify-between">
+          {sidebarOpen ? (
+            <>
+              <h2 className="text-xs font-bold uppercase text-zinc-400">Consultations</h2>
+              <button
+                onClick={() => selectSession(0)}
+                className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1 transition-colors"
+                title="New Chat"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </>
+          ) : (
             <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setModelDropdownOpen(!modelDropdownOpen)
-              }}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-xs text-zinc-300 transition-all cursor-pointer"
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 mx-auto text-zinc-400 hover:text-white"
             >
-              <Sparkles className="h-3 w-3 text-blue-400" />
-              <span>
-                {selectedModel === 'flash'
-                  ? 'Gemini 3.7 Flash'
-                  : selectedModel === 'bitmask'
-                  ? 'In-Memory Bitmask'
-                  : 'Deep Reasoner'}
-              </span>
-              <ChevronDown className="h-3 w-3 text-zinc-500 ml-0.5" />
+              <Menu className="h-4 w-4" />
             </button>
+          )}
+        </div>
 
-            {/* Model Dropdown Menu */}
-            {modelDropdownOpen && (
-              <div className="absolute left-0 mt-1.5 w-60 rounded-xl bg-zinc-900 border border-zinc-750 shadow-xl p-1 z-50 text-left animate-in fade-in zoom-in-95 duration-100">
-                <div
-                  onClick={() => setSelectedModel('flash')}
-                  className={`p-2 rounded-lg cursor-pointer transition-colors ${
-                    selectedModel === 'flash' ? 'bg-zinc-800 text-zinc-100' : 'hover:bg-zinc-850 text-zinc-400'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium">Gemini 3.7 Flash</span>
-                    {selectedModel === 'flash' && <Check className="h-3.5 w-3.5 text-blue-400" />}
-                  </div>
-                  <p className="text-[10px] text-zinc-500 mt-0.5">Fast synthesis with official OKF rules</p>
-                </div>
+        {/* Sessions List */}
+        <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-none">
+          {sidebarOpen &&
+            sessions.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => selectSession(s.id)}
+                className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-medium truncate transition-all flex items-center gap-2 ${
+                  currentSessionId === s.id
+                    ? 'bg-zinc-800 text-white shadow-md'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                }`}
+              >
+                <MessageSquare className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{s.title || `Consultation #${s.id}`}</span>
+              </button>
+            ))}
+        </div>
 
-                <div
-                  onClick={() => setSelectedModel('bitmask')}
-                  className={`p-2 rounded-lg cursor-pointer transition-colors ${
-                    selectedModel === 'bitmask' ? 'bg-zinc-800 text-zinc-100' : 'hover:bg-zinc-850 text-zinc-400'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium">In-Memory Bitmask</span>
-                    {selectedModel === 'bitmask' && <Check className="h-3.5 w-3.5 text-blue-400" />}
-                  </div>
-                  <p className="text-[10px] text-zinc-500 mt-0.5">0.85ms pure integer binary evaluations</p>
-                </div>
+        {/* Quick Nav Bottom */}
+        {sidebarOpen && (
+          <div className="p-3 border-t border-zinc-800 space-y-1 text-xs text-zinc-400">
+            <Link
+              href="/profile"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-zinc-900 hover:text-white transition-colors"
+            >
+              <UserIcon className="h-4 w-4 text-zinc-400" /> Citizen Profile
+            </Link>
+            <Link
+              href="/check"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-zinc-900 hover:text-white transition-colors"
+            >
+              <Sparkles className="h-4 w-4 text-blue-400" /> Eligibility Check
+            </Link>
+            <Link
+              href="/vault"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-zinc-900 hover:text-white transition-colors"
+            >
+              <FolderLock className="h-4 w-4 text-emerald-400" /> Citizen Vault
+            </Link>
+            <Link
+              href="/household"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-zinc-900 hover:text-white transition-colors"
+            >
+              <Users className="h-4 w-4 text-indigo-400" /> Household Mesh
+            </Link>
+            <button
+              onClick={logout}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-zinc-400 hover:bg-red-950/30 hover:text-red-400 transition-colors text-left cursor-pointer"
+            >
+              <LogOut className="h-4 w-4" /> Logout
+            </button>
+          </div>
+        )}
+      </aside>
 
-                <div
-                  onClick={() => setSelectedModel('deep')}
-                  className={`p-2 rounded-lg cursor-pointer transition-colors ${
-                    selectedModel === 'deep' ? 'bg-zinc-800 text-zinc-100' : 'hover:bg-zinc-850 text-zinc-400'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium">Deep Document Reasoner</span>
-                    {selectedModel === 'deep' && <Check className="h-3.5 w-3.5 text-blue-400" />}
-                  </div>
-                  <p className="text-[10px] text-zinc-500 mt-0.5">Multi-step household eligibility graph</p>
-                </div>
-              </div>
+      {/* Main Chat Area */}
+      <main className="flex-1 flex flex-col h-full overflow-hidden bg-slate-950">
+        {/* Top Header */}
+        <header className="h-14 border-b border-zinc-800 px-4 sm:px-6 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-1.5 hover:bg-zinc-900 text-zinc-400 rounded-lg"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+            <h1 className="text-sm font-bold text-white">Multilingual AI Welfare Consultant</h1>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => setIsVoiceModalOpen(true)}
+              className="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-lg shadow-purple-500/20 transition-all"
+            >
+              <Mic className="h-3.5 w-3.5" /> Live Voice
+            </button>
+            <Link
+              href="/profile"
+              className="p-1.5 sm:px-3 sm:py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-medium rounded-xl border border-zinc-800 flex items-center gap-1.5 transition-colors"
+              title="Citizen Profile"
+            >
+              <UserIcon className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{userName || user?.profile?.full_name || 'Profile'}</span>
+            </Link>
+            <button
+              onClick={logout}
+              className="p-1.5 sm:px-3 sm:py-1.5 bg-zinc-900 hover:bg-red-950/40 text-zinc-400 hover:text-red-400 text-xs font-medium rounded-xl border border-zinc-800 hover:border-red-900/50 flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Logout"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          </div>
+        </header>
+
+        {/* Chat Timeline / Welcome */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 scrollbar-none">
+          <div className="max-w-3xl mx-auto">
+            {messages.length === 0 && !streamBuffer ? (
+              <ChatWelcomeHero userName={userName} onSelectSuggestion={sendQuery} />
+            ) : (
+              <ChatMessageList
+                messages={messages}
+                streamBuffer={streamBuffer}
+                streamCitations={streamCitations}
+                isStreaming={isStreaming}
+              />
             )}
           </div>
         </div>
-      </header>
 
-      {/* Main Conversation / Empty State Area */}
-      <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 flex flex-col">
-        
-        {/* Error Alert */}
-        {error && (
-          <div className="max-w-2xl mx-auto w-full mb-4 p-3 rounded-xl bg-red-950/60 border border-red-800/60 text-red-300 text-xs flex items-center justify-between gap-2">
-            <span>{error}</span>
-            <button
-              onClick={() => setError(null)}
-              className="p-1 text-red-400 hover:text-white rounded hover:bg-red-900/50"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </div>
-        )}
-
-        {/* Minimal Conversational Empty State */}
-        {isGreetingEmptyState && (
-          <div className="max-w-2xl mx-auto w-full my-auto py-8 sm:py-12 flex flex-col items-center text-center space-y-6 animate-in fade-in duration-200">
-            
-            {/* 1. Context Label & Greeting */}
-            <div className="space-y-2">
-              <span className="text-xs font-medium text-zinc-500 tracking-wide">
-                Scheme AI · Government benefits assistant
-              </span>
-              
-              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-100">
-                {timeGreeting}, {userName}.
-              </h1>
-              
-              <p className="text-sm sm:text-base text-zinc-400 max-w-md mx-auto leading-relaxed">
-                Find government schemes, scholarships, benefits, and services you may qualify for.
-              </p>
-            </div>
-
-            {/* 2. Primary Dominated Chat Composer */}
+        {/* Bottom Composer */}
+        <footer className="p-4 border-t border-zinc-800 bg-zinc-950/80 shrink-0">
+          <div className="max-w-3xl mx-auto">
             <ChatComposer
               input={input}
               setInput={setInput}
               onSend={handleSend}
               isStreaming={isStreaming}
               isDictating={isDictating}
-              onToggleDictation={toggleDictation}
-              citizenState={citizen?.profile?.state || 'India'}
-              autoFocus
-            />
-
-            {/* 3. Lightweight Suggested Actions */}
-            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-              {SUGGESTIONS.map((s, idx) => (
-                <SuggestionChip
-                  key={idx}
-                  icon={s.icon}
-                  label={s.label}
-                  prompt={s.prompt}
-                  onClick={handleSend}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Active Conversation Messages */}
-        {!isGreetingEmptyState && (
-          <div className="max-w-3xl mx-auto w-full space-y-6 flex-1">
-            {messages.map((m) => {
-              const isUser = m.role === 'user'
-              return (
-                <div
-                  key={m.id}
-                  className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} space-y-1.5`}
-                >
-                  {/* Message Bubble */}
-                  {isUser ? (
-                    <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl bg-zinc-800 text-zinc-100 px-4 py-2.5 text-sm leading-relaxed">
-                      <p className="whitespace-pre-wrap">{m.content}</p>
-                    </div>
-                  ) : (
-                    <div className="w-full space-y-2 text-left">
-                      <div className="prose prose-invert max-w-none text-zinc-200 text-[15px] leading-relaxed">
-                        <MarkdownMessage content={m.content} />
-                      </div>
-
-                      {/* Compact Grounded Sources */}
-                      {m.citations && m.citations.length > 0 && (
-                        <div className="pt-2 flex flex-wrap items-center gap-1.5">
-                          <span className="text-[11px] font-medium text-zinc-500 mr-1">
-                            Sources:
-                          </span>
-                          {m.citations.map((c, cIdx) => (
-                            <span
-                              key={cIdx}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 text-[11px]"
-                            >
-                              <ShieldCheck className="h-3 w-3 text-blue-400" />
-                              <span className="capitalize">{c.replace(/_/g, ' ')}</span>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Assistant Actions Bar */}
-                      <div className="flex items-center gap-2 pt-1 text-zinc-500 text-xs">
-                        <button
-                          onClick={() => handleCopyMessage(m.id, m.content)}
-                          className="hover:text-zinc-300 transition-colors p-1 rounded hover:bg-zinc-850 flex items-center gap-1 cursor-pointer"
-                          title="Copy text"
-                        >
-                          {copiedMsgId === m.id ? (
-                            <>
-                              <CheckCheck className="h-3 w-3 text-emerald-400" />
-                              <span className="text-[11px] text-emerald-400">Copied</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="h-3 w-3" />
-                              <span className="text-[11px]">Copy</span>
-                            </>
-                          )}
-                        </button>
-
-                        <button
-                          onClick={() => handleSpeakMessage(m.id, m.content)}
-                          className={`hover:text-zinc-300 transition-colors p-1 rounded hover:bg-zinc-850 flex items-center gap-1 cursor-pointer ${
-                            speakingMsgId === m.id ? 'text-blue-400 animate-pulse' : ''
-                          }`}
-                          title="Listen to audio"
-                        >
-                          <Volume2 className="h-3 w-3" />
-                          <span className="text-[11px]">
-                            {speakingMsgId === m.id ? 'Speaking...' : 'Listen'}
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-
-            {/* Active SSE Streaming Assistant Response */}
-            {isStreaming && (
-              <div className="w-full space-y-2 text-left animate-in fade-in duration-150">
-                <div className="prose prose-invert max-w-none text-zinc-200 text-[15px] leading-relaxed">
-                  {streamBuffer ? (
-                    <MarkdownMessage content={streamBuffer} />
-                  ) : (
-                    <div className="flex items-center gap-2 text-xs text-zinc-400 py-2">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-400" />
-                      <span>Checking eligibility rules...</span>
-                    </div>
-                  )}
-                </div>
-
-                {streamCitations.length > 0 && (
-                  <div className="pt-2 flex flex-wrap items-center gap-1.5">
-                    <span className="text-[11px] font-medium text-zinc-500 mr-1">
-                      Sources:
-                    </span>
-                    {streamCitations.map((c, cIdx) => (
-                      <span
-                        key={cIdx}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 text-[11px]"
-                      >
-                        <ShieldCheck className="h-3 w-3 text-blue-400" />
-                        <span>{c}</span>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
-          </div>
-        )}
-      </main>
-
-      {/* Pinned Bottom Chat Composer */}
-      {!isGreetingEmptyState && (
-        <footer className="p-3 sm:p-4 bg-[#0a0a0c]/90 backdrop-blur-xs border-t border-zinc-800/60 shrink-0">
-          <div className="max-w-3xl mx-auto w-full">
-            <ChatComposer
-              input={input}
-              setInput={setInput}
-              onSend={handleSend}
-              isStreaming={isStreaming}
-              isDictating={isDictating}
-              onToggleDictation={toggleDictation}
-              citizenState={citizen?.profile?.state || 'India'}
+              isServiceBlocked={isServiceBlocked}
+              serviceErrorMessage={serviceErrorMessage}
+              onResetServiceBlock={resetServiceBlock}
+              onToggleDictation={() => setIsVoiceModalOpen(true)}
             />
           </div>
         </footer>
-      )}
+      </main>
+
+      {/* Live Voice Assistant Modal */}
+      <VoiceAssistantModal
+        isOpen={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+      />
+
+      {/* Centralized Dev Mode Error & Stack Trace Inspector Modal */}
+      <DevErrorModal />
     </div>
   )
 }
