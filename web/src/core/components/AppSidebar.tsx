@@ -20,7 +20,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import type { ChatSession } from '@/types'
-import { updateChatSessionTitle, deleteChatSession } from '@/lib/api'
+import { updateChatSessionTitle, deleteChatSession } from '@/core'
 
 interface AppSidebarProps {
   isOpen: boolean
@@ -114,9 +114,10 @@ export function AppSidebar({
 
   const navItems = [
     { label: 'Chat', href: '/', icon: MessageSquare, active: currentPath === '/' && !activeSessionId },
-    { label: 'Explore Schemes', href: '/results', icon: Search, active: currentPath === '/results' },
+    { label: 'Browse Schemes', href: '/schemes', icon: Search, active: currentPath.startsWith('/schemes') },
+    { label: 'Eligibility Check', href: '/check', icon: Sparkles, active: currentPath === '/check' },
     { label: 'Document Vault', href: '/vault', icon: FolderLock, active: currentPath === '/vault' },
-    { label: 'Family / Household', href: '/household', icon: Users, active: currentPath === '/household' },
+    { label: 'Family Mesh', href: '/household', icon: Users, active: currentPath === '/household' },
   ]
 
   return (

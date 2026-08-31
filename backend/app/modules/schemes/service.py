@@ -109,6 +109,7 @@ def list_schemes(
     state: str | None = None,
     status: str | None = None,
     search: str | None = None,
+    sort_by: str | None = None,
 ) -> tuple[list[Scheme], int]:
     query = select(Scheme)
 
@@ -138,10 +139,20 @@ def list_schemes(
     total = db.scalar(count_stmt) or 0
 
     order_clauses = []
-    if state and state.upper() not in ("ALL_INDIA", "NATIONAL"):
-        from sqlalchemy import case
-        order_clauses.append(case((Scheme.state.ilike(f"%{state}%"), 0), else_=1))
-    order_clauses.append(Scheme.id.desc())
+    if sort_by == "name_asc":
+        order_clauses.append(Scheme.name.asc())
+    elif sort_by == "name_desc":
+        order_clauses.append(Scheme.name.desc())
+    elif sort_by == "id_asc":
+        order_clauses.append(Scheme.id.asc())
+    elif sort_by == "category_asc":
+        order_clauses.append(Scheme.category.asc())
+        order_clauses.append(Scheme.name.asc())
+    else:
+        if state and state.upper() not in ("ALL_INDIA", "NATIONAL"):
+            from sqlalchemy import case
+            order_clauses.append(case((Scheme.state.ilike(f"%{state}%"), 0), else_=1))
+        order_clauses.append(Scheme.id.desc())
 
     stmt = (
         query.offset(skip)
@@ -166,6 +177,7 @@ def search_schemes(
     status: str = "active",
     skip: int = 0,
     limit: int = 20,
+    sort_by: str | None = None,
 ) -> tuple[list[Scheme], int]:
     return list_schemes(
         db=db,
@@ -175,6 +187,7 @@ def search_schemes(
         state=state,
         status=status,
         search=q,
+        sort_by=sort_by,
     )
 
 

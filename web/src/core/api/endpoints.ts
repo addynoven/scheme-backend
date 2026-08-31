@@ -1,189 +1,33 @@
 import { getAdminToken, getCitizenToken } from '../auth/session'
-
-export interface Benefit {
-  id: number
-  title?: string
-  benefit_type?: string
-  description: string
-  amount?: number | null
-}
-
-export interface EligibilityRule {
-  id: number
-  field_name?: string
-  field?: string
-  operator: string
-  rule_value?: string
-  value?: string
-  description?: string | null
-}
-
-export interface RequiredDocument {
-  id: number
-  document_name: string
-  is_mandatory: boolean
-  description?: string | null
-}
-
-export interface OfficialSource {
-  id: number
-  title?: string
-  source_name?: string
-  url?: string
-  source_url?: string
-  source_type?: string
-}
-
-export interface Scheme {
-  id: number
-  name: string
-  slug: string
-  state?: string
-  category: string
-  tags?: string | null
-  ministry: string
-  description: string
-  status: string
-  application_url?: string | null
-  official_website?: string | null
-  launch_date?: string | null
-  created_at?: string
-  updated_at?: string
-  benefits: Benefit[]
-  eligibility_rules: EligibilityRule[]
-  required_documents: RequiredDocument[]
-  official_sources: OfficialSource[]
-}
-
-export interface CriterionVerdict {
-  field: string
-  criterion_title: string
-  status: 'passed' | 'failed' | 'missing_info'
-  your_value: any
-  required_condition: string
-  reason: string
-}
-
-export interface SchemeExplanation {
-  scheme_id: number
-  scheme_name: string
-  scheme_slug: string
-  state?: string
-  ministry: string
-  description: string
-  status: 'eligible' | 'nearly_eligible' | 'ineligible'
-  is_eligible: boolean
-  match_percentage: number
-  criteria_passed: number
-  criteria_total: number
-  summary_reason: string
-  passed_criteria: CriterionVerdict[]
-  failed_criteria: CriterionVerdict[]
-  benefits_summary: string[]
-  application_url?: string | null
-}
-
-export interface EligibilityReport {
-  total_evaluated: number
-  eligible_count: number
-  nearly_eligible_count: number
-  ineligible_count: number
-  eligible_schemes: SchemeExplanation[]
-  nearly_eligible_schemes: SchemeExplanation[]
-  ineligible_schemes: SchemeExplanation[]
-}
-
-export interface EligibilityCheckPayload {
-  age?: number
-  date_of_birth?: string
-  gender?: string
-  state?: string
-  district?: string
-  annual_income?: number
-  occupation?: string
-  caste_category?: string
-  is_differently_abled?: boolean
-  marital_status?: string
-  residence_area?: string
-  has_land?: boolean
-}
-
-export interface UserDocument {
-  id: number
-  user_id: number
-  household_member_id?: number | null
-  citizen_uid?: string | null
-  document_type: string
-  document_number_masked?: string | null
-  file_name: string
-  file_size_bytes: number
-  mime_type: string
-  is_verified: boolean
-  download_url?: string | null
-  created_at?: string
-  updated_at?: string
-}
-
-export interface DocumentReadinessItem {
-  document_name: string
-  description?: string | null
-  is_mandatory: boolean
-  status: 'available' | 'missing'
-  matched_vault_document_id?: number | null
-  matched_vault_document_name?: string | null
-}
-
-export interface SchemeDocumentReadiness {
-  scheme_id: number
-  scheme_name: string
-  scheme_slug: string
-  is_ready_to_apply: boolean
-  readiness_percentage: number
-  mandatory_total: number
-  mandatory_available: number
-  optional_total: number
-  optional_available: number
-  checklist: DocumentReadinessItem[]
-  summary: string
-}
-
-export interface ExtractedDocumentFacts {
-  full_name?: string | null
-  date_of_birth?: string | null
-  age?: number | null
-  gender?: string | null
-  state?: string | null
-  district?: string | null
-  annual_income?: number | null
-  occupation?: string | null
-  caste_category?: string | null
-  has_land?: boolean | null
-  is_differently_abled?: boolean | null
-  document_number_masked?: string | null
-}
-
-export interface ExtractedDocumentFactsResponse {
-  status: string
-  document_id?: number | null
-  detected_document_type: string
-  confidence_score: number
-  evidence_summary: string
-  extracted_facts: ExtractedDocumentFacts
-  applicable_profile_fields: string[]
-}
-
-export interface ConfirmFactsAndSyncProfileRequest {
-  full_name?: string | null
-  date_of_birth?: string | null
-  gender?: string | null
-  state?: string | null
-  district?: string | null
-  annual_income?: number | null
-  occupation?: string | null
-  caste_category?: string | null
-  has_land?: boolean | null
-  is_differently_abled?: boolean | null
-}
+import type {
+  Benefit,
+  EligibilityRule,
+  RequiredDocument,
+  OfficialSource,
+  Scheme,
+  CriterionVerdict,
+  SchemeExplanation,
+  EligibilityReport,
+  EligibilityCheckPayload,
+  UserDocument,
+  DocumentReadinessItem,
+  SchemeDocumentReadiness,
+  ExtractedDocumentFacts,
+  ExtractedDocumentFactsResponse,
+  ConfirmFactsAndSyncProfileRequest,
+  CitizenFactAuditItem,
+  CitizenFactsAuditResponse,
+  HouseholdMember,
+  HouseholdMemberCreatePayload,
+  HouseholdEligibilityMemberResult,
+  HouseholdEligibilityResponse,
+  FamilyEligibilityReport,
+  ChatMessage,
+  ChatSession,
+  VoiceTranscriptionResponse,
+  VoiceChatResponse,
+  VoiceSynthesisResponse,
+} from '../../types'
 
 export interface PaginatedResult<T> {
   items: T[]
@@ -229,6 +73,36 @@ export async function fetchPopularSchemes(limit = 8, state?: string): Promise<Sc
   if (!res.ok) throw new Error('Failed to load popular schemes')
   const data = await res.json()
   return data.items || []
+}
+
+export async function listSchemesPaginated(params?: {
+  skip?: number
+  limit?: number
+  category?: string
+  state?: string
+  ministry?: string
+  search?: string
+  sort_by?: string
+}): Promise<PaginatedResult<Scheme>> {
+  const query = new URLSearchParams()
+  if (params?.skip !== undefined) query.set('skip', String(params.skip))
+  if (params?.limit !== undefined) query.set('limit', String(params.limit))
+  if (params?.category && params.category !== 'All') query.set('category', params.category)
+  if (params?.state && params.state !== 'ALL_INDIA' && params.state !== 'All') query.set('state', params.state)
+  if (params?.ministry && params.ministry !== 'All') query.set('ministry', params.ministry)
+  if (params?.search) query.set('search', params.search)
+  if (params?.sort_by) query.set('sort_by', params.sort_by)
+  query.set('status', 'active')
+
+  const res = await fetch(`${API_BASE}/schemes?${query.toString()}`)
+  if (!res.ok) throw new Error('Failed to load schemes')
+  return res.json()
+}
+
+export async function getSchemeCategories(): Promise<Array<{ category: string; count: number }>> {
+  const res = await fetch(`${API_BASE}/schemes/categories`)
+  if (!res.ok) throw new Error('Failed to load scheme categories')
+  return res.json()
 }
 
 export async function searchSchemesPaginated(
@@ -711,56 +585,6 @@ export async function queryRouter(question: string, state?: string): Promise<Que
 // V2.7 HOUSEHOLD & FAMILY WELFARE GRAPH APIS
 // ============================================================================
 
-export interface HouseholdMember {
-  id: number
-  primary_user_id?: number
-  citizen_uid: string
-  member_uid: string
-  household_uid: string
-  full_name: string
-  relationship: string
-  life_stage: 'MINOR' | 'ADULT' | 'SENIOR'
-  verification_status: 'UNVERIFIED' | 'PENDING_DOCS' | 'DOCUMENT_VERIFIED'
-  date_of_birth?: string | null
-  age: number
-  gender: string
-  occupation?: string | null
-  caste_category?: string | null
-  annual_income?: number | null
-  is_student: boolean
-  is_disabled?: boolean
-  has_disability?: boolean
-  aadhaar_last_four?: string | null
-  created_at?: string
-  updated_at?: string
-}
-
-export interface HouseholdMemberReport {
-  member_id: number
-  citizen_uid: string
-  member_uid: string
-  full_name: string
-  relationship: string
-  life_stage: string
-  verification_status: string
-  age: number
-  gender: string
-  eligible_schemes_count: number
-  eligible_schemes: Array<{
-    name: string
-    slug: string
-    benefit_title?: string
-    application_url?: string
-  }>
-}
-
-export interface FamilyEligibilityReport {
-  household_uid: string
-  total_family_members: number
-  total_collective_schemes: number
-  family_members_reports: HouseholdMemberReport[]
-}
-
 export async function listHouseholdMembers(): Promise<HouseholdMember[]> {
   const res = await fetch(`${API_BASE}/household/members`, {
     headers: getCitizenAuthHeaders(),
@@ -844,22 +668,6 @@ export async function getFamilyEligibility(): Promise<FamilyEligibilityReport> {
 // V2.8 CONVERSATIONAL CITIZEN CHAT APIS
 // ============================================================================
 
-export interface ChatMessage {
-  id: number
-  role: 'user' | 'assistant' | 'system'
-  content: string
-  citations: string[]
-  created_at: string
-}
-
-export interface ChatSession {
-  id: number
-  title: string
-  created_at: string
-  updated_at?: string
-  messages: ChatMessage[]
-}
-
 export async function listChatSessions(): Promise<ChatSession[]> {
   const res = await fetch(`${API_BASE}/chat/sessions`, {
     headers: getCitizenAuthHeaders(),
@@ -910,20 +718,28 @@ export async function deleteChatSession(sessionId: number): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete chat session')
 }
 
-export async function sendChatMessage(sessionId: number, content: string): Promise<ChatMessage> {
+export async function sendChatMessage(
+  sessionId: number,
+  content: string,
+  languageCode: string = 'en'
+): Promise<ChatMessage> {
+  console.log(`💬 [API sendChatMessage] POST /chat/sessions/${sessionId}/messages | Content:`, content)
   const res = await fetch(`${API_BASE}/chat/sessions/${sessionId}/messages`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...getCitizenAuthHeaders(),
     },
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content, language_code: languageCode }),
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
+    console.error(`❌ [API sendChatMessage] Error response HTTP ${res.status}:`, err)
     throw new Error(err.message || 'Failed to send message')
   }
-  return res.json()
+  const data = await res.json()
+  console.log(`✅ [API sendChatMessage] Response received:`, data)
+  return data
 }
 
 export async function streamChatMessage(
@@ -933,6 +749,7 @@ export async function streamChatMessage(
   onDone: (messageId: number) => void,
   onError: (err: Error) => void
 ): Promise<void> {
+  console.log(`📡 [API streamChatMessage] Connecting to SSE stream | Session: ${sessionId} | Query: "${content}"`)
   try {
     const res = await fetch(`${API_BASE}/chat/sessions/${sessionId}/messages/stream`, {
       method: 'POST',
@@ -944,16 +761,21 @@ export async function streamChatMessage(
     })
 
     if (!res.ok || !res.body) {
+      console.error(`❌ [API streamChatMessage] SSE HTTP error ${res.status}: ${res.statusText}`)
       throw new Error(`SSE streaming failed with status ${res.status}`)
     }
 
     const reader = res.body.getReader()
     const decoder = new TextDecoder('utf-8')
     let buffer = ''
+    let tokenCount = 0
 
     while (true) {
       const { value, done } = await reader.read()
-      if (done) break
+      if (done) {
+        console.log(`🏁 [API streamChatMessage] Stream EOF reached | Total tokens emitted: ${tokenCount}`)
+        break
+      }
 
       buffer += decoder.decode(value, { stream: true })
       const lines = buffer.split('\n')
@@ -966,19 +788,23 @@ export async function streamChatMessage(
           try {
             const data = JSON.parse(jsonStr)
             if (data.type === 'token') {
+              tokenCount++
               onToken(data.token, data.citations)
             } else if (data.type === 'done') {
+              console.log(`✨ [API streamChatMessage] 'done' event received. Message ID: ${data.message_id}`)
               onDone(data.message_id)
             } else if (data.type === 'error') {
+              console.warn(`⚠️ [API streamChatMessage] 'error' event received:`, data)
               onError(new Error(data.message || 'Streaming error'))
             }
           } catch (e) {
-            console.error('SSE JSON parse error:', e)
+            console.error('❌ [API streamChatMessage] SSE JSON parse error:', e)
           }
         }
       }
     }
   } catch (err: any) {
+    console.error(`❌ [API streamChatMessage] Uncaught error:`, err)
     onError(err)
   }
 }
@@ -986,34 +812,6 @@ export async function streamChatMessage(
 // ============================================================================
 // V2.9 VOICE-FIRST SPEECH INTERFACE APIS
 // ============================================================================
-
-export interface VoiceTranscriptionResponse {
-  transcribed_text: string
-  detected_language: string
-  confidence: number
-}
-
-export interface VoiceChatResponse {
-  session_id?: number
-  transcribed_text: string
-  detected_language: string
-  answer: string
-  citations: string[]
-  matched_schemes: Array<{
-    name: string
-    slug: string
-    benefit_title?: string
-    application_url?: string
-  }>
-  synthesized_speech_base64: string | null
-}
-
-export interface VoiceSynthesisResponse {
-  language_code: string
-  audio_format: string
-  audio_base64: string
-  synthesized_text: string
-}
 
 export async function transcribeAudio(file: File): Promise<VoiceTranscriptionResponse> {
   const formData = new FormData()

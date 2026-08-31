@@ -15,6 +15,7 @@ import {
   LogOut,
   User as UserIcon,
   Users,
+  Compass,
 } from 'lucide-react'
 import {
   ChatWelcomeHero,
@@ -109,6 +110,12 @@ export function HomeScreen() {
         {/* Quick Nav Bottom */}
         {sidebarOpen && (
           <div className="p-3 border-t border-zinc-800 space-y-1 text-xs text-zinc-400">
+            <Link
+              href="/schemes"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-zinc-900 hover:text-white transition-colors"
+            >
+              <Compass className="h-4 w-4 text-amber-400" /> Browse Schemes
+            </Link>
             <Link
               href="/profile"
               className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-zinc-900 hover:text-white transition-colors"

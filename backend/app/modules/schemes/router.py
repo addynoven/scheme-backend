@@ -54,6 +54,7 @@ def list_schemes_endpoint(
     state: str | None = Query(None, description="Filter by state (e.g. 'Madhya Pradesh', 'Maharashtra', 'Karnataka', 'ALL_INDIA')"),
     status_filter: str | None = Query(None, alias="status", description="Filter by status ('active', 'draft', 'archived')"),
     search: str | None = Query(None, description="Search across scheme name, description, category, and tags"),
+    sort_by: str | None = Query(None, description="Sort order: 'name_asc', 'name_desc', 'id_desc', 'id_asc', 'category_asc'"),
     db: Session = Depends(get_db),
 ):
     items, total = list_schemes(
@@ -65,6 +66,7 @@ def list_schemes_endpoint(
         state=state,
         status=status_filter,
         search=search,
+        sort_by=sort_by,
     )
     return PaginatedResponse(
         items=items,
@@ -88,6 +90,7 @@ def search_schemes_endpoint(
     status_filter: str = Query("active", alias="status", description="Scheme status filter"),
     skip: int = Query(0, ge=0, description="Offset for pagination"),
     limit: int = Query(20, ge=1, le=100, description="Page size"),
+    sort_by: str | None = Query(None, description="Sort order: 'name_asc', 'name_desc', 'id_desc', 'id_asc'"),
     db: Session = Depends(get_db),
 ):
     items, total = search_schemes(
@@ -98,6 +101,7 @@ def search_schemes_endpoint(
         status=status_filter,
         skip=skip,
         limit=limit,
+        sort_by=sort_by,
     )
     return PaginatedResponse(
         items=items,
