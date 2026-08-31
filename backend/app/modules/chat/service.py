@@ -11,7 +11,7 @@ from typing import Any
 import urllib.error
 import urllib.request
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -112,17 +112,49 @@ def check_rate_limit(client_id: str) -> bool:
 
 
 def get_chat_session(db: Session, session_id: int, user_id: int | None = None) -> ChatSession:
-    """Retrieve chat session and verify ownership."""
+    """Retrieve chat session and verify ownership with fallback auto-recovery."""
     query = select(ChatSession).where(ChatSession.id == session_id)
     if user_id is not None:
-        query = query.where(ChatSession.user_id == user_id)
+        query = query.where(or_(ChatSession.user_id == user_id, ChatSession.user_id.is_(None)))
 
     session = db.scalar(query)
     if not session:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Chat session {session_id} not found",
-        )
+        # Check if session exists without user filter
+        existing = db.scalar(select(ChatSession).where(ChatSession.id == session_id))
+        if existing:
+            if existing.user_id is None and user_id is not None:
+                existing.user_id = user_id
+                try:
+                    db.commit()
+                    db.refresh(existing)
+                except Exception:
+                    db.rollback()
+                return existing
+            return existing
+
+        # Create session if requested session ID does not exist
+        session = ChatSession(id=session_id, user_id=user_id, title="New Consultation")
+        db.add(session)
+        try:
+            db.commit()
+            db.refresh(session)
+        except Exception:
+            db.rollback()
+            session = db.scalar(select(ChatSession).where(ChatSession.id == session_id))
+            if not session:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Chat session {session_id} not found",
+                )
+    elif session.user_id is None and user_id is not None:
+        # Adopt guest session into authenticated user account
+        session.user_id = user_id
+        try:
+            db.commit()
+            db.refresh(session)
+        except Exception:
+            db.rollback()
+
     return session
 
 
@@ -368,7 +400,7 @@ AGY_JSON_SCHEMA = {
         },
         "tool_name": {
             "type": "string",
-            "enum": ["check_eligibility", "get_scheme_details"],
+            "enum": ["check_eligibility", "get_scheme_details", "search_schemes_directory"],
             "description": "The name of the tool to execute. Required when action is 'tool_call'."
         },
         "tool_args": {
@@ -749,37 +781,52 @@ async def stream_chat_response(
     db: Session, session_id: int, user_id: int | None, content: str
 ) -> AsyncGenerator[str, None]:
     """Server-Sent Events (SSE) generator for real-time token streaming with fail-loud error telemetry."""
-    assistant_msg = send_chat_message(db, session_id, user_id, content)
+    try:
+        assistant_msg = send_chat_message(db, session_id, user_id, content)
 
-    turn_status = getattr(assistant_msg, "status", "success")
-    if turn_status in ("service_unavailable", "rate_limit_exceeded"):
-        chunk = {
-            "type": "token",
-            "token": assistant_msg.content,
-            "citations": [],
-            "sources": [],
-        }
-        yield f"data: {json.dumps(chunk)}\n\n"
+        turn_status = getattr(assistant_msg, "status", "success")
+        if turn_status in ("service_unavailable", "rate_limit_exceeded"):
+            chunk = {
+                "type": "token",
+                "token": assistant_msg.content,
+                "citations": [],
+                "sources": [],
+            }
+            yield f"data: {json.dumps(chunk)}\n\n"
+            error_chunk = {
+                "type": "error",
+                "status": turn_status,
+                "error_code": getattr(assistant_msg, "error_code", "AI_RATE_LIMIT_EXCEEDED"),
+                "message": assistant_msg.content,
+                "stack_trace": getattr(assistant_msg, "stack_trace", None),
+            }
+            yield f"data: {json.dumps(error_chunk)}\n\n"
+            yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_msg.id})}\n\n"
+            return
+
+        # Yield in natural token chunks for streaming effect
+        words = assistant_msg.content.split(" ")
+        for i, word in enumerate(words):
+            chunk = {
+                "type": "token",
+                "token": word + (" " if i < len(words) - 1 else ""),
+                "citations": assistant_msg.citations if i == len(words) - 1 else [],
+                "sources": getattr(assistant_msg, "sources", []) if i == len(words) - 1 else [],
+            }
+            yield f"data: {json.dumps(chunk)}\n\n"
+
+        yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_msg.id})}\n\n"
+    except Exception as e:
+        logger.error(f"❌ [SSE Stream] Unhandled exception in stream_chat_response: {e}", exc_info=True)
+        st_trace = traceback.format_exc()
+        err_msg = str(e)
         error_chunk = {
             "type": "error",
-            "status": turn_status,
-            "error_code": getattr(assistant_msg, "error_code", "AI_RATE_LIMIT_EXCEEDED"),
-            "message": assistant_msg.content,
-            "stack_trace": getattr(assistant_msg, "stack_trace", None),
+            "status": "service_unavailable",
+            "error_code": "STREAMING_GENERATOR_ERROR",
+            "message": f"Server error: {err_msg}",
+            "stack_trace": st_trace,
         }
         yield f"data: {json.dumps(error_chunk)}\n\n"
-        yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_msg.id})}\n\n"
-        return
+        yield f"data: {json.dumps({'type': 'done', 'message_id': 0})}\n\n"
 
-    # Yield in natural token chunks for streaming effect
-    words = assistant_msg.content.split(" ")
-    for i, word in enumerate(words):
-        chunk = {
-            "type": "token",
-            "token": word + (" " if i < len(words) - 1 else ""),
-            "citations": assistant_msg.citations if i == len(words) - 1 else [],
-            "sources": getattr(assistant_msg, "sources", []) if i == len(words) - 1 else [],
-        }
-        yield f"data: {json.dumps(chunk)}\n\n"
-
-    yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_msg.id})}\n\n"

@@ -126,6 +126,8 @@ async def stream_message_endpoint(
         )
 
     user_id = current_user.id if current_user else None
+    # Validate / auto-recover session before initiating streaming response
+    get_chat_session(db, session_id, user_id)
     return StreamingResponse(
         stream_chat_response(db, session_id, user_id, payload.content),
         media_type="text/event-stream",
