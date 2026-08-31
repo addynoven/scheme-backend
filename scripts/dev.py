@@ -112,6 +112,7 @@ def main():
     print("  ⚡ Backend API:      \033[1;32mhttp://localhost:8000\033[0m")
     print("  📖 Swagger Docs:     \033[1;33mhttp://localhost:8000/docs\033[0m")
     print("  🗄️ MinIO S3 Console: \033[1;35mhttp://localhost:9001\033[0m (minioadmin/minioadmin)")
+    print("  🤖 AI LLM Provider:  \033[1;32mLocal CLI (agy / gemini-3.7-flash-low)\033[0m")
     print("=" * 60)
     print("  Press \033[1;31mCtrl+C\033[0m anytime to stop all servers cleanly.\n")
 
