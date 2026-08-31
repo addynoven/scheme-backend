@@ -321,7 +321,7 @@ def test_eval_service_unavailable_explicit_failure_state(
         "hello there",
     ]
 
-    with patch("app.modules.chat.service._call_gemini_api", return_value=None):
+    with patch("app.modules.chat.service.call_llm_provider", return_value=None), patch("app.modules.chat.service.settings.DEV_MODE", False):
         for q in test_queries:
             msg_res = client.post(
                 f"/chat/sessions/{session_id}/messages",
