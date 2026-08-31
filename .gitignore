@@ -31,3 +31,7 @@ frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 frontend/.next/
+
+.pnpm-store
+web/.pnpm-store
+web/.pnpm-store.bak
