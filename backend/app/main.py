@@ -14,11 +14,15 @@ from app.modules.ocr.router import router as ocr_router
 from app.modules.routing.router import router as routing_router
 from app.modules.schemes.router import router as schemes_router
 from app.modules.vault.router import router as vault_router
+from app.core.config import settings
 from app.modules.voice.router import router as voice_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Validate production configuration security
+    settings.validate_production_secrets()
+
     # Warm up in-memory bitmask rule engine on startup
     db = SessionLocal()
     try:
@@ -127,16 +131,20 @@ app = FastAPI(
 )
 
 # Enable CORS for Next.js and frontend dev servers
+cors_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+if settings.FRONTEND_URL:
+    cors_origins.append(settings.FRONTEND_URL.strip().rstrip("/"))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-    ],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -146,18 +154,64 @@ app.add_middleware(
 register_error_handlers(app)
 
 
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from app.core.deps import get_db
+
+
 @app.get(
     "/health",
     tags=["Health"],
-    summary="Check API health and liveness",
-    response_description="System status",
+    summary="Check active system readiness & component health",
+    response_description="Operational health status across DB, S3 Storage, and Bitmask Engine",
 )
-def health_check():
-    return {"status": "ok", "version": "2.0.0", "bitmask_warmed": bitmask_engine.is_warmed}
+def health_check(db: Session = Depends(get_db)):
+    from sqlalchemy import text
+    from fastapi import HTTPException, status
+    from app.core.storage import storage_service
+
+    checks: dict[str, str] = {}
+    is_healthy = True
+
+    # 1. Active Database Ping
+    try:
+        db.execute(text("SELECT 1"))
+        checks["database"] = "healthy"
+    except Exception as e:
+        checks["database"] = f"unhealthy: {e}"
+        is_healthy = False
+
+    # 2. Active Storage Check
+    try:
+        storage_service.ensure_bucket_exists()
+        checks["storage"] = "healthy"
+    except Exception as e:
+        checks["storage"] = f"unhealthy: {e}"
+        is_healthy = False
+
+    # 3. Bitmask Engine Readiness
+    checks["bitmask_engine"] = "warmed" if bitmask_engine.is_warmed else "unwarmed"
+
+    status_str = "ok" if is_healthy else "degraded"
+
+    if not is_healthy:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "status": status_str,
+                "version": "2.0.0",
+                "checks": checks,
+            },
+        )
+
+    return {
+        "status": status_str,
+        "version": "2.0.0",
+        "checks": checks,
+    }
 
 
 app.include_router(auth_router)
-app.include_router(auth_router, prefix="/api")
 app.include_router(schemes_router)
 app.include_router(eligibility_router)
 app.include_router(ocr_router)
