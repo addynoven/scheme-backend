@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { homeRepository } from '../repositories'
 import { useChatStore } from '../store'
 import { type ChatMessage, type ChatSession } from '@/core'
@@ -43,18 +44,32 @@ export function useChat(initialSessionId?: number) {
     } catch {}
   }, [])
 
+  const router = useRouter()
+
   const selectSession = useCallback(async (sessionId: number) => {
     setLoading(true)
     setCurrentSessionId(sessionId)
+    if (sessionId > 0) {
+      if (typeof window !== 'undefined' && window.location.pathname !== `/c/${sessionId}`) {
+        router.push(`/c/${sessionId}`)
+      }
+    } else {
+      setMessages([])
+      if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+        router.push('/')
+      }
+    }
     try {
-      const session = await homeRepository.getSession(sessionId)
-      setMessages(session.messages || [])
+      if (sessionId > 0) {
+        const session = await homeRepository.getSession(sessionId)
+        setMessages(session.messages || [])
+      }
     } catch {
       setMessages([])
     } finally {
       setLoading(false)
     }
-  }, [setCurrentSessionId, setMessages])
+  }, [setCurrentSessionId, setMessages, router])
 
   useEffect(() => {
     loadSessions()
@@ -70,8 +85,11 @@ export function useChat(initialSessionId?: number) {
     const newSession = await homeRepository.createSession('New Welfare Consultation')
     setCurrentSessionId(newSession.id)
     setSessions([newSession, ...sessions])
+    if (typeof window !== 'undefined' && window.location.pathname !== `/c/${newSession.id}`) {
+      router.push(`/c/${newSession.id}`)
+    }
     return newSession.id
-  }, [currentSessionId, sessions, setCurrentSessionId, setSessions])
+  }, [currentSessionId, sessions, setCurrentSessionId, setSessions, router])
 
   const sendQuery = useCallback(async (text: string) => {
     if (!text.trim() || isStreaming) return
@@ -107,7 +125,7 @@ export function useChat(initialSessionId?: number) {
             setStreamCitations(accumulatedCitations)
           }
         },
-        async (messageId: number) => {
+        async (messageId: number, memoryTrace?: any) => {
           console.log('✅ [useChat] Stream finalized for message ID:', messageId, '| Total text length:', accumulatedText.length)
           setIsStreaming(false)
           if (accumulatedText.trim().length > 0) {
@@ -118,6 +136,7 @@ export function useChat(initialSessionId?: number) {
                 role: 'assistant',
                 content: accumulatedText,
                 citations: accumulatedCitations,
+                memory_trace: memoryTrace,
                 created_at: new Date().toISOString(),
               },
             ])

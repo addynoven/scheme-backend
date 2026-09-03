@@ -1,17 +1,11 @@
 'use client'
 
 import React from 'react'
-import NextLink, { LinkProps as NextLinkProps } from 'next/link'
-import { useRouter, useParams as useNextParams, usePathname, useSearchParams } from 'next/navigation'
+import NextLink from 'next/link'
+import { useRouter, useParams as useNextParams } from 'next/navigation'
 
-export interface LinkProps extends Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> {
-  to?: string
-  href?: string
-  children: React.ReactNode
-}
-
-export function Link({ to, href, children, ...props }: LinkProps) {
-  const target = to || href || '/'
+export function Link({ to, href, children, ...props }: any) {
+  const target = href || to || '/'
   return (
     <NextLink href={target} {...props}>
       {children}
@@ -21,25 +15,23 @@ export function Link({ to, href, children, ...props }: LinkProps) {
 
 export function useNavigate() {
   const router = useRouter()
-  return (path: string | number) => {
+  return (path: any) => {
     if (typeof path === 'number') {
-      if (path === -1) window.history.back()
+      router.back()
     } else {
-      router.push(path)
+      router.push(String(path))
     }
   }
 }
 
-export function useParams<T = Record<string, string>>(_routePattern?: string): T {
-  const params = useNextParams()
-  return (params || {}) as unknown as T
+export function useParams(routeStr?: any) {
+  return useNextParams() || {}
 }
 
-export function useLocation() {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  return {
-    pathname,
-    search: searchParams?.toString() ? `?${searchParams.toString()}` : '',
+export const Navigate = ({ to }: { to: any }) => {
+  const router = useRouter()
+  if (typeof window !== 'undefined') {
+    router.push(String(to))
   }
+  return null
 }

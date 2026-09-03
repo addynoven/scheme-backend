@@ -785,7 +785,7 @@ export async function streamChatMessage(
   sessionId: number,
   content: string,
   onToken: (token: string, citations?: string[]) => void,
-  onDone: (messageId: number) => void,
+  onDone: (messageId: number, memoryTrace?: any) => void,
   onError: (err: Error) => void
 ): Promise<void> {
   console.log(`📡 [API streamChatMessage] Connecting to SSE stream | Session: ${sessionId} | Query: "${content}"`)
@@ -831,7 +831,7 @@ export async function streamChatMessage(
               onToken(data.token, data.citations)
             } else if (data.type === 'done') {
               console.log(`✨ [API streamChatMessage] 'done' event received. Message ID: ${data.message_id}`)
-              onDone(data.message_id)
+              onDone(data.message_id, data.memory_trace)
             } else if (data.type === 'error') {
               console.warn(`⚠️ [API streamChatMessage] 'error' event received:`, data)
               onError(new Error(data.message || 'Streaming error'))
