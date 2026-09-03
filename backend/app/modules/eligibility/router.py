@@ -73,7 +73,11 @@ def get_my_eligible_schemes_endpoint(
 def get_user_eligible_schemes_endpoint(
     user_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    from app.modules.auth.router import _verify_user_owner_or_admin
+    _verify_user_owner_or_admin(user_id, current_user)
+
     user = get_user_by_id(db=db, user_id=user_id)
     if not user:
         raise UserNotFoundError(user_id)

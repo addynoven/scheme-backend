@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
 
 def test_user_registration_and_login_flow(client: TestClient):
@@ -72,7 +73,13 @@ def test_user_registration_and_login_flow(client: TestClient):
     assert res_bad_refresh.status_code == 401
 
 
-def test_authenticated_profile_and_eligibility_flow(client: TestClient):
+def test_authenticated_profile_and_eligibility_flow(client: TestClient, db_session: Session):
+    from app.modules.admin.__tests__.test_admin_api import create_admin_user
+    admin_creds = create_admin_user(db_session)
+    res_admin_login = client.post("/auth/login", json=admin_creds)
+    admin_token = res_admin_login.json()["access_token"]
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
     # Setup Scheme: PM Kisan
     client.post(
         "/schemes",
@@ -95,6 +102,7 @@ def test_authenticated_profile_and_eligibility_flow(client: TestClient):
                 },
             ],
         },
+        headers=admin_headers,
     )
 
     # 1. Register & Login

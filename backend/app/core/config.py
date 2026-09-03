@@ -29,11 +29,27 @@ class Settings(BaseSettings):
 
     # Google Gemini Vision LLM / agy CLI provider
     GEMINI_API_KEY: str | None = None
-    GEMINI_MODEL: str = "gemini-3.7-flash"
+    GEMINI_MODEL: str = "gemini-3.8-flash"
     LLM_PROVIDER: str = "gemini"  # "gemini" | "agy"
-    AGY_MODEL: str = "gemini-3.7-flash-low"
-    DEV_MODE: bool = True
+    AGY_MODEL: str = "gemini-3.8-flash-low"
+    DEV_MODE: bool = False
     TESTING: bool = False
+    FRONTEND_URL: str | None = None
+
+    def validate_production_secrets(self) -> None:
+        """Halt startup if DEV_MODE is False but insecure default development keys are configured."""
+        if not self.DEV_MODE and not self.TESTING:
+            default_secret = "development_secret_key_change_in_production_super_secure_key_123456"
+            if self.SECRET_KEY == default_secret:
+                raise RuntimeError(
+                    "CRITICAL SECURITY CONFIG ERROR: Default SECRET_KEY used in production mode (DEV_MODE=False). "
+                    "You MUST set a strong, unique SECRET_KEY in your environment!"
+                )
+            if self.S3_ACCESS_KEY == "minioadmin" or self.S3_SECRET_KEY == "minioadmin":
+                raise RuntimeError(
+                    "CRITICAL SECURITY CONFIG ERROR: Default MinIO/S3 credentials used in production mode (DEV_MODE=False). "
+                    "You MUST configure non-default S3_ACCESS_KEY and S3_SECRET_KEY in production!"
+                )
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -116,35 +116,26 @@ def test_users_endpoints_authorization(client: TestClient, db_session: Session):
     assert client.get(f"/users/{user_a_id}", headers=citizen_a["headers"]).status_code == 200
 
 
-def test_chat_session_idor_and_guest_token(client: TestClient):
+def test_chat_session_idor_and_mandatory_auth(client: TestClient):
+    # 1. Unauthenticated creation fails 401
+    assert client.post("/chat/sessions", json={"title": "Unauth Chat"}).status_code == 401
+
     citizen_a = create_citizen_user(client, "chat.usera@example.com", "+919666600001")
     citizen_b = create_citizen_user(client, "chat.userb@example.com", "+919666600002")
 
-    # 1. Citizen A creates a chat session
+    # 2. Citizen A creates a chat session
     res_sess = client.post("/chat/sessions", json={"title": "Private Chat A"}, headers=citizen_a["headers"])
     assert res_sess.status_code == 201
     session_id = res_sess.json()["id"]
 
-    # 2. Citizen B attempting to read Citizen A's session fails 403
+    # 3. Citizen B attempting to read Citizen A's session fails 403
     assert client.get(f"/chat/sessions/{session_id}", headers=citizen_b["headers"]).status_code == 403
 
-    # 3. Citizen B attempting to delete Citizen A's session fails 403
+    # 4. Citizen B attempting to delete Citizen A's session fails 403
     assert client.delete(f"/chat/sessions/{session_id}", headers=citizen_b["headers"]).status_code == 403
 
-    # 4. Guest creates session with X-Guest-Token
-    guest_headers = {"X-Guest-Token": "secret_guest_token_123"}
-    res_guest = client.post("/chat/sessions", json={"title": "Guest Chat"}, headers=guest_headers)
-    assert res_guest.status_code == 201
-    guest_sess_id = res_guest.json()["id"]
-
-    # 5. Unauthenticated call without guest token fails 403
-    assert client.get(f"/chat/sessions/{guest_sess_id}").status_code == 403
-
-    # 6. Unauthenticated call with wrong guest token fails 403
-    assert client.get(f"/chat/sessions/{guest_sess_id}", headers={"X-Guest-Token": "wrong_secret"}).status_code == 403
-
-    # 7. Unauthenticated call with correct guest token succeeds
-    assert client.get(f"/chat/sessions/{guest_sess_id}", headers=guest_headers).status_code == 200
+    # 5. Unauthenticated read fails 401
+    assert client.get(f"/chat/sessions/{session_id}").status_code == 401
 
 
 def test_admin_role_elevation_audit_logging(client: TestClient, db_session: Session):
@@ -176,6 +167,7 @@ def test_household_member_authorization(client: TestClient):
     member_payload = {
         "full_name": "Child A",
         "relationship": "daughter",
+        "age": 9,
         "date_of_birth": "2015-05-10",
         "gender": "female",
     }

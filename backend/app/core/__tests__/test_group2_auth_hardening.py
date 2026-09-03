@@ -6,16 +6,15 @@ from app.core.config import settings
 from app.modules.auth.models import RefreshToken, User
 
 
-def test_optional_auth_dependency_strictness(client: TestClient):
-    # 1. No Authorization header -> guest session creation succeeds
-    res_guest = client.post("/chat/sessions", json={"title": "Guest Session"})
-    assert res_guest.status_code == 201
+def test_unauthenticated_requests_return_401(client: TestClient):
+    # 1. No Authorization header -> fails 401 Unauthorized
+    res_unauth = client.post("/chat/sessions", json={"title": "Session"})
+    assert res_unauth.status_code == 401
 
-    # 2. Present but malformed/invalid Authorization header -> fails HTTP 401
+    # 2. Present but malformed/invalid Authorization header -> fails 401 Unauthorized
     bad_headers = {"Authorization": "Bearer invalid.malformed.jwt.token"}
-    res_bad = client.post("/chat/sessions", json={"title": "Hacked Session"}, headers=bad_headers)
+    res_bad = client.post("/chat/sessions", json={"title": "Session"}, headers=bad_headers)
     assert res_bad.status_code == 401
-    assert "error" in res_bad.json() or "detail" in res_bad.json()
 
 
 def test_refresh_token_rotation_and_reuse_detection(client: TestClient, db_session: Session):

@@ -130,8 +130,6 @@ class UserUpdate(BaseModel):
     email: EmailStr | None = None
     phone: str | None = None
     password: str | None = None
-    role: str | None = None
-    is_verified: bool | None = None
 
 
 class UserResponse(UserBase):
@@ -188,6 +186,10 @@ class CitizenFactResponse(BaseModel):
     user_id: int
     fact_key: str = Field(..., description="Fact identifier e.g. 'annual_income', 'date_of_birth', 'gender'")
     fact_value: str = Field(..., description="Stringified verified value")
+    source_type: str = Field("self_attested", description="Provenance source type: self_attested, document_ocr, admin_verified")
+    confidence_score: float | None = Field(None, description="Confidence score hint (0.0 to 1.0)")
+    status: str = Field("unverified", description="Verification status: unverified, verified, rejected")
+    supersedes_fact_id: int | None = Field(None, description="Previous fact ID superseded by this record")
     source_document_id: int | None = Field(None, description="Linked document in vault if verified via OCR/upload")
     verified_by_user_id: int | None = Field(None, description="User ID who confirmed this fact")
     verified_at: datetime
@@ -200,6 +202,9 @@ class FactSourceEvidence(BaseModel):
     document_id: int | None = Field(None, description="Vault document ID")
     document_type: str | None = Field(None, description="Document type e.g. Aadhaar Card, PAN Card")
     file_name: str | None = Field(None, description="Original uploaded filename")
+    source_type: str = Field("self_attested", description="Source type")
+    confidence_score: float | None = Field(None, description="Confidence score")
+    status: str = Field("unverified", description="Status")
     verified_value: str = Field(..., description="Value extracted and confirmed from this document")
     verified_at: datetime = Field(..., description="Timestamp of confirmation")
 

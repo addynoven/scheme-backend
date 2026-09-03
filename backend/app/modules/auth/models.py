@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -41,6 +41,12 @@ class User(Base):
     facts: Mapped[list["CitizenFact"]] = relationship(
         "CitizenFact",
         foreign_keys="CitizenFact.user_id",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
+        "RefreshToken",
         back_populates="user",
         cascade="all, delete-orphan",
     )
@@ -85,6 +91,17 @@ class CitizenFact(Base):
     )
     fact_key: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     fact_value: Mapped[str] = mapped_column(String(500), nullable=False)
+    source_type: Mapped[str] = mapped_column(
+        String(50), default="self_attested", server_default="self_attested", nullable=False
+    )
+    confidence_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(50), default="unverified", server_default="unverified", nullable=False
+    )
+    supersedes_fact_id: Mapped[int | None] = mapped_column(
+        ForeignKey("citizen_facts.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     source_document_id: Mapped[int | None] = mapped_column(
         ForeignKey("user_documents.id", ondelete="SET NULL"),
         nullable=True,
@@ -114,3 +131,42 @@ class CitizenFact(Base):
         "UserDocument",
         foreign_keys=[source_document_id],
     )
+
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    token_hash: Mapped[str] = mapped_column(
+        String(255),
+        unique=True,
+        index=True,
+        nullable=False,
+    )
+    family_id: Mapped[str] = mapped_column(
+        String(100),
+        index=True,
+        nullable=False,
+    )
+    is_revoked: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default="false",
+        nullable=False,
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    user: Mapped["User"] = relationship("User", back_populates="refresh_tokens")

@@ -41,7 +41,9 @@ async def upload_document_endpoint(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    file_bytes = await file.read()
+    from app.modules.vault.service import read_upload_file_bounded
+
+    file_bytes = await read_upload_file_bounded(file)
     mime_type = file.content_type or "application/octet-stream"
 
     return upload_user_document(
@@ -78,22 +80,32 @@ def list_my_vault_documents_endpoint(
 @router.get(
     "/documents/{document_id}/download",
     summary="Download or view a citizen vault document",
-    description="Streams the decrypted document directly from secure S3 storage with inline disposition for browser viewing.",
+    description="Redirects directly to a secure presigned S3/MinIO URL for RAM-free direct browser download.",
 )
 def download_vault_document_endpoint(
     document_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    from fastapi.responses import Response
+    from fastapi.responses import RedirectResponse
+    from sqlalchemy import select
+    from app.core.exceptions import EntityNotFoundError
+    from app.core.storage import storage_service
+    from app.modules.vault.models import UserDocument
 
-    body_bytes, content_type, filename = get_user_document_content(
-        db=db, user_id=current_user.id, document_id=document_id
+    doc = db.scalar(
+        select(UserDocument).where(
+            UserDocument.id == document_id,
+            UserDocument.user_id == current_user.id,
+        )
     )
-    return Response(
-        content=body_bytes,
-        media_type=content_type,
-        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    if not doc:
+        raise EntityNotFoundError("UserDocument", document_id)
+
+    presigned_url = storage_service.generate_presigned_download_url(doc.file_key)
+    return RedirectResponse(
+        url=presigned_url,
+        status_code=status.HTTP_307_TEMPORARY_REDIRECT,
     )
 
 
@@ -179,6 +191,7 @@ async def extract_quick_endpoint(
     file: UploadFile = File(..., description="Aadhaar, PAN, or Certificate binary"),
     document_type: str | None = Form(None, description="Optional document type hint"),
     authorization: str | None = Header(None, description="Optional Bearer token to auto-save to Vault"),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     from app.modules.ocr.router import extract_facts_endpoint

@@ -1,8 +1,16 @@
 from datetime import date
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.modules.admin.__tests__.test_admin_api import create_admin_user
 
 
-def setup_national_schemes(client: TestClient):
+def setup_national_schemes(client: TestClient, db_session: Session) -> dict[str, str]:
+    admin_creds = create_admin_user(db_session)
+    res_login = client.post("/auth/login", json=admin_creds)
+    admin_token = res_login.json()["access_token"]
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
     schemes = [
         {
             "name": "PM Kisan Samman Nidhi",
@@ -107,17 +115,20 @@ def setup_national_schemes(client: TestClient):
     ]
 
     for scheme_data in schemes:
-        res = client.post("/schemes", json=scheme_data)
+        res = client.post("/schemes", json=scheme_data, headers=admin_headers)
         assert res.status_code == 201
 
+    return admin_headers
 
-def test_persona_1_farmer_ramesh(client: TestClient):
-    setup_national_schemes(client)
+
+def test_persona_1_farmer_ramesh(client: TestClient, db_session: Session):
+    admin_headers = setup_national_schemes(client, db_session)
 
     # Ramesh: 42yo Farmer from Maharashtra with 1.2L income
     res = client.post(
         "/users",
         json={"email": "ramesh.farmer@test.com", "phone": "+919111111111"},
+        headers=admin_headers,
     )
     user_id = res.json()["id"]
 
@@ -132,6 +143,7 @@ def test_persona_1_farmer_ramesh(client: TestClient):
             "annual_income": 120000,
             "occupation": "farmer",
         },
+        headers=admin_headers,
     )
 
     res_eligible = client.get(f"/eligibility/users/{user_id}/schemes")
@@ -141,13 +153,14 @@ def test_persona_1_farmer_ramesh(client: TestClient):
     assert matched_slugs == ["pm-kisan"]
 
 
-def test_persona_2_girl_child_priya(client: TestClient):
-    setup_national_schemes(client)
+def test_persona_2_girl_child_priya(client: TestClient, db_session: Session):
+    admin_headers = setup_national_schemes(client, db_session)
 
     # Priya: 7yo Girl child from UP
     res = client.post(
         "/users",
         json={"email": "priya.child@test.com", "phone": "+919222222222"},
+        headers=admin_headers,
     )
     user_id = res.json()["id"]
 
@@ -162,6 +175,7 @@ def test_persona_2_girl_child_priya(client: TestClient):
             "annual_income": 60000,
             "occupation": "student",
         },
+        headers=admin_headers,
     )
 
     res_eligible = client.get(f"/eligibility/users/{user_id}/schemes")
@@ -172,13 +186,14 @@ def test_persona_2_girl_child_priya(client: TestClient):
     assert matched_slugs == ["sukanya-samriddhi"]
 
 
-def test_persona_3_senior_citizen_murugan(client: TestClient):
-    setup_national_schemes(client)
+def test_persona_3_senior_citizen_murugan(client: TestClient, db_session: Session):
+    admin_headers = setup_national_schemes(client, db_session)
 
     # Murugan: 68yo Senior citizen with 40k income
     res = client.post(
         "/users",
         json={"email": "murugan.senior@test.com", "phone": "+919333333333"},
+        headers=admin_headers,
     )
     user_id = res.json()["id"]
 
@@ -193,6 +208,7 @@ def test_persona_3_senior_citizen_murugan(client: TestClient):
             "annual_income": 40000,
             "occupation": "retired",
         },
+        headers=admin_headers,
     )
 
     res_eligible = client.get(f"/eligibility/users/{user_id}/schemes")
@@ -202,13 +218,14 @@ def test_persona_3_senior_citizen_murugan(client: TestClient):
     assert matched_slugs == ["old-age-pension"]
 
 
-def test_persona_4_rural_artisan_sunita(client: TestClient):
-    setup_national_schemes(client)
+def test_persona_4_rural_artisan_sunita(client: TestClient, db_session: Session):
+    admin_headers = setup_national_schemes(client, db_session)
 
     # Sunita: 30yo Artisan weaver from Rajasthan with 1.4L income
     res = client.post(
         "/users",
         json={"email": "sunita.artisan@test.com", "phone": "+919444444444"},
+        headers=admin_headers,
     )
     user_id = res.json()["id"]
 
@@ -223,6 +240,7 @@ def test_persona_4_rural_artisan_sunita(client: TestClient):
             "annual_income": 140000,
             "occupation": "artisan",
         },
+        headers=admin_headers,
     )
 
     res_eligible = client.get(f"/eligibility/users/{user_id}/schemes")
@@ -232,13 +250,14 @@ def test_persona_4_rural_artisan_sunita(client: TestClient):
     assert matched_slugs == ["pm-vishwakarma"]
 
 
-def test_persona_5_high_income_engineer_vikram(client: TestClient):
-    setup_national_schemes(client)
+def test_persona_5_high_income_engineer_vikram(client: TestClient, db_session: Session):
+    admin_headers = setup_national_schemes(client, db_session)
 
     # Vikram: 30yo Software Engineer with 25L income
     res = client.post(
         "/users",
         json={"email": "vikram.tech@test.com", "phone": "+919555555555"},
+        headers=admin_headers,
     )
     user_id = res.json()["id"]
 
@@ -253,6 +272,7 @@ def test_persona_5_high_income_engineer_vikram(client: TestClient):
             "annual_income": 2500000,
             "occupation": "software engineer",
         },
+        headers=admin_headers,
     )
 
     res_eligible = client.get(f"/eligibility/users/{user_id}/schemes")

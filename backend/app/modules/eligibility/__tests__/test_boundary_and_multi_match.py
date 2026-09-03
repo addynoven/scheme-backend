@@ -1,7 +1,15 @@
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.modules.admin.__tests__.test_admin_api import create_admin_user
 
 
-def setup_multi_match_schemes(client: TestClient):
+def setup_multi_match_schemes(client: TestClient, db_session: Session) -> dict[str, str]:
+    admin_creds = create_admin_user(db_session)
+    res_login = client.post("/auth/login", json=admin_creds)
+    admin_token = res_login.json()["access_token"]
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
     schemes = [
         {
             "name": "Post-Matric Scholarship Scheme",
@@ -73,17 +81,20 @@ def setup_multi_match_schemes(client: TestClient):
     ]
 
     for s in schemes:
-        client.post("/schemes", json=s)
+        client.post("/schemes", json=s, headers=admin_headers)
+
+    return admin_headers
 
 
-def test_multi_scheme_match_female_student(client: TestClient):
-    setup_multi_match_schemes(client)
+def test_multi_scheme_match_female_student(client: TestClient, db_session: Session):
+    admin_headers = setup_multi_match_schemes(client, db_session)
 
     # 18-year-old female student with 50,000 annual income
     # Should qualify for BOTH Post-Matric Scholarship AND Mahila Samman
     res_user = client.post(
         "/users",
-        json={"email": "ananya.student@test.com", "phone": "+919999988888"},
+        json={"email": "ananya.student@test.com", "phone": "+919999977777"},
+        headers=admin_headers,
     )
     user_id = res_user.json()["id"]
 
@@ -98,6 +109,7 @@ def test_multi_scheme_match_female_student(client: TestClient):
             "annual_income": 50000,
             "occupation": "student",
         },
+        headers=admin_headers,
     )
 
     res_eligible = client.get(f"/eligibility/users/{user_id}/schemes")
@@ -112,8 +124,8 @@ def test_multi_scheme_match_female_student(client: TestClient):
     assert "pm-kisan" not in matched_slugs
 
 
-def test_exact_income_boundary_cutoff(client: TestClient):
-    setup_multi_match_schemes(client)
+def test_exact_income_boundary_cutoff(client: TestClient, db_session: Session):
+    setup_multi_match_schemes(client, db_session)
 
     # PM Kisan cutoff is 200,000
     # Case A: Income exactly 200,000 (Passes)
@@ -135,8 +147,8 @@ def test_exact_income_boundary_cutoff(client: TestClient):
     assert "pm-kisan" not in slugs_fail
 
 
-def test_exact_age_boundary_cutoff(client: TestClient):
-    setup_multi_match_schemes(client)
+def test_exact_age_boundary_cutoff(client: TestClient, db_session: Session):
+    setup_multi_match_schemes(client, db_session)
 
     # Mahila Samman age rule is between 18-50
     # Case A: Exactly age 18 (Passes lower bound)

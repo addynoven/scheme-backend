@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.core.exceptions import EntityNotFoundError
+from app.core.exceptions import EntityNotFoundError, PermissionDeniedError
 from app.core.uid_generator import (
     compute_life_stage,
     generate_citizen_uid,
@@ -86,12 +86,11 @@ def list_household_members(db: Session, primary_user_id: int) -> list[HouseholdM
 
 
 def get_household_member(db: Session, primary_user_id: int, member_id: int) -> HouseholdMember:
-    member = db.scalar(
-        select(HouseholdMember)
-        .where(HouseholdMember.id == member_id, HouseholdMember.primary_user_id == primary_user_id)
-    )
+    member = db.scalar(select(HouseholdMember).where(HouseholdMember.id == member_id))
     if not member:
         raise EntityNotFoundError("HouseholdMember", member_id)
+    if member.primary_user_id != primary_user_id:
+        raise PermissionDeniedError("Access forbidden: household member belongs to another citizen")
     return member
 
 

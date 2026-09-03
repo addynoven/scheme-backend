@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class BitmaskRuleEngine:
     """
-    High-Performance In-Memory Bitmask Rule Engine (CQRS Read Replica).
+    High-Performance In-Memory Compiled Eligibility Index.
     Pre-compiles all schemes and rules into in-memory integer bitmasks for microsecond CPU evaluations.
     """
 
@@ -32,9 +32,10 @@ class BitmaskRuleEngine:
         self.is_warmed: bool = False
 
     def warm_up(self, db: Session):
-        """Loads all schemes and pre-compiles bitmasks from PostgreSQL."""
+        """Loads active, published schemes and pre-compiles bitmasks from PostgreSQL."""
         schemes = (
             db.query(Scheme)
+            .filter(Scheme.status == "active", Scheme.publication_state == "published")
             .options(
                 selectinload(Scheme.eligibility_rules),
                 selectinload(Scheme.benefits),
@@ -87,19 +88,37 @@ class BitmaskRuleEngine:
                 elif f_name == "occupation":
                     self.occupation_masks[val] |= bit
                 elif f_name in ["age", "annual_income", "land_hectares"]:
-                    try:
-                        num_val = float(val)
-                        self.numeric_rules.append({
-                            "idx": i,
-                            "field": f_name,
-                            "op": r.operator.lower().strip(),
-                            "val": num_val,
-                        })
-                    except ValueError:
-                        pass
+                    op = r.operator.lower().strip()
+                    if op == "between":
+                        clean_val = val.replace("to", "-").replace(",", "-")
+                        parts = clean_val.split("-")
+                        if len(parts) == 2:
+                            try:
+                                val_min = float(parts[0].strip())
+                                val_max = float(parts[1].strip())
+                                self.numeric_rules.append({
+                                    "idx": i,
+                                    "field": f_name,
+                                    "op": "between",
+                                    "val_min": val_min,
+                                    "val_max": val_max,
+                                })
+                            except ValueError:
+                                pass
+                    else:
+                        try:
+                            num_val = float(val)
+                            self.numeric_rules.append({
+                                "idx": i,
+                                "field": f_name,
+                                "op": op,
+                                "val": num_val,
+                            })
+                        except ValueError:
+                            pass
 
         self.is_warmed = True
-        logger.info(f"BitmaskRuleEngine warmed up successfully with {len(schemes)} schemes.")
+        logger.info(f"Compiled Eligibility Index warmed up successfully with {len(schemes)} schemes.")
 
     def evaluate(
         self, profile: dict[str, Any], include_diagnostics: bool = False
@@ -210,7 +229,6 @@ class BitmaskRuleEngine:
         for rule in self.numeric_rules:
             idx = rule["idx"]
             f_name = rule["field"]
-            val = rule["val"]
             op = rule["op"]
 
             current_val = user_age if f_name == "age" else user_income
@@ -224,11 +242,22 @@ class BitmaskRuleEngine:
                 continue
 
             passed = True
-            if op == "lte" and current_val > val:
+            if op == "between":
+                val_min = rule["val_min"]
+                val_max = rule["val_max"]
+                if not (val_min <= current_val <= val_max):
+                    passed = False
+            elif op in ("lte", "<=") and current_val > rule["val"]:
                 passed = False
-            elif op == "gte" and current_val < val:
+            elif op in ("gte", ">=") and current_val < rule["val"]:
                 passed = False
-            elif op == "eq" and current_val != val:
+            elif op in ("eq", "==") and current_val != rule["val"]:
+                passed = False
+            elif op in ("neq", "!=", "ne") and current_val == rule["val"]:
+                passed = False
+            elif op in ("gt", ">") and current_val <= rule["val"]:
+                passed = False
+            elif op in ("lt", "<") and current_val >= rule["val"]:
                 passed = False
 
             if not passed:

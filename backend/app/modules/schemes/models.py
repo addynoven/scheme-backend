@@ -22,6 +22,8 @@ class Scheme(Base):
     ministry: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="active", server_default="active", nullable=False, index=True)
+    publication_state: Mapped[str] = mapped_column(String(50), default="published", server_default="published", nullable=False, index=True)
+    source_freshness: Mapped[str] = mapped_column(String(50), default="fresh", server_default="fresh", nullable=False, index=True)
     application_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     official_website: Mapped[str | None] = mapped_column(String(500), nullable=True)
     launch_date: Mapped[date | None] = mapped_column(Date, nullable=True)
@@ -40,6 +42,9 @@ class Scheme(Base):
     )
     official_sources: Mapped[list["OfficialSource"]] = relationship(
         "OfficialSource", back_populates="scheme", cascade="all, delete-orphan", lazy="selectin"
+    )
+    versions: Mapped[list["SchemeVersion"]] = relationship(
+        "SchemeVersion", back_populates="scheme", cascade="all, delete-orphan", lazy="selectin"
     )
 
 
@@ -96,3 +101,34 @@ class OfficialSource(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     scheme: Mapped["Scheme"] = relationship("Scheme", back_populates="official_sources")
+
+
+class SchemeVersion(Base):
+    __tablename__ = "scheme_versions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    scheme_id: Mapped[int] = mapped_column(ForeignKey("schemes.id", ondelete="CASCADE"), index=True, nullable=False)
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(50), nullable=False)
+    source_hash: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    scheme: Mapped["Scheme"] = relationship("Scheme", back_populates="versions")
+    rule_versions: Mapped[list["EligibilityRuleVersion"]] = relationship(
+        "EligibilityRuleVersion", back_populates="scheme_version", cascade="all, delete-orphan", lazy="selectin"
+    )
+
+
+class EligibilityRuleVersion(Base):
+    __tablename__ = "eligibility_rule_versions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    scheme_version_id: Mapped[int] = mapped_column(ForeignKey("scheme_versions.id", ondelete="CASCADE"), index=True, nullable=False)
+    field_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    operator: Mapped[str] = mapped_column(String(20), nullable=False)
+    rule_value: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    scheme_version: Mapped["SchemeVersion"] = relationship("SchemeVersion", back_populates="rule_versions")

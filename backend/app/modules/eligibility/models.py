@@ -19,6 +19,7 @@ class EligibilityDecision(Base):
         nullable=True,
         index=True,
     )
+    scheme_version_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     scheme_slug: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     profile_snapshot: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     decision: Mapped[str] = mapped_column(String(50), nullable=False)  # 'eligible', 'nearly_eligible', 'ineligible'

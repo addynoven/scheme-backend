@@ -1,7 +1,15 @@
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.modules.admin.__tests__.test_admin_api import create_admin_user
 
 
-def test_create_and_get_scheme_with_nested_relations(client: TestClient):
+def test_create_and_get_scheme_with_nested_relations(client: TestClient, db_session: Session):
+    admin_creds = create_admin_user(db_session)
+    res_login = client.post("/auth/login", json=admin_creds)
+    admin_token = res_login.json()["access_token"]
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
     payload = {
         "name": "Pradhan Mantri Kisan Samman Nidhi",
         "slug": "pm-kisan",
@@ -45,7 +53,7 @@ def test_create_and_get_scheme_with_nested_relations(client: TestClient):
     }
 
     # 1. Create Scheme
-    res = client.post("/schemes", json=payload)
+    res = client.post("/schemes", json=payload, headers=admin_headers)
     assert res.status_code == 201
     data = res.json()
     scheme_id = data["id"]
@@ -56,7 +64,7 @@ def test_create_and_get_scheme_with_nested_relations(client: TestClient):
     assert len(data["official_sources"]) == 1
 
     # 2. Duplicate slug should return 400
-    res_dup = client.post("/schemes", json=payload)
+    res_dup = client.post("/schemes", json=payload, headers=admin_headers)
     assert res_dup.status_code == 400
     assert "already exists" in res_dup.json()["detail"]
 
@@ -83,12 +91,13 @@ def test_create_and_get_scheme_with_nested_relations(client: TestClient):
     res_patch = client.patch(
         f"/schemes/{scheme_id}",
         json={"description": "Updated income support description"},
+        headers=admin_headers,
     )
     assert res_patch.status_code == 200
     assert res_patch.json()["description"] == "Updated income support description"
 
     # 7. Delete Scheme with Cascade
-    res_delete = client.delete(f"/schemes/{scheme_id}")
+    res_delete = client.delete(f"/schemes/{scheme_id}", headers=admin_headers)
     assert res_delete.status_code == 204
 
     # 8. Confirm deleted

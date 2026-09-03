@@ -1,7 +1,15 @@
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.modules.admin.__tests__.test_admin_api import create_admin_user
 
 
-def setup_sample_schemes(client: TestClient):
+def setup_sample_schemes(client: TestClient, db_session: Session) -> dict[str, str]:
+    admin_creds = create_admin_user(db_session)
+    res_login = client.post("/auth/login", json=admin_creds)
+    admin_token = res_login.json()["access_token"]
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
     # Scheme 1: PM Kisan (Farmers only, income <= 200000)
     client.post(
         "/schemes",
@@ -24,6 +32,7 @@ def setup_sample_schemes(client: TestClient):
                 },
             ],
         },
+        headers=admin_headers,
     )
 
     # Scheme 2: Student Scholarship (Students only, age <= 25)
@@ -48,11 +57,13 @@ def setup_sample_schemes(client: TestClient):
                 },
             ],
         },
+        headers=admin_headers,
     )
+    return admin_headers
 
 
-def test_adhoc_eligibility_check(client: TestClient):
-    setup_sample_schemes(client)
+def test_adhoc_eligibility_check(client: TestClient, db_session: Session):
+    setup_sample_schemes(client, db_session)
 
     # Adhoc check for Farmer with 150000 income
     res_farmer = client.post(
@@ -83,13 +94,14 @@ def test_adhoc_eligibility_check(client: TestClient):
     assert student_schemes[0]["slug"] == "national-youth-scholarship"
 
 
-def test_user_profile_eligibility_matching(client: TestClient):
-    setup_sample_schemes(client)
+def test_user_profile_eligibility_matching(client: TestClient, db_session: Session):
+    admin_headers = setup_sample_schemes(client, db_session)
 
     # Create User
     res_user = client.post(
         "/users",
         json={"email": "student.anita@example.com", "phone": "+919876543299"},
+        headers=admin_headers,
     )
     user_id = res_user.json()["id"]
 
@@ -105,6 +117,7 @@ def test_user_profile_eligibility_matching(client: TestClient):
             "annual_income": 50000,
             "occupation": "student",
         },
+        headers=admin_headers,
     )
 
     # Match schemes for this user

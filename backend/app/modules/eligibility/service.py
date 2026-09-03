@@ -329,6 +329,40 @@ def explain_scheme_eligibility(
     )
 
 
+def record_eligibility_decision(
+    db: Session,
+    scheme: Scheme,
+    profile_context: dict[str, Any],
+    explanation: SchemeExplanation,
+    user_id: int | None = None,
+) -> None:
+    from app.modules.eligibility.models import EligibilityDecision
+
+    clean_snapshot = {}
+    for k, v in profile_context.items():
+        if isinstance(v, (str, int, float, bool)):
+            clean_snapshot[k] = v
+        elif v is not None:
+            clean_snapshot[k] = str(v)
+
+    latest_version_id = None
+    if scheme.versions:
+        latest_version_id = max(v.id for v in scheme.versions)
+
+    decision_record = EligibilityDecision(
+        user_id=user_id or profile_context.get("user_id"),
+        scheme_id=scheme.id,
+        scheme_version_id=latest_version_id,
+        scheme_slug=scheme.slug,
+        profile_snapshot=clean_snapshot,
+        decision=explanation.status,
+        match_percentage=explanation.match_percentage,
+        matched_rules_count=explanation.criteria_passed,
+        failed_rules_count=len(explanation.failed_criteria),
+    )
+    db.add(decision_record)
+
+
 def generate_eligibility_report(
     db: Session, profile_context: dict[str, Any]
 ) -> EligibilityReportResponse:
@@ -350,12 +384,18 @@ def generate_eligibility_report(
 
     for scheme in schemes:
         explanation = explain_scheme_eligibility(scheme, profile_context)
+        record_eligibility_decision(db, scheme, profile_context, explanation)
         if explanation.status == "eligible":
             eligible.append(explanation)
         elif explanation.status == "nearly_eligible":
             nearly_eligible.append(explanation)
         else:
             ineligible.append(explanation)
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
 
     eligible_count = len(eligible)
     nearly_eligible_count = len(nearly_eligible)

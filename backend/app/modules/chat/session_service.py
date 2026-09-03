@@ -36,11 +36,13 @@ def create_chat_session(
     """Create a new chat session for an authenticated citizen."""
     title = "New Welfare Conversation"
     lang = language_code or "en"
-    if hasattr(payload_or_title, "title"):
-        title = payload_or_title.title or title
-        lang = getattr(payload_or_title, "language_code", None) or lang
-    elif isinstance(payload_or_title, str):
+    if isinstance(payload_or_title, str):
         title = payload_or_title
+    elif payload_or_title is not None and hasattr(payload_or_title, "title"):
+        title_val = getattr(payload_or_title, "title", None)
+        if isinstance(title_val, str) and title_val:
+            title = title_val
+        lang = getattr(payload_or_title, "language_code", None) or lang
 
     session = ChatSession(
         user_id=user_id,

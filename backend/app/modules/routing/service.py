@@ -336,10 +336,10 @@ class IntelligentQueryRouter:
             },
         }
 
-        configured_model = settings.GEMINI_MODEL or "gemini-3.7-flash"
+        configured_model = settings.GEMINI_MODEL or "gemini-3.8-flash"
         models_to_try = [configured_model]
         for fallback in [
-            "gemini-3.7-flash",
+            "gemini-3.8-flash",
             "gemini-flash-latest",
             "gemini-3.1-flash-lite",
             "gemini-flash-lite-latest",

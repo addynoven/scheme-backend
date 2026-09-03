@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
+from app.core.deps import get_current_admin_user
 from app.core.exceptions import SchemeNotFoundError
 from app.database import get_db
 from app.core.pagination import PaginatedResponse
+from app.modules.auth.models import User
 from app.modules.schemes.schemas import (
     CategoryListResponse,
     SchemeCreate,
@@ -29,12 +31,13 @@ router = APIRouter(prefix="/schemes", tags=["Schemes"])
     response_model=SchemeDetailResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new government scheme",
-    description="Creates a new scheme with nested benefits, eligibility rules, required documents, and official sources.",
+    description="Creates a new scheme with nested benefits, eligibility rules, required documents, and official sources. Requires role='admin'.",
     response_description="Created scheme details with full relations",
 )
 def create_scheme_endpoint(
     payload: SchemeCreate,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin_user),
 ):
     return create_scheme(db=db, payload=payload)
 
@@ -163,13 +166,14 @@ def get_scheme_by_id_endpoint(
     "/{scheme_id}",
     response_model=SchemeDetailResponse,
     summary="Update scheme details",
-    description="Updates top-level fields of a scheme (name, description, status, category, tags, URLs).",
+    description="Updates top-level fields of a scheme (name, description, status, category, tags, URLs). Requires role='admin'.",
     response_description="Updated scheme",
 )
 def update_scheme_endpoint(
     scheme_id: int,
     payload: SchemeUpdate,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin_user),
 ):
     return update_scheme(db=db, scheme_id=scheme_id, payload=payload)
 
@@ -178,11 +182,12 @@ def update_scheme_endpoint(
     "/{scheme_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete scheme",
-    description="Deletes a scheme and cascades deletion to all child relations.",
+    description="Deletes a scheme and cascades deletion to all child relations. Requires role='admin'.",
 )
 def delete_scheme_endpoint(
     scheme_id: int,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin_user),
 ):
     delete_scheme(db=db, scheme_id=scheme_id)
     return None

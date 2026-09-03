@@ -84,10 +84,31 @@ def authenticate_user(db: Session, payload: UserLoginRequest) -> User:
 register = register_user
 
 
-def generate_tokens(user: User) -> TokenResponse:
+def generate_tokens(db: Session, user: User, family_id: str | None = None) -> TokenResponse:
+    import hashlib
+    import uuid
+    from datetime import datetime, timedelta, timezone
+
+    from app.core.config import settings
     from app.core.security import create_access_token, create_refresh_token
+    from app.modules.auth.models import RefreshToken
+
     access_token = create_access_token(subject=user.id)
     refresh_token = create_refresh_token(subject=user.id)
+
+    token_family = family_id or str(uuid.uuid4())
+    expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+
+    db_refresh_token = RefreshToken(
+        user_id=user.id,
+        token_hash=hashlib.sha256(refresh_token.encode("utf-8")).hexdigest(),
+        family_id=token_family,
+        is_revoked=False,
+        expires_at=expires_at,
+    )
+    db.add(db_refresh_token)
+    db.commit()
+
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -97,10 +118,18 @@ def generate_tokens(user: User) -> TokenResponse:
 
 
 def refresh_access_token(db: Session, refresh_token: str | None = None, refresh_token_str: str | None = None) -> TokenResponse:
-    from app.core.exceptions import InvalidTokenError
+    import hashlib
+    from datetime import datetime, timedelta, timezone
+
+    from app.core.config import settings
+    from app.core.exceptions import AuthenticationError, InvalidTokenError
     from app.core.security import create_access_token, create_refresh_token, decode_token
+    from app.modules.auth.models import RefreshToken
 
     tok = refresh_token or refresh_token_str or ""
+    if not tok:
+        raise InvalidTokenError("Refresh token is required")
+
     try:
         payload = decode_token(tok)
     except Exception:
@@ -117,8 +146,44 @@ def refresh_access_token(db: Session, refresh_token: str | None = None, refresh_
     if not user:
         raise AuthenticationError("User not found")
 
+    tok_hash = hashlib.sha256(tok.encode("utf-8")).hexdigest()
+    token_record = db.scalar(select(RefreshToken).where(RefreshToken.token_hash == tok_hash))
+
+    if not token_record:
+        raise InvalidTokenError("Refresh token is invalid or has been revoked")
+
+    # TOKEN REUSE DETECTED!
+    if token_record.is_revoked:
+        # Revoke ALL tokens belonging to this family
+        db.query(RefreshToken).filter(RefreshToken.family_id == token_record.family_id).update({"is_revoked": True})
+        db.commit()
+        raise AuthenticationError("Refresh token reuse detected. Token family has been revoked.")
+
+    now_utc = datetime.now(timezone.utc)
+    expires_at = token_record.expires_at
+    now_compare = datetime.now() if expires_at.tzinfo is None else now_utc
+    if expires_at < now_compare:
+        token_record.is_revoked = True
+        db.commit()
+        raise InvalidTokenError("Refresh token has expired")
+
+    # Mark current refresh token as used/revoked
+    token_record.is_revoked = True
+
+    # Generate new token pair in the SAME family
     new_access_token = create_access_token(subject=user.id)
     new_refresh_token = create_refresh_token(subject=user.id)
+    new_expires_at = now_utc + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+
+    new_db_token = RefreshToken(
+        user_id=user.id,
+        token_hash=hashlib.sha256(new_refresh_token.encode("utf-8")).hexdigest(),
+        family_id=token_record.family_id,
+        is_revoked=False,
+        expires_at=new_expires_at,
+    )
+    db.add(new_db_token)
+    db.commit()
 
     return TokenResponse(
         access_token=new_access_token,
@@ -204,6 +269,11 @@ def update_user_role(db: Session, user_id: int, role: str) -> User:
     if not user:
         raise UserNotFoundError(user_id)
     user.role = role.strip().lower()
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 def create_user(db: Session, payload: Any) -> User:
     existing = db.scalar(
         select(User).where(
@@ -239,7 +309,10 @@ def update_user(db: Session, user_id: int, payload: Any) -> User:
     if not user:
         raise UserNotFoundError(user_id)
 
-    update_data = payload.model_dump(exclude_unset=True)
+    update_data = payload.model_dump(exclude_unset=True) if hasattr(payload, "model_dump") else dict(payload)
+    # Strip security-sensitive fields from general user update
+    update_data.pop("role", None)
+    update_data.pop("is_verified", None)
 
     if "email" in update_data and update_data["email"] != user.email:
         existing = get_user_by_email(db, update_data["email"])
@@ -291,6 +364,10 @@ def record_citizen_fact(
     fact_key: str,
     fact_value: Any,
     source_document_id: int | None = None,
+    source_type: str = "self_attested",
+    confidence_score: float | None = None,
+    status: str = "unverified",
+    supersedes_fact_id: int | None = None,
     verified_by_user_id: int | None = None,
 ) -> CitizenFact:
     val_str = str(fact_value) if fact_value is not None else ""
@@ -298,6 +375,10 @@ def record_citizen_fact(
         user_id=user_id,
         fact_key=fact_key,
         fact_value=val_str,
+        source_type=source_type,
+        confidence_score=confidence_score,
+        status=status,
+        supersedes_fact_id=supersedes_fact_id,
         source_document_id=source_document_id,
         verified_by_user_id=verified_by_user_id or user_id,
     )
@@ -342,6 +423,9 @@ def get_citizen_facts_audit(db: Session, user_id: int):
             document_id=f.source_document_id,
             document_type=doc.document_type if doc else "Direct Entry / Self-Attested",
             file_name=doc.file_name if doc else None,
+            source_type=f.source_type,
+            confidence_score=f.confidence_score,
+            status=f.status,
             verified_value=f.fact_value,
             verified_at=f.verified_at,
         )
@@ -350,15 +434,18 @@ def get_citizen_facts_audit(db: Session, user_id: int):
     provenance_map: dict[str, FactProvenanceDetail] = {}
     for key, val in verified_map.items():
         srcs = grouped_sources.get(key, [])
-        distinct_doc_types = list(
-            dict.fromkeys([s.document_type for s in srcs if s.document_type])
+        official_doc_types = list(
+            dict.fromkeys([
+                s.document_type for s in srcs
+                if s.document_type and s.document_type != "Direct Entry / Self-Attested"
+            ])
         )
-        is_cross = len(distinct_doc_types) >= 2 or len(srcs) >= 2
+        is_cross = len(official_doc_types) >= 2
 
-        if len(distinct_doc_types) >= 2:
-            reason = f"Cross-verified across {len(distinct_doc_types)} independent official sources ({', '.join(distinct_doc_types)})"
-        elif len(distinct_doc_types) == 1:
-            reason = f"Verified from official {distinct_doc_types[0]}"
+        if is_cross:
+            reason = f"Cross-verified across {len(official_doc_types)} independent official sources ({', '.join(official_doc_types)})"
+        elif len(official_doc_types) == 1:
+            reason = f"Verified from official {official_doc_types[0]}"
         else:
             reason = "Self-attested citizen claim"
 

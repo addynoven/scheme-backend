@@ -1,26 +1,25 @@
 import datetime
-import random
-import string
+import uuid
 
 
 def generate_citizen_uid() -> str:
-    """Generate sovereign trackable Citizen ID, e.g. CIT-2026-8941"""
+    """Generate sovereign trackable Citizen ID, e.g. CIT-2026-8941AB"""
     year = datetime.datetime.now().year
-    suffix = "".join(random.choices(string.digits, k=4))
+    suffix = uuid.uuid4().hex[:6].upper()
     return f"CIT-{year}-{suffix}"
 
 
 def generate_household_uid() -> str:
-    """Generate shared Family Household ID, e.g. HHD-2026-4402"""
+    """Generate shared Family Household ID, e.g. HHD-2026-4402CD"""
     year = datetime.datetime.now().year
-    suffix = "".join(random.choices(string.digits, k=4))
+    suffix = uuid.uuid4().hex[:6].upper()
     return f"HHD-{year}-{suffix}"
 
 
 def generate_member_uid(relationship: str = "member") -> str:
-    """Generate Household Relationship Member ID, e.g. MBR-2026-1189"""
+    """Generate Household Relationship Member ID, e.g. MBR-2026-1189EF"""
     year = datetime.datetime.now().year
-    suffix = "".join(random.choices(string.digits, k=4))
+    suffix = uuid.uuid4().hex[:6].upper()
     return f"MBR-{year}-{suffix}"
 
 

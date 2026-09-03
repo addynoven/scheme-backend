@@ -7,7 +7,7 @@ from app.modules.eligibility.bitmask_engine import bitmask_engine
 
 
 def test_bitmask_engine_between_operator(client: TestClient, db_session: Session):
-    admin_creds = create_admin_user(db_session, "group3.admin1@gov.in")
+    admin_creds = create_admin_user(db_session)
     admin_token = client.post("/auth/login", json=admin_creds).json()["access_token"]
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
@@ -54,7 +54,7 @@ def test_bitmask_engine_between_operator(client: TestClient, db_session: Session
 
 
 def test_bitmask_cache_invalidation_on_mutation(client: TestClient, db_session: Session):
-    admin_creds = create_admin_user(db_session, "group3.admin2@gov.in")
+    admin_creds = create_admin_user(db_session)
     admin_token = client.post("/auth/login", json=admin_creds).json()["access_token"]
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
 

@@ -101,6 +101,18 @@ def test_query_router_decomposition_and_synthesis(db_session: Session, seed_test
 def test_routing_endpoint_api(client: TestClient, db_session: Session, seed_test_schemes):
     bitmask_engine.warm_up(db_session)
 
+    # Register & Login User
+    client.post(
+        "/auth/register",
+        json={"email": "router.user@test.com", "phone": "+919111199999", "password": "Password123!"},
+    )
+    res_login = client.post(
+        "/auth/login",
+        json={"email": "router.user@test.com", "password": "Password123!"},
+    )
+    token = res_login.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
     payload = {
         "query": "What schemes are available for a farmer in India?",
         "user_profile": {
@@ -110,7 +122,7 @@ def test_routing_endpoint_api(client: TestClient, db_session: Session, seed_test
         },
     }
 
-    res = client.post("/routing/query", json=payload)
+    res = client.post("/routing/query", json=payload, headers=headers)
     assert res.status_code == 200
     data = res.json()
 

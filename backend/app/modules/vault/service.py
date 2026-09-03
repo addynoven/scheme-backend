@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -50,6 +51,70 @@ def _is_doc_match(required_name: str, user_doc_type: str) -> bool:
     return False
 
 
+MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024  # 15 MB
+
+
+def validate_file_bytes(file_bytes: bytes, filename: str) -> str:
+    """
+    Validates file size (max 15MB) and inspects binary magic bytes.
+    Returns normalized mime_type string if valid, raises InvalidFileFormatError if invalid.
+    """
+    from app.core.exceptions import InvalidFileFormatError
+
+    if not file_bytes or len(file_bytes) == 0:
+        raise InvalidFileFormatError("Uploaded file is empty")
+
+    if len(file_bytes) > MAX_FILE_SIZE_BYTES:
+        raise InvalidFileFormatError("File size exceeds maximum limit of 15 MB")
+
+    header = file_bytes[:16]
+
+    # PDF: %PDF-
+    if header.startswith(b"%PDF"):
+        return "application/pdf"
+
+    # PNG: \x89PNG\r\n\x1a\n
+    if header.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+
+    # JPEG / JPG: \xff\xd8\xff
+    if header.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+
+    # WebP: RIFF ... WEBP
+    if header.startswith(b"RIFF") and b"WEBP" in header:
+        return "image/webp"
+
+    # WAV audio / RIFF container
+    if header.startswith(b"RIFF") and b"WAVE" in header:
+        return "audio/wav"
+
+    raise InvalidFileFormatError(
+        "Invalid or unsupported file type. Only PDF, PNG, JPG, WEBP, and WAV files are allowed."
+    )
+
+
+async def read_upload_file_bounded(file: Any, max_bytes: int = 15 * 1024 * 1024) -> bytes:
+    from app.core.exceptions import InvalidFileFormatError
+
+    if getattr(file, "size", None) and file.size > max_bytes:
+        raise InvalidFileFormatError("File size exceeds maximum limit of 15 MB")
+
+    chunks = []
+    total_bytes = 0
+    chunk_size = 1024 * 1024  # 1MB chunks
+    while True:
+        chunk = await file.read(chunk_size)
+        if not chunk:
+            break
+        total_bytes += len(chunk)
+        if total_bytes > max_bytes:
+            raise InvalidFileFormatError("File size exceeds maximum limit of 15 MB")
+        chunks.append(chunk)
+
+    return b"".join(chunks)
+
+
 def upload_user_document(
     db: Session,
     user_id: int,
@@ -60,16 +125,24 @@ def upload_user_document(
     document_number_masked: str | None = None,
     household_member_id: int | None = None,
 ) -> UserDocumentResponse:
+    validated_mime = validate_file_bytes(file_bytes, file_name)
+
     storage_service.ensure_bucket_exists()
 
-    unique_id = uuid.uuid4().hex[:12]
-    clean_file_name = file_name.replace(" ", "_")
-    object_key = f"vault/user_{user_id}/{unique_id}_{clean_file_name}"
+    import pathlib
+    import re
+    ext = pathlib.Path(file_name).suffix.lower()
+    if not ext or len(ext) > 5:
+        ext = ".pdf" if "pdf" in validated_mime else ".png"
+
+    unique_uuid = uuid.uuid4().hex
+    object_key = f"vault/user_{user_id}/{unique_uuid}{ext}"
+    clean_file_name = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', file_name).strip() or "document"
 
     storage_service.upload_bytes(
         file_bytes=file_bytes,
         object_key=object_key,
-        content_type=mime_type,
+        content_type=validated_mime,
     )
 
     citizen_uid = None
@@ -95,9 +168,9 @@ def upload_user_document(
         document_type=document_type.strip(),
         document_number_masked=document_number_masked,
         file_key=object_key,
-        file_name=file_name,
+        file_name=clean_file_name,
         file_size_bytes=len(file_bytes),
-        mime_type=mime_type,
+        mime_type=validated_mime,
         is_verified=False,
     )
     db.add(doc)
@@ -105,6 +178,10 @@ def upload_user_document(
         db.commit()
     except Exception:
         db.rollback()
+        try:
+            storage_service.delete_object(object_key)
+        except Exception:
+            pass
         raise
 
     db.refresh(doc)
@@ -182,13 +259,14 @@ def delete_user_document(db: Session, user_id: int, document_id: int) -> bool:
     if not doc:
         raise EntityNotFoundError("UserDocument", document_id)
 
-    # Delete from S3 storage
-    storage_service.delete_object(doc.file_key)
+    file_key = doc.file_key
 
-    # Delete from DB
+    # Delete from DB first
     db.delete(doc)
     try:
         db.commit()
+        # Delete from S3 storage only after successful DB commit
+        storage_service.delete_object(file_key)
     except Exception:
         db.rollback()
         raise
@@ -222,14 +300,21 @@ def evaluate_document_readiness(
             None,
         )
 
-        is_present = matched_user_doc is not None
+        is_verified_available = matched_user_doc is not None and matched_user_doc.is_verified == True
+        if matched_user_doc is None:
+            item_status = "missing"
+        elif matched_user_doc.is_verified:
+            item_status = "available"
+        else:
+            item_status = "pending_verification"
+
         if req.is_mandatory:
             mandatory_total += 1
-            if is_present:
+            if is_verified_available:
                 mandatory_available += 1
         else:
             optional_total += 1
-            if is_present:
+            if is_verified_available:
                 optional_available += 1
 
         checklist.append(
@@ -237,7 +322,7 @@ def evaluate_document_readiness(
                 document_name=req.document_name,
                 description=req.description,
                 is_mandatory=req.is_mandatory,
-                status="available" if is_present else "missing",
+                status=item_status,
                 matched_vault_document_id=matched_user_doc.id if matched_user_doc else None,
                 matched_vault_document_name=matched_user_doc.file_name if matched_user_doc else None,
             )
@@ -314,9 +399,21 @@ def confirm_and_sync_profile_from_facts(
     synced_fields: list[str] = []
     data = payload.model_dump(exclude_unset=True)
 
+    # Verify document ownership if document_id is provided
+    verified_doc = None
+    if document_id:
+        verified_doc = db.scalar(
+            select(UserDocument).where(
+                UserDocument.id == document_id, UserDocument.user_id == user_id
+            )
+        )
+        if not verified_doc:
+            raise EntityNotFoundError("UserDocument", document_id)
+        verified_doc.is_verified = True
+
     if not profile:
-        # Create fresh profile with sensible fallbacks
-        dob = date(2000, 1, 1)
+        # Create fresh profile using provided facts
+        dob = None
         if payload.date_of_birth:
             try:
                 parts = [int(p) for p in payload.date_of_birth.split("-")]
@@ -327,12 +424,12 @@ def confirm_and_sync_profile_from_facts(
         profile = Profile(
             user_id=user_id,
             full_name=payload.full_name or "Citizen",
-            date_of_birth=dob,
-            gender=payload.gender or "other",
-            state=payload.state or "All-India",
+            date_of_birth=dob or date(1990, 1, 1),
+            gender=payload.gender or "unspecified",
+            state=payload.state or "ALL_INDIA",
             district=payload.district or "General",
             annual_income=payload.annual_income or 0,
-            occupation=payload.occupation or "self_employed",
+            occupation=payload.occupation or "unspecified",
             caste_category=payload.caste_category,
             has_land=payload.has_land,
             is_differently_abled=payload.is_differently_abled,
@@ -354,18 +451,11 @@ def confirm_and_sync_profile_from_facts(
                     setattr(profile, field, val)
                     synced_fields.append(field)
 
-    # Mark document as verified if document_id provided
-    if document_id:
-        doc = db.scalar(
-            select(UserDocument).where(
-                UserDocument.id == document_id, UserDocument.user_id == user_id
-            )
-        )
-        if doc:
-            doc.is_verified = True
-
-    # Record immutable audit trail in citizen_facts table
+    # Record immutable audit trail in citizen_facts table with validated source document
     from app.modules.auth.service import record_citizen_fact
+
+    source_type_val = "document_ocr" if verified_doc else "self_attested"
+    linked_doc_id = verified_doc.id if verified_doc else None
 
     for field in synced_fields:
         val = data.get(field)
@@ -375,7 +465,20 @@ def confirm_and_sync_profile_from_facts(
                 user_id=user_id,
                 fact_key=field,
                 fact_value=val,
+                source_document_id=linked_doc_id,
+                source_type=source_type_val,
+                status="verified",
+                verified_by_user_id=user_id,
+            )
+        if val is not None:
+            record_citizen_fact(
+                db=db,
+                user_id=user_id,
+                fact_key=field,
+                fact_value=val,
                 source_document_id=document_id,
+                source_type=source_type_val,
+                status="verified",
                 verified_by_user_id=user_id,
             )
 

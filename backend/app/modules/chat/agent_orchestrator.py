@@ -92,8 +92,8 @@ def _call_gemini_api(contents: list[dict[str, Any]], system_instruction: str) ->
         "generationConfig": {"temperature": 0.2, "maxOutputTokens": 1024},
     }
 
-    configured_model = settings.GEMINI_MODEL or "gemini-2.5-flash-lite"
-    models_to_try = [configured_model, "gemini-2.5-flash-lite", "gemini-3.7-flash", "gemini-flash-latest"]
+    configured_model = settings.GEMINI_MODEL or "gemini-3.8-flash"
+    models_to_try = [configured_model, "gemini-3.8-flash", "gemini-2.5-flash-lite", "gemini-flash-latest"]
     seen = set()
     deduped_models = [m for m in models_to_try if not (m in seen or seen.add(m))]
 
@@ -134,10 +134,127 @@ def _call_gemini_api(contents: list[dict[str, Any]], system_instruction: str) ->
     return None
 
 
+AGY_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "action": {
+            "type": "string",
+            "enum": ["text", "tool_call"],
+            "description": "Choose 'text' to respond directly to the citizen, or 'tool_call' to execute a backend tool function."
+        },
+        "text": {
+            "type": "string",
+            "description": "Direct response text for the citizen. Required when action is 'text'."
+        },
+        "tool_name": {
+            "type": "string",
+            "enum": ["check_eligibility", "get_scheme_details", "search_schemes_directory"],
+            "description": "The name of the tool to execute. Required when action is 'tool_call'."
+        },
+        "tool_args": {
+            "type": "object",
+            "description": "Arguments dictionary for the tool. Required when action is 'tool_call'."
+        }
+    },
+    "required": ["action"]
+}
+
+
+def _call_agy_cli(contents: list[dict[str, Any]], system_instruction: str) -> dict[str, Any] | None:
+    """
+    Executes local completion using the agy CLI with strict JSON schema enforcement.
+    Maps output to the uniform candidate / functionCall structure for zero-duplication orchestration.
+    """
+    agy_bin = shutil.which("agy") or "/home/neon/.local/bin/agy"
+    if not Path(agy_bin).exists() and not shutil.which("agy"):
+        logger.warning("agy binary not found on PATH or at /home/neon/.local/bin/agy")
+        return None
+
+    # Format contents into conversational prompt context
+    lines = []
+    for c in contents:
+        role = c.get("role", "user")
+        for part in c.get("parts", []):
+            if "text" in part:
+                prefix = "User:" if role == "user" else "Assistant:"
+                lines.append(f"{prefix} {part['text']}")
+            elif "functionCall" in part:
+                fn = part["functionCall"]
+                lines.append(f"Assistant: [Invoked tool {fn.get('name')} with args {json.dumps(fn.get('args', {}))}]")
+            elif "functionResponse" in part:
+                resp = part["functionResponse"]
+                lines.append(f"Tool Result ({resp.get('name')}): {json.dumps(resp.get('response', {}))}")
+
+    prompt_body = "\n".join(lines)
+    full_prompt = (
+        f"System Instruction:\n{system_instruction}\n\n"
+        f"Response Protocol:\n"
+        f"- Output ONLY a single valid JSON object conforming to the schema.\n"
+        f"- If you need factual scheme data or eligibility matching, use action: 'tool_call'.\n"
+        f"- If answering greetings, out-of-scope, or summarizing tool results, use action: 'text'.\n\n"
+        f"---\n\nConversation Context & User Query:\n{prompt_body}"
+    )
+
+    model_name = getattr(settings, "AGY_MODEL", "gemini-3.7-flash-low") or "gemini-3.7-flash-low"
+    logger.info(f"🤖 [agy CLI] Executing prompt using model: {model_name} (sandbox=True)")
+    cmd = [
+        agy_bin,
+        "--model", model_name,
+        "--output-format", "json",
+        "--json-schema", json.dumps(AGY_JSON_SCHEMA),
+        "--sandbox",
+        "--prompt", full_prompt,
+    ]
+
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        if res.returncode != 0:
+            logger.warning(f"❌ [agy CLI] Process returned non-zero code {res.returncode}: {res.stderr}")
+            return None
+
+        raw = json.loads(res.stdout)
+        structured = raw.get("structured_output")
+        if not structured or not isinstance(structured, dict):
+            resp_str = raw.get("response", "")
+            try:
+                structured = json.loads(resp_str)
+            except Exception:
+                logger.warning(f"❌ [agy CLI] Failed to parse structured output from raw response: {res.stdout[:200]}")
+                return None
+
+        logger.info(f"✅ [agy CLI] Successfully received structured action: '{structured.get('action')}'")
+        action = structured.get("action")
+        if action == "tool_call":
+            logger.info(f"🔧 [agy CLI] Model requested tool call: {structured.get('tool_name')} with args: {structured.get('tool_args')}")
+            parts = [
+                {
+                    "functionCall": {
+                        "name": structured.get("tool_name", "check_eligibility"),
+                        "args": structured.get("tool_args") or {},
+                    }
+                }
+            ]
+        else:
+            logger.info(f"💬 [agy CLI] Model returned direct text response ({len(structured.get('text', ''))} chars)")
+            parts = [{"text": structured.get("text", "")}]
+
+        usage = raw.get("usage", {})
+        return {
+            "candidates": [{"content": {"parts": parts}}],
+            "usageMetadata": {
+                "promptTokenCount": usage.get("input_tokens", 0),
+                "candidatesTokenCount": usage.get("output_tokens", 0),
+                "totalTokenCount": usage.get("total_tokens", 0),
+            },
+        }
+    except Exception as e:
+        logger.warning(f"❌ [agy CLI] Execution exception: {e}")
+        return None
+
+
 def call_llm_provider(contents: list[dict[str, Any]], system_instruction: str) -> dict[str, Any] | None:
     provider = (getattr(settings, "LLM_PROVIDER", None) or "gemini").lower()
     if provider == "agy":
-        from app.modules.chat.service import _call_agy_cli
         return _call_agy_cli(contents, system_instruction)
     return _call_gemini_api(contents, system_instruction)
 

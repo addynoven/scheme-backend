@@ -127,8 +127,8 @@ class VoiceSpeechService:
         chat_history = []
         target_session = None
         if session_id:
-            target_session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
-            if target_session and (target_session.user_id is None or target_session.user_id == user_id):
+            target_session = db.query(ChatSession).filter(ChatSession.id == session_id, ChatSession.user_id == user_id).first()
+            if target_session:
                 # Retrieve last 6 messages for context
                 recent_msgs = (
                     db.query(ChatMessage)

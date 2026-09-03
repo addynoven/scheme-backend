@@ -97,7 +97,49 @@ def create_scheme(db: Session, payload: SchemeCreate) -> Scheme:
         raise
 
     db.refresh(scheme)
+    create_scheme_version_snapshot(db, scheme.id)
+    from app.modules.eligibility.bitmask_engine import bitmask_engine
+    bitmask_engine.warm_up(db)
     return scheme
+
+
+def create_scheme_version_snapshot(db: Session, scheme_id: int, source_hash: str | None = None):
+    from app.modules.schemes.models import EligibilityRuleVersion, SchemeVersion
+    scheme = get_scheme_by_id(db, scheme_id)
+    if not scheme:
+        return None
+
+    max_ver_stmt = select(func.max(SchemeVersion.version_number)).where(SchemeVersion.scheme_id == scheme_id)
+    current_max = db.scalar(max_ver_stmt) or 0
+    next_ver = current_max + 1
+
+    sv = SchemeVersion(
+        scheme_id=scheme_id,
+        version_number=next_ver,
+        name=scheme.name,
+        description=scheme.description,
+        status=scheme.status,
+        source_hash=source_hash,
+    )
+    db.add(sv)
+    db.flush()
+
+    for rule in scheme.eligibility_rules:
+        rv = EligibilityRuleVersion(
+            scheme_version_id=sv.id,
+            field_name=rule.field_name,
+            operator=rule.operator,
+            rule_value=rule.rule_value,
+        )
+        db.add(rv)
+
+    try:
+        db.commit()
+        db.refresh(sv)
+    except Exception:
+        db.rollback()
+
+    return sv
 
 
 def list_schemes(
@@ -237,6 +279,9 @@ def update_scheme(
         raise
 
     db.refresh(scheme)
+    create_scheme_version_snapshot(db, scheme.id)
+    from app.modules.eligibility.bitmask_engine import bitmask_engine
+    bitmask_engine.warm_up(db)
     return scheme
 
 
@@ -251,4 +296,7 @@ def delete_scheme(db: Session, scheme_id: int) -> bool:
     except Exception:
         db.rollback()
         raise
+
+    from app.modules.eligibility.bitmask_engine import bitmask_engine
+    bitmask_engine.warm_up(db)
     return True

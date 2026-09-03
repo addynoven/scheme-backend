@@ -22,7 +22,28 @@ async def extract_facts_endpoint(
     authorization: str | None = Header(None, description="Optional Bearer token to auto-save document to citizen's vault"),
     db: Session = Depends(get_db),
 ):
-    file_bytes = await file.read()
+    from fastapi import HTTPException, status
+    from app.core.config import settings
+    from app.modules.chat.rate_limit import check_rate_limit
+    from app.modules.vault.service import read_upload_file_bounded
+
+    client_id = "anon_ocr"
+    if authorization and authorization.startswith("Bearer "):
+        try:
+            tok = authorization.split(" ")[1]
+            p = decode_token(tok)
+            if p and "sub" in p:
+                client_id = f"user_{p['sub']}"
+        except Exception:
+            pass
+
+    if not getattr(settings, "TESTING", False) and not check_rate_limit(client_id):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Rate limit exceeded. Please wait a moment before uploading another document.",
+        )
+
+    file_bytes = await read_upload_file_bounded(file)
     mime_type = file.content_type or "application/octet-stream"
     file_name = file.filename or "uploaded_document"
 

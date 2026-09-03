@@ -1,7 +1,15 @@
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.modules.admin.__tests__.test_admin_api import create_admin_user
 
 
-def setup_explanation_schemes(client: TestClient):
+def setup_explanation_schemes(client: TestClient, db_session: Session) -> dict[str, str]:
+    admin_creds = create_admin_user(db_session)
+    res_login = client.post("/auth/login", json=admin_creds)
+    admin_token = res_login.json()["access_token"]
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
     schemes = [
         {
             "name": "PM Kisan Samman Nidhi",
@@ -69,11 +77,13 @@ def setup_explanation_schemes(client: TestClient):
     ]
 
     for s in schemes:
-        client.post("/schemes", json=s)
+        client.post("/schemes", json=s, headers=admin_headers)
+
+    return admin_headers
 
 
-def test_adhoc_explain_endpoint_human_friendly_breakdown(client: TestClient):
-    setup_explanation_schemes(client)
+def test_adhoc_explain_endpoint_human_friendly_breakdown(client: TestClient, db_session: Session):
+    setup_explanation_schemes(client, db_session)
 
     # 45yo Male Farmer with ₹1,20,000 income
     payload = {
@@ -135,8 +145,8 @@ def test_adhoc_explain_endpoint_human_friendly_breakdown(client: TestClient):
     assert "exceeds the maximum eligible age" in age_fail["reason"]
 
 
-def test_authenticated_me_explained_and_single_scheme(client: TestClient):
-    setup_explanation_schemes(client)
+def test_authenticated_me_explained_and_single_scheme(client: TestClient, db_session: Session):
+    setup_explanation_schemes(client, db_session)
 
     # 1. Register & Login as 65yo Senior Citizen
     client.post(

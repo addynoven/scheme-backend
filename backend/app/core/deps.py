@@ -59,26 +59,3 @@ def get_current_admin_user(
         )
     return current_user
 
-
-security_optional = HTTPBearer(auto_error=False)
-
-
-def get_current_user_optional(
-    credentials: HTTPAuthorizationCredentials | None = Depends(security_optional),
-    db: Session = Depends(get_db),
-) -> User | None:
-    if not credentials:
-        return None
-    token = credentials.credentials
-    try:
-        payload = decode_token(token)
-        if payload.get("type") != "access":
-            return None
-        user_id_str = payload.get("sub")
-        if user_id_str is None:
-            return None
-        user_id = int(user_id_str)
-        return get_user_by_id(db, user_id=user_id)
-    except Exception:
-        return None
-

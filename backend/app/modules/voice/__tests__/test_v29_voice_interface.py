@@ -41,9 +41,20 @@ def test_voice_transcription_and_speech_endpoints(client: TestClient, db_session
     assert tts_data["audio_base64"] is not None
 
     # 3. Test End-to-End Voice Chat Endpoint
+    client.post(
+        "/auth/register",
+        json={"email": "voice.citizen@test.com", "phone": "+919222233333", "password": "Password123!"},
+    )
+    res_login = client.post(
+        "/auth/login",
+        json={"email": "voice.citizen@test.com", "password": "Password123!"},
+    )
+    token = res_login.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
     fake_audio.seek(0)
     files_chat = {"file": ("query.wav", fake_audio, "audio/wav")}
-    res_chat = client.post("/voice/chat", files=files_chat)
+    res_chat = client.post("/voice/chat", files=files_chat, headers=headers)
     assert res_chat.status_code == 200
     chat_data = res_chat.json()
     assert "transcribed_query" in chat_data

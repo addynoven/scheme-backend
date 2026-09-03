@@ -1,7 +1,15 @@
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.modules.admin.__tests__.test_admin_api import create_admin_user
 
 
-def seed_searchable_schemes(client: TestClient):
+def seed_searchable_schemes(client: TestClient, db_session: Session):
+    admin_creds = create_admin_user(db_session)
+    res_login = client.post("/auth/login", json=admin_creds)
+    admin_token = res_login.json()["access_token"]
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
     schemes = [
         {
             "name": "Pradhan Mantri Kisan Samman Nidhi",
@@ -72,11 +80,11 @@ def seed_searchable_schemes(client: TestClient):
     ]
 
     for s in schemes:
-        client.post("/schemes", json=s)
+        client.post("/schemes", json=s, headers=admin_headers)
 
 
-def test_problem_and_tag_search(client: TestClient):
-    seed_searchable_schemes(client)
+def test_problem_and_tag_search(client: TestClient, db_session: Session):
+    seed_searchable_schemes(client, db_session)
 
     # 1. Search by problem/tag not in scheme title (e.g. 'fertilizer')
     res_fertilizer = client.get("/schemes/search?q=fertilizer")
@@ -100,8 +108,8 @@ def test_problem_and_tag_search(client: TestClient):
     assert data_pen["items"][0]["slug"] == "ignoaps-old-age-pension"
 
 
-def test_category_filter_and_categories_list(client: TestClient):
-    seed_searchable_schemes(client)
+def test_category_filter_and_categories_list(client: TestClient, db_session: Session):
+    seed_searchable_schemes(client, db_session)
 
     # 1. Filter by category 'Healthcare'
     res_cat = client.get("/schemes/search?category=Healthcare")

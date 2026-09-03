@@ -152,6 +152,9 @@ def admin_add_rule(
     payload: EligibilityRuleCreate,
     db: Session = Depends(get_db),
 ):
+    from app.modules.eligibility.bitmask_engine import bitmask_engine
+    from app.modules.schemes.service import create_scheme_version_snapshot
+
     scheme = get_scheme_by_id(db=db, scheme_id=scheme_id)
     if not scheme:
         raise SchemeNotFoundError(scheme_id)
@@ -160,6 +163,8 @@ def admin_add_rule(
     db.add(rule)
     db.commit()
     db.refresh(rule)
+    create_scheme_version_snapshot(db, scheme_id)
+    bitmask_engine.warm_up(db)
     return rule
 
 
@@ -172,11 +177,17 @@ def admin_delete_rule(
     rule_id: int,
     db: Session = Depends(get_db),
 ):
+    from app.modules.eligibility.bitmask_engine import bitmask_engine
+    from app.modules.schemes.service import create_scheme_version_snapshot
+
     rule = db.scalar(select(EligibilityRule).where(EligibilityRule.id == rule_id))
     if not rule:
         raise EntityNotFoundError("EligibilityRule", rule_id)
+    scheme_id = rule.scheme_id
     db.delete(rule)
     db.commit()
+    create_scheme_version_snapshot(db, scheme_id)
+    bitmask_engine.warm_up(db)
     return None
 
 
@@ -192,6 +203,8 @@ def admin_add_document(
     payload: RequiredDocumentCreate,
     db: Session = Depends(get_db),
 ):
+    from app.modules.schemes.service import create_scheme_version_snapshot
+
     scheme = get_scheme_by_id(db=db, scheme_id=scheme_id)
     if not scheme:
         raise SchemeNotFoundError(scheme_id)
@@ -200,6 +213,7 @@ def admin_add_document(
     db.add(doc)
     db.commit()
     db.refresh(doc)
+    create_scheme_version_snapshot(db, scheme_id)
     return doc
 
 
@@ -212,11 +226,15 @@ def admin_delete_document(
     document_id: int,
     db: Session = Depends(get_db),
 ):
+    from app.modules.schemes.service import create_scheme_version_snapshot
+
     doc = db.scalar(select(RequiredDocument).where(RequiredDocument.id == document_id))
     if not doc:
         raise EntityNotFoundError("RequiredDocument", document_id)
+    scheme_id = doc.scheme_id
     db.delete(doc)
     db.commit()
+    create_scheme_version_snapshot(db, scheme_id)
     return None
 
 
@@ -231,6 +249,8 @@ def admin_add_benefit(
     payload: BenefitCreate,
     db: Session = Depends(get_db),
 ):
+    from app.modules.schemes.service import create_scheme_version_snapshot
+
     scheme = get_scheme_by_id(db=db, scheme_id=scheme_id)
     if not scheme:
         raise SchemeNotFoundError(scheme_id)
@@ -239,6 +259,7 @@ def admin_add_benefit(
     db.add(benefit)
     db.commit()
     db.refresh(benefit)
+    create_scheme_version_snapshot(db, scheme_id)
     return benefit
 
 
@@ -251,11 +272,15 @@ def admin_delete_benefit(
     benefit_id: int,
     db: Session = Depends(get_db),
 ):
+    from app.modules.schemes.service import create_scheme_version_snapshot
+
     benefit = db.scalar(select(Benefit).where(Benefit.id == benefit_id))
     if not benefit:
         raise EntityNotFoundError("Benefit", benefit_id)
+    scheme_id = benefit.scheme_id
     db.delete(benefit)
     db.commit()
+    create_scheme_version_snapshot(db, scheme_id)
     return None
 
 
@@ -285,21 +310,37 @@ def admin_list_users(
 @router.patch(
     "/users/{user_id}/role",
     response_model=UserResponse,
-    summary="[Admin] Update user role",
-    description="Changes a user's role (e.g. elevating a citizen to 'admin').",
+    summary="[Admin] Update user role with audit log",
+    description="Changes a user's role (e.g. elevating a citizen to 'admin') and creates an immutable audit trail entry.",
 )
 def admin_update_user_role(
     user_id: int,
     payload: UserRoleUpdate,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin_user),
 ):
+    from app.modules.admin.models import RoleChangeAudit
+
     user = get_user_by_id(db=db, user_id=user_id)
     if not user:
         raise UserNotFoundError(user_id)
 
-    user.role = payload.role.strip().lower()
-    db.commit()
-    db.refresh(user)
+    old_role = user.role
+    new_role = payload.role.strip().lower()
+
+    if old_role != new_role:
+        audit_entry = RoleChangeAudit(
+            target_user_id=user.id,
+            actor_admin_id=current_admin.id,
+            previous_role=old_role,
+            new_role=new_role,
+            reason=f"Role updated from {old_role} to {new_role} by admin user_id {current_admin.id}",
+        )
+        db.add(audit_entry)
+        user.role = new_role
+        db.commit()
+        db.refresh(user)
+
     return user
 
 

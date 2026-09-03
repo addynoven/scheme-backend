@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user, get_db
-from app.core.exceptions import ProfileNotFoundError, UserNotFoundError
+from app.core.deps import get_current_admin_user, get_current_user, get_db
+from app.core.exceptions import PermissionDeniedError, ProfileNotFoundError, UserNotFoundError
 from app.modules.auth.models import User
 from app.modules.auth.schemas import (
     CitizenFactsAuditResponse,
@@ -65,7 +65,7 @@ def login_endpoint(
     db: Session = Depends(get_db),
 ):
     user = authenticate_user(db=db, payload=payload)
-    return generate_tokens(user)
+    return generate_tokens(db=db, user=user)
 
 
 @router.post(
@@ -181,15 +181,21 @@ def get_my_verified_facts_endpoint(
 # --- General User Management Endpoints ---
 
 
+def _verify_user_owner_or_admin(target_user_id: int, current_user: User) -> None:
+    if current_user.id != target_user_id and current_user.role != "admin":
+        raise PermissionDeniedError("Access forbidden: you do not have permission to access or modify this user")
+
+
 @router.post(
     "/users",
     response_model=UserResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create user account (Internal)",
+    summary="Create user account (Admin/Internal)",
 )
 def create_user_endpoint(
     payload: UserCreate,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin_user),
 ):
     return create_user(db=db, payload=payload)
 
@@ -197,12 +203,13 @@ def create_user_endpoint(
 @router.get(
     "/users",
     response_model=PaginatedResponse[UserWithProfileResponse],
-    summary="List users",
+    summary="List users (Admin)",
 )
 def list_users_endpoint(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin_user),
 ):
     items, total = list_users(db=db, skip=skip, limit=limit)
     return PaginatedResponse(
@@ -221,7 +228,9 @@ def list_users_endpoint(
 def get_user_by_id_endpoint(
     user_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    _verify_user_owner_or_admin(user_id, current_user)
     user = get_user_by_id(db=db, user_id=user_id)
     if not user:
         raise UserNotFoundError(user_id)
@@ -237,18 +246,21 @@ def update_user_endpoint(
     user_id: int,
     payload: UserUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    _verify_user_owner_or_admin(user_id, current_user)
     return update_user(db=db, user_id=user_id, payload=payload)
 
 
 @router.delete(
     "/users/{user_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete user by ID",
+    summary="Delete user by ID (Admin)",
 )
 def delete_user_endpoint(
     user_id: int,
     db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin_user),
 ):
     delete_user(db=db, user_id=user_id)
     return None
@@ -262,7 +274,9 @@ def delete_user_endpoint(
 def get_user_profile_endpoint(
     user_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    _verify_user_owner_or_admin(user_id, current_user)
     profile = get_profile_by_user_id(db=db, user_id=user_id)
     if not profile:
         raise ProfileNotFoundError(f"user_id:{user_id}")
@@ -279,7 +293,9 @@ def create_or_update_user_profile_endpoint(
     user_id: int,
     payload: ProfileCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    _verify_user_owner_or_admin(user_id, current_user)
     return create_or_update_profile(
         db=db, user_id=user_id, payload=payload
     )
@@ -294,7 +310,9 @@ def update_user_profile_endpoint(
     user_id: int,
     payload: ProfileUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    _verify_user_owner_or_admin(user_id, current_user)
     user = get_user_by_id(db, user_id)
     if not user or not user.profile:
         raise ProfileNotFoundError(f"user_id:{user_id}")
@@ -309,7 +327,9 @@ def update_user_profile_endpoint(
 def delete_user_profile_endpoint(
     user_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    _verify_user_owner_or_admin(user_id, current_user)
     user = get_user_by_id(db, user_id)
     if not user or not user.profile:
         raise ProfileNotFoundError(f"user_id:{user_id}")

@@ -51,3 +51,8 @@ class PermissionDeniedError(AppException):
 class BusinessRuleError(AppException):
     def __init__(self, message: str):
         super().__init__(message, error_code="BUSINESS_RULE_VIOLATION")
+
+
+class InvalidFileFormatError(AppException):
+    def __init__(self, message: str = "Invalid file format or file size limit exceeded"):
+        super().__init__(message, error_code="INVALID_FILE_FORMAT")

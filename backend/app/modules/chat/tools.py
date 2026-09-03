@@ -196,19 +196,36 @@ def execute_check_eligibility(
         if not bitmask_engine.is_warmed or len(bitmask_engine.scheme_ids) == 0:
             bitmask_engine.warm_up(db)
 
-        # Layer 1: Build factual profile from authenticated user context and current turn conversational inputs
+        # Layer 1: Build factual profile from authenticated user context
         eval_profile: dict[str, Any] = {}
         if user_profile:
             eval_profile.update({k: v for k, v in user_profile.items() if v is not None})
 
-        # Layer 2: Tool arguments override or supply missing facts
+        # Layer 2: Tool arguments supply ONLY missing facts (authenticated profile facts in user_profile take absolute precedence)
         for k in ["state", "occupation", "age", "annual_income", "caste_category", "gender", "jurisdiction"]:
-            if tool_args.get(k) is not None:
+            if tool_args.get(k) is not None and eval_profile.get(k) is None:
                 eval_profile[k] = tool_args[k]
 
-        # Identify which fields are missing to help frontend dynamic form or LLM ask relevant follow-up
-        standard_fields = ["state", "occupation", "age", "annual_income", "caste_category", "gender"]
-        missing_fields = [f for f in standard_fields if eval_profile.get(f) is None or str(eval_profile.get(f)).strip() == ""]
+        # Identify scheme-dependent missing fields based on active candidate rules
+        candidate_fields = set()
+        if bitmask_engine.is_warmed:
+            if bitmask_engine.caste_masks:
+                candidate_fields.add("caste_category")
+            if bitmask_engine.gender_masks:
+                candidate_fields.add("gender")
+            if bitmask_engine.occupation_masks:
+                candidate_fields.add("occupation")
+            if bitmask_engine.numeric_rules:
+                for nr in bitmask_engine.numeric_rules:
+                    candidate_fields.add(nr["field"])
+            if bitmask_engine.state_masks:
+                candidate_fields.add("state")
+
+        standard_order = ["occupation", "annual_income", "age", "caste_category", "gender", "state"]
+        missing_fields = [
+            f for f in standard_order
+            if f in candidate_fields and (eval_profile.get(f) is None or str(eval_profile.get(f)).strip() == "")
+        ]
 
         # Run conservative bitmask evaluation with diagnostics
         eval_res = bitmask_engine.evaluate(eval_profile, include_diagnostics=True)

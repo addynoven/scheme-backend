@@ -123,6 +123,11 @@ def approve_triage_item(
     try:
         db.commit()
         db.refresh(item)
+        if scheme:
+            from app.modules.eligibility.bitmask_engine import bitmask_engine
+            from app.modules.schemes.service import create_scheme_version_snapshot
+            create_scheme_version_snapshot(db, scheme.id)
+            bitmask_engine.warm_up(db)
     except Exception:
         db.rollback()
         raise

@@ -51,6 +51,7 @@ def create_refresh_token(
     subject: str | int,
     expires_delta: timedelta | None = None,
 ) -> str:
+    import uuid
     now = datetime.now(timezone.utc)
     if expires_delta:
         expire = now + expires_delta
@@ -60,6 +61,7 @@ def create_refresh_token(
     payload = {
         "sub": str(subject),
         "type": "refresh",
+        "jti": str(uuid.uuid4()),
         "iat": now,
         "exp": expire,
     }
