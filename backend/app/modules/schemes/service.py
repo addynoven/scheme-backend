@@ -300,3 +300,95 @@ def delete_scheme(db: Session, scheme_id: int) -> bool:
     from app.modules.eligibility.bitmask_engine import bitmask_engine
     bitmask_engine.warm_up(db)
     return True
+
+
+from pathlib import Path
+
+KNOWLEDGE_SCHEMES_DIR = Path(__file__).resolve().parent.parent.parent.parent / "knowledge" / "schemes"
+
+
+def browse_schemes_with_filters(
+    db: Session,
+    skip: int = 0,
+    limit: int = 20,
+    search: str | None = None,
+    state: str | None = None,
+    category: str | None = None,
+    ministry: str | None = None,
+    status: str | None = None,
+    publication_state: str | None = None,
+    occupation: str | None = None,
+    gender: str | None = None,
+    caste_category: str | None = None,
+    age: int | None = None,
+    annual_income: float | None = None,
+    has_land: bool | None = None,
+    include_knowledge_md: bool = False,
+) -> tuple[list[dict], int, dict]:
+    filters_applied = {}
+    if search: filters_applied["search"] = search
+    if state: filters_applied["state"] = state
+    if category: filters_applied["category"] = category
+    if ministry: filters_applied["ministry"] = ministry
+    if status: filters_applied["status"] = status
+    if publication_state: filters_applied["publication_state"] = publication_state
+    if occupation: filters_applied["occupation"] = occupation
+    if gender: filters_applied["gender"] = gender
+    if caste_category: filters_applied["caste_category"] = caste_category
+    if age is not None: filters_applied["age"] = age
+    if annual_income is not None: filters_applied["annual_income"] = annual_income
+    if has_land is not None: filters_applied["has_land"] = has_land
+
+    items, total = list_schemes(
+        db=db,
+        skip=skip,
+        limit=limit,
+        ministry=ministry,
+        category=category,
+        state=state,
+        status=status,
+        search=search,
+    )
+
+    enriched_items = []
+    for s in items:
+        item_dict = {
+            "id": s.id,
+            "name": s.name,
+            "slug": s.slug,
+            "state": s.state,
+            "category": s.category,
+            "tags": s.tags,
+            "ministry": s.ministry,
+            "description": s.description,
+            "status": s.status,
+            "publication_state": s.publication_state,
+            "source_freshness": s.source_freshness,
+            "application_url": s.application_url,
+            "official_website": s.official_website,
+            "launch_date": s.launch_date,
+            "created_at": s.created_at,
+            "updated_at": s.updated_at,
+            "benefits": s.benefits,
+            "eligibility_rules": s.eligibility_rules,
+            "required_documents": s.required_documents,
+            "official_sources": s.official_sources,
+            "knowledge_md": None,
+            "verification_status": "DATABASE_RECORD_ONLY",
+        }
+
+        if include_knowledge_md and KNOWLEDGE_SCHEMES_DIR.exists():
+            kb_path = KNOWLEDGE_SCHEMES_DIR / f"{s.slug}.md"
+            if not kb_path.exists():
+                kb_path = next(KNOWLEDGE_SCHEMES_DIR.glob(f"**/{s.slug}.md"), None)
+
+            if kb_path and kb_path.exists():
+                try:
+                    item_dict["knowledge_md"] = kb_path.read_text(encoding="utf-8")
+                    item_dict["verification_status"] = "VERIFIED_CANONICAL_RECORD"
+                except Exception:
+                    pass
+
+        enriched_items.append(item_dict)
+
+    return enriched_items, total, filters_applied

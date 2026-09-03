@@ -169,3 +169,20 @@ class CategoryListResponse(BaseModel):
     categories: list[CategoryCount]
     total_categories: int | None = None
     total_schemes: int | None = None
+
+
+# --- Scheme Browse & Verification Schemas ---
+
+class SchemeBrowseItemResponse(SchemeDetailResponse):
+    publication_state: str = Field(default="published", examples=["published"])
+    source_freshness: str = Field(default="fresh", examples=["fresh"])
+    knowledge_md: str | None = Field(None, description="Canonical OKF Markdown documentation if include_knowledge_md=true")
+    verification_status: str = Field(default="DATABASE_RECORD_ONLY", description="Verification label e.g. VERIFIED_CANONICAL_RECORD or DATABASE_RECORD_ONLY")
+
+
+class SchemeBrowsePaginatedResponse(BaseModel):
+    items: list[SchemeBrowseItemResponse] = Field(default_factory=list)
+    total: int
+    skip: int = 0
+    limit: int = 20
+    filters_applied: dict[str, str | int | float | bool] = Field(default_factory=dict)

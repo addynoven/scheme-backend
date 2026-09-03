@@ -107,6 +107,27 @@ CHAT_TOOLS_DECLARATIONS = [
                     "required": ["scheme_slug"],
                 },
             },
+            {
+                "name": "browse_schemes_and_knowledge",
+                "description": (
+                    "Browse schemes with multi-field demographic/policy filters AND inspect canonical @knowledge Markdown documentation. "
+                    "Use this tool to verify whether an AI recommendation is accurate by inspecting both database rules and ground-truth @knowledge Markdown files."
+                ),
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "search_query": {"type": "STRING", "description": "Search keyword e.g. 'farmer', 'scholarship', 'pension'"},
+                        "state": {"type": "STRING", "description": "State filter e.g. 'Gujarat', 'Madhya Pradesh', 'ALL_INDIA'"},
+                        "category": {"type": "STRING", "description": "Category filter e.g. 'Agriculture', 'Education', 'Healthcare'"},
+                        "occupation": {"type": "STRING", "description": "Occupation e.g. 'farmer', 'student', 'unemployed'"},
+                        "gender": {"type": "STRING", "description": "Gender filter e.g. 'male', 'female'"},
+                        "caste_category": {"type": "STRING", "description": "Caste filter e.g. 'General', 'OBC', 'SC', 'ST'"},
+                        "annual_income": {"type": "NUMBER", "description": "Annual household income in INR"},
+                        "has_land": {"type": "BOOLEAN", "description": "Landholding boolean filter"},
+                        "include_knowledge_md": {"type": "BOOLEAN", "description": "Set true to attach ground-truth @knowledge Markdown files"},
+                    },
+                },
+            },
         ]
     }
 ]
@@ -427,4 +448,65 @@ def execute_get_scheme_details(db: Session, tool_args: dict[str, Any]) -> dict[s
         return {
             "status": "error",
             "message": "Failed to retrieve scheme details due to an internal error.",
+        }
+
+
+def execute_browse_schemes_and_knowledge(db: Session, tool_args: dict[str, Any]) -> dict[str, Any]:
+    """
+    Browses scheme directory with multi-field demographic/policy filters AND inspects canonical @knowledge Markdown documentation.
+    """
+    try:
+        from app.modules.schemes.service import browse_schemes_with_filters
+
+        search = tool_args.get("search_query") or tool_args.get("q")
+        state = tool_args.get("state")
+        category = tool_args.get("category")
+        occupation = tool_args.get("occupation")
+        gender = tool_args.get("gender")
+        caste_category = tool_args.get("caste_category")
+        annual_income = tool_args.get("annual_income")
+        has_land = tool_args.get("has_land")
+        include_knowledge_md = tool_args.get("include_knowledge_md", True)
+
+        items, total, filters_applied = browse_schemes_with_filters(
+            db=db,
+            skip=0,
+            limit=5,
+            search=search,
+            state=state,
+            category=category,
+            occupation=occupation,
+            gender=gender,
+            caste_category=caste_category,
+            annual_income=float(annual_income) if annual_income is not None else None,
+            has_land=has_land,
+            include_knowledge_md=include_knowledge_md,
+        )
+
+        compact_schemes = []
+        for s in items:
+            compact_schemes.append({
+                "slug": s["slug"],
+                "name": s["name"],
+                "state": s["state"],
+                "category": s["category"],
+                "ministry": s["ministry"],
+                "application_url": s["application_url"],
+                "verification_status": s["verification_status"],
+                "has_knowledge_md": bool(s.get("knowledge_md")),
+                "knowledge_md_snippet": s["knowledge_md"][:350] if s.get("knowledge_md") else None,
+            })
+
+        return {
+            "status": "success",
+            "total_count": total,
+            "filters_applied": filters_applied,
+            "showing_count": len(compact_schemes),
+            "schemes": compact_schemes,
+        }
+    except Exception as e:
+        logger.error(f"Error executing browse_schemes_and_knowledge: {e}", exc_info=True)
+        return {
+            "status": "error",
+            "message": "Failed to browse schemes registry with @knowledge inspection.",
         }

@@ -20,6 +20,7 @@ from app.modules.chat.prompts import SYSTEM_INSTRUCTION
 from app.modules.chat.session_service import get_chat_session
 from app.modules.chat.tools import (
     CHAT_TOOLS_DECLARATIONS,
+    execute_browse_schemes_and_knowledge,
     execute_check_eligibility,
     execute_get_scheme_details,
     execute_search_schemes_directory,
@@ -416,6 +417,27 @@ def orchestrate_agentic_turn(
                         citations.append(slug)
                     if not any(src["slug"] == slug for src in sources):
                         sources.append({"title": name, "slug": slug})
+
+                function_response_parts.append({"functionResponse": {"name": fn_name, "response": result}})
+
+            elif fn_name == "browse_schemes_and_knowledge":
+                result = execute_browse_schemes_and_knowledge(db, fn_args)
+                t_duration = int((time.perf_counter() - t_start) * 1000)
+                procedural_tools_executed.append({
+                    "name": fn_name,
+                    "args": fn_args,
+                    "duration_ms": t_duration,
+                    "status": result.get("status", "success"),
+                    "matched_count": result.get("total_count", 0),
+                })
+                for s in result.get("schemes", []):
+                    slug = s.get("slug")
+                    name = s.get("name") or slug
+                    if slug:
+                        if slug not in citations:
+                            citations.append(slug)
+                        if not any(src["slug"] == slug for src in sources):
+                            sources.append({"title": name, "slug": slug})
 
                 function_response_parts.append({"functionResponse": {"name": fn_name, "response": result}})
 

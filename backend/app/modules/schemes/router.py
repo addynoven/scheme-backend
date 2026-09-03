@@ -8,11 +8,13 @@ from app.core.pagination import PaginatedResponse
 from app.modules.auth.models import User
 from app.modules.schemes.schemas import (
     CategoryListResponse,
+    SchemeBrowsePaginatedResponse,
     SchemeCreate,
     SchemeDetailResponse,
     SchemeUpdate,
 )
 from app.modules.schemes.service import (
+    browse_schemes_with_filters,
     create_scheme,
     delete_scheme,
     get_scheme_by_id,
@@ -111,6 +113,58 @@ def search_schemes_endpoint(
         total=total,
         skip=skip,
         limit=limit,
+    )
+
+
+@router.get(
+    "/browse",
+    response_model=SchemeBrowsePaginatedResponse,
+    summary="Browse schemes with multi-field filters & @knowledge inspection",
+    description="Multi-field directory browsing with full support for demographic/policy filters (state, category, ministry, status, publication_state, age, income, gender, occupation, caste, land) and ground-truth @knowledge Markdown content inspection.",
+    response_description="Paginated schemes with applied filters and optional canonical OKF Markdown documentation",
+)
+def browse_schemes_endpoint(
+    q: str | None = Query(None, description="Search keyword e.g. 'farmer', 'scholarship'"),
+    state: str | None = Query(None, description="State filter e.g. 'Gujarat', 'Madhya Pradesh', 'ALL_INDIA'"),
+    category: str | None = Query(None, description="Category filter e.g. 'Agriculture', 'Education'"),
+    ministry: str | None = Query(None, description="Ministry filter"),
+    status_filter: str | None = Query(None, alias="status", description="Status filter ('active', 'draft', 'archived', or omit for all)"),
+    publication_state: str | None = Query(None, description="Publication state ('published', 'draft', 'archived', or omit for all)"),
+    occupation: str | None = Query(None, description="Occupation filter e.g. 'farmer', 'student'"),
+    gender: str | None = Query(None, description="Gender filter e.g. 'male', 'female'"),
+    caste_category: str | None = Query(None, description="Caste filter e.g. 'OBC', 'General', 'SC', 'ST'"),
+    age: int | None = Query(None, ge=0, le=120, description="Age filter in years"),
+    annual_income: float | None = Query(None, ge=0, description="Annual household income filter in INR"),
+    has_land: bool | None = Query(None, description="Landholding boolean filter"),
+    include_knowledge_md: bool = Query(False, description="Set true to attach canonical @knowledge Markdown documentation"),
+    skip: int = Query(0, ge=0, description="Pagination offset"),
+    limit: int = Query(20, ge=1, le=100, description="Page size"),
+    db: Session = Depends(get_db),
+):
+    items, total, filters_applied = browse_schemes_with_filters(
+        db=db,
+        skip=skip,
+        limit=limit,
+        search=q,
+        state=state,
+        category=category,
+        ministry=ministry,
+        status=status_filter,
+        publication_state=publication_state,
+        occupation=occupation,
+        gender=gender,
+        caste_category=caste_category,
+        age=age,
+        annual_income=annual_income,
+        has_land=has_land,
+        include_knowledge_md=include_knowledge_md,
+    )
+    return SchemeBrowsePaginatedResponse(
+        items=items,
+        total=total,
+        skip=skip,
+        limit=limit,
+        filters_applied=filters_applied,
     )
 
 

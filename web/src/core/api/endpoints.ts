@@ -130,6 +130,45 @@ export async function searchSchemes(q?: string, category?: string, state?: strin
   return data.items || []
 }
 
+export async function browseSchemesWithKnowledge(params?: {
+  q?: string
+  state?: string
+  category?: string
+  ministry?: string
+  status?: string
+  publication_state?: string
+  occupation?: string
+  gender?: string
+  caste_category?: string
+  age?: number
+  annual_income?: number
+  has_land?: boolean
+  include_knowledge_md?: boolean
+  skip?: number
+  limit?: number
+}) {
+  const query = new URLSearchParams()
+  if (params?.q) query.set('q', params.q)
+  if (params?.state && params.state !== 'All') query.set('state', params.state)
+  if (params?.category && params.category !== 'All') query.set('category', params.category)
+  if (params?.ministry && params.ministry !== 'All') query.set('ministry', params.ministry)
+  if (params?.status && params.status !== 'All') query.set('status', params.status)
+  if (params?.publication_state) query.set('publication_state', params.publication_state)
+  if (params?.occupation) query.set('occupation', params.occupation)
+  if (params?.gender) query.set('gender', params.gender)
+  if (params?.caste_category) query.set('caste_category', params.caste_category)
+  if (params?.age !== undefined) query.set('age', String(params.age))
+  if (params?.annual_income !== undefined) query.set('annual_income', String(params.annual_income))
+  if (params?.has_land !== undefined) query.set('has_land', String(params.has_land))
+  if (params?.include_knowledge_md) query.set('include_knowledge_md', 'true')
+  if (params?.skip !== undefined) query.set('skip', String(params.skip))
+  if (params?.limit !== undefined) query.set('limit', String(params.limit))
+
+  const res = await fetch(`${API_BASE}/schemes/browse?${query.toString()}`)
+  if (!res.ok) throw new Error('Failed to browse schemes with @knowledge inspection')
+  return res.json()
+}
+
 export async function getSchemeBySlug(slug: string): Promise<Scheme> {
   const res = await fetch(`${API_BASE}/schemes/slug/${slug}`)
   if (!res.ok) throw new Error('Scheme not found')
