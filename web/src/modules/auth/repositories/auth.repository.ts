@@ -18,7 +18,7 @@ export interface UserMeResponse {
 
 export const authRepository = {
   async login(payload: LoginInput): Promise<Result<AuthTokenResponse, AppError>> {
-    return request<AuthTokenResponse>(`${API_BASE}/api/auth/login`, {
+    return request<AuthTokenResponse>(`/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -26,7 +26,7 @@ export const authRepository = {
   },
 
   async register(payload: RegisterInput): Promise<Result<any, AppError>> {
-    return request<any>(`${API_BASE}/api/auth/register`, {
+    return request<any>(`/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -34,7 +34,7 @@ export const authRepository = {
   },
 
   async getMe(): Promise<Result<UserMeResponse, AppError>> {
-    return request<UserMeResponse>(`${API_BASE}/api/auth/me`, {
+    return request<UserMeResponse>(`/api/auth/me`, {
       headers: getAuthHeaders('citizen'),
     })
   },

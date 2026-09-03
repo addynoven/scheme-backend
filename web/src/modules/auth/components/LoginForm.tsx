@@ -109,7 +109,7 @@ export function LoginForm() {
           type="button"
           onClick={() => {
             setEmail('admin@gov.in')
-            setPassword('AdminPassword123!')
+            setPassword('AdminPass123!')
           }}
           className="w-full py-2.5 px-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-xs font-semibold text-purple-300 transition-colors flex items-center justify-center gap-2 cursor-pointer"
         >

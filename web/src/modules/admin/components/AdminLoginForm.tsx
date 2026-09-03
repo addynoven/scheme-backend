@@ -10,8 +10,8 @@ interface AdminLoginFormProps {
 }
 
 export function AdminLoginForm({ onSuccess }: AdminLoginFormProps) {
-  const [email, setEmail] = useState('admin@schemesync.gov.in')
-  const [password, setPassword] = useState('admin1234')
+  const [email, setEmail] = useState('admin@gov.in')
+  const [password, setPassword] = useState('AdminPass123!')
   const [loginError, setLoginError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
