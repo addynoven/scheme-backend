@@ -178,7 +178,9 @@ def health_check(db: Session = Depends(get_db)):
         db.execute(text("SELECT 1"))
         checks["database"] = "healthy"
     except Exception as e:
-        checks["database"] = f"unhealthy: {e}"
+        import logging
+        logging.getLogger("app.health").error(f"Health check DB ping failed: {e}")
+        checks["database"] = "unhealthy"
         is_healthy = False
 
     # 2. Active Storage Check
@@ -186,7 +188,9 @@ def health_check(db: Session = Depends(get_db)):
         storage_service.ensure_bucket_exists()
         checks["storage"] = "healthy"
     except Exception as e:
-        checks["storage"] = f"unhealthy: {e}"
+        import logging
+        logging.getLogger("app.health").error(f"Health check storage check failed: {e}")
+        checks["storage"] = "unhealthy"
         is_healthy = False
 
     # 3. Bitmask Engine Readiness
