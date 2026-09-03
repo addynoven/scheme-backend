@@ -11,6 +11,9 @@ interface ChatState {
   isVoiceModalOpen: boolean
   isServiceBlocked: boolean
   serviceErrorMessage: string | null
+  isMemoryInspectorOpen: boolean
+  activeMemoryTrace: any | null
+  activePromptSnippet: string | null
   setCurrentSessionId: (id: number | null) => void
   setSessions: (sessions: ChatSession[]) => void
   setMessages: (messages: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => void
@@ -20,6 +23,8 @@ interface ChatState {
   setIsVoiceModalOpen: (open: boolean) => void
   setIsServiceBlocked: (blocked: boolean, message?: string | null) => void
   resetServiceBlock: () => void
+  openMemoryInspector: (trace: any, snippet?: string) => void
+  closeMemoryInspector: () => void
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -32,6 +37,9 @@ export const useChatStore = create<ChatState>((set) => ({
   isVoiceModalOpen: false,
   isServiceBlocked: false,
   serviceErrorMessage: null,
+  isMemoryInspectorOpen: false,
+  activeMemoryTrace: null,
+  activePromptSnippet: null,
   setCurrentSessionId: (currentSessionId) => set({ currentSessionId }),
   setSessions: (sessions) => set({ sessions }),
   setMessages: (messages) =>
@@ -45,4 +53,7 @@ export const useChatStore = create<ChatState>((set) => ({
   setIsServiceBlocked: (isServiceBlocked, serviceErrorMessage = null) =>
     set({ isServiceBlocked, serviceErrorMessage }),
   resetServiceBlock: () => set({ isServiceBlocked: false, serviceErrorMessage: null }),
+  openMemoryInspector: (trace, snippet) =>
+    set({ isMemoryInspectorOpen: true, activeMemoryTrace: trace, activePromptSnippet: snippet || null }),
+  closeMemoryInspector: () => set({ isMemoryInspectorOpen: false }),
 }))

@@ -16,6 +16,7 @@ import {
   User as UserIcon,
   Users,
   Compass,
+  Brain,
 } from 'lucide-react'
 import {
   ChatWelcomeHero,
@@ -27,6 +28,7 @@ import { useChatStore } from '../store'
 import { VoiceAssistantModal } from '@/modules/voice'
 import { useAuth } from '@/modules/auth'
 import { DevErrorModal } from '@/core/components/DevErrorModal'
+import { MemoryEnginePanel } from '@/components/MemoryEnginePanel'
 
 export function HomeScreen({ initialSessionId }: { initialSessionId?: number } = {}) {
   const {
@@ -45,7 +47,15 @@ export function HomeScreen({ initialSessionId }: { initialSessionId?: number } =
   } = useChat(initialSessionId)
 
   const { logout, user } = useAuth()
-  const { isVoiceModalOpen, setIsVoiceModalOpen } = useChatStore()
+  const {
+    isVoiceModalOpen,
+    setIsVoiceModalOpen,
+    isMemoryInspectorOpen,
+    activeMemoryTrace,
+    activePromptSnippet,
+    openMemoryInspector,
+    closeMemoryInspector,
+  } = useChatStore()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [input, setInput] = useState('')
   const [isDictating, setIsDictating] = useState(false)
@@ -166,8 +176,16 @@ export function HomeScreen({ initialSessionId }: { initialSessionId?: number } =
 
           <div className="flex items-center gap-2 sm:gap-3">
             <button
+              onClick={() => openMemoryInspector(null)}
+              className="px-2.5 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Memory Engine Inspector"
+            >
+              <Brain className="h-3.5 w-3.5 text-purple-400" />
+              <span className="hidden sm:inline">Memory Engine</span>
+            </button>
+            <button
               onClick={() => setIsVoiceModalOpen(true)}
-              className="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-lg shadow-purple-500/20 transition-all"
+              className="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-lg shadow-purple-500/20 transition-all cursor-pointer"
             >
               <Mic className="h-3.5 w-3.5" /> Live Voice
             </button>
@@ -228,6 +246,14 @@ export function HomeScreen({ initialSessionId }: { initialSessionId?: number } =
       <VoiceAssistantModal
         isOpen={isVoiceModalOpen}
         onClose={() => setIsVoiceModalOpen(false)}
+      />
+
+      {/* Memory Engine Inspector Drawer */}
+      <MemoryEnginePanel
+        isOpen={isMemoryInspectorOpen}
+        onClose={closeMemoryInspector}
+        memoryTrace={activeMemoryTrace}
+        activeMessageSnippet={activePromptSnippet || undefined}
       />
 
       {/* Centralized Dev Mode Error & Stack Trace Inspector Modal */}

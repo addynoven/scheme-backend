@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -32,6 +33,7 @@ class ChatMessageResponse(BaseModel):
     citations: list[str] = Field(default_factory=list)
     sources: list[SchemeCitation] = Field(default_factory=list)
     token_usage: TokenUsageMetrics | None = None
+    memory_trace: dict[str, Any] | None = None
     created_at: datetime
 
 

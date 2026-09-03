@@ -264,14 +264,15 @@ def orchestrate_agentic_turn(
     user_message: str,
     history_messages: list[ChatMessage],
     user_profile: dict[str, Any] | None,
-) -> tuple[str, list[str], list[dict[str, str]], dict[str, int], str, str | None, str | None]:
+) -> tuple[str, list[str], list[dict[str, str]], dict[str, int], dict[str, Any], str, str | None, str | None]:
     """
-    Executes the Native Agentic Tool-Calling Loop.
+    Executes the Native Agentic Tool-Calling Loop with 4-Tier Memory Tracing.
     """
     start_time = time.perf_counter()
     citations: list[str] = []
     sources: list[dict[str, str]] = []
     tools_called_names: list[str] = []
+    procedural_tools_executed: list[dict[str, Any]] = []
     token_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
     # Build profile context string
@@ -306,18 +307,26 @@ def orchestrate_agentic_turn(
 
             logger.error(f"❌ [Agentic Turn] LLM Provider '{provider}' failed. Error Code: {err_code}")
 
+            empty_memory = {
+                "working_memory": {"model_name": settings.GEMINI_MODEL, "provider": provider},
+                "semantic_memory": {"recalled_facts": []},
+                "episodic_memory": {"session_turns_count": len(history_messages)},
+                "procedural_memory": {"tools_executed": []},
+            }
+
             if getattr(settings, "DEV_MODE", True):
                 dev_message = (
                     f"🚨 **[Dev Mode Error: {err_code}]**\n\n"
                     f"LLM Provider `{provider}` failed: {err_info.get('message', 'Unknown failure')}"
                 )
-                return dev_message, [], [], {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}, "rate_limit_exceeded" if err_code == "AI_RATE_LIMIT_EXCEEDED" else "service_unavailable", err_code, None
+                return dev_message, [], [], {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}, empty_memory, "rate_limit_exceeded" if err_code == "AI_RATE_LIMIT_EXCEEDED" else "service_unavailable", err_code, None
 
             return (
                 "I'm having trouble connecting right now. Please try again in a moment.",
                 [],
                 [],
                 {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+                empty_memory,
                 "service_unavailable",
                 "SERVICE_UNAVAILABLE",
                 None,
@@ -346,9 +355,18 @@ def orchestrate_agentic_turn(
             fn_name = fc.get("name")
             fn_args = fc.get("args", {})
             tools_called_names.append(fn_name)
+            t_start = time.perf_counter()
 
             if fn_name == "check_eligibility":
                 result = execute_check_eligibility(db, user_profile, fn_args)
+                t_duration = int((time.perf_counter() - t_start) * 1000)
+                procedural_tools_executed.append({
+                    "name": fn_name,
+                    "args": fn_args,
+                    "duration_ms": t_duration,
+                    "status": result.get("status", "success"),
+                    "matched_count": result.get("total_matched_count", 0),
+                })
                 for s in result.get("schemes", []):
                     slug = s.get("slug")
                     name = s.get("name") or slug
@@ -362,7 +380,15 @@ def orchestrate_agentic_turn(
 
             elif fn_name == "search_schemes_directory":
                 result = execute_search_schemes_directory(db, fn_args)
-                for s in result.get("schemes", []):
+                t_duration = int((time.perf_counter() - t_start) * 1000)
+                procedural_tools_executed.append({
+                    "name": fn_name,
+                    "args": fn_args,
+                    "duration_ms": t_duration,
+                    "status": result.get("status", "success"),
+                    "matched_count": result.get("total_count_in_directory", 0),
+                })
+                for s in result.get("sample_schemes", []):
                     slug = s.get("slug")
                     name = s.get("name") or slug
                     if slug:
@@ -375,6 +401,14 @@ def orchestrate_agentic_turn(
 
             elif fn_name == "get_scheme_details":
                 result = execute_get_scheme_details(db, fn_args)
+                t_duration = int((time.perf_counter() - t_start) * 1000)
+                procedural_tools_executed.append({
+                    "name": fn_name,
+                    "args": fn_args,
+                    "duration_ms": t_duration,
+                    "status": result.get("status", "success"),
+                    "matched_count": 1 if result.get("status") == "success" else 0,
+                })
                 slug = result.get("slug")
                 name = result.get("name") or slug
                 if slug:
@@ -401,7 +435,50 @@ def orchestrate_agentic_turn(
     if not final_response_text:
         final_response_text = "I am ready to assist you with government welfare programs. Please let me know what you need."
 
-    return final_response_text, citations, sources, token_usage, "success", None, None
+    # Build 4-Tier Agentic Memory Trace Payload
+    recalled_facts = []
+    if user_profile:
+        for k in ["state", "district", "age", "gender", "occupation", "annual_income", "caste_category"]:
+            val = user_profile.get(k)
+            if val is not None and str(val).strip() != "":
+                formatted_val = f"₹{val:,}" if k == "annual_income" and isinstance(val, (int, float)) else str(val)
+                recalled_facts.append({"key": k, "value": formatted_val, "status": "IN_PROMPT"})
+
+    memory_trace = {
+        "working_memory": {
+            "model_name": getattr(settings, "GEMINI_MODEL", "gemini-3.8-flash"),
+            "provider": getattr(settings, "LLM_PROVIDER", "gemini"),
+            "system_instruction_summary": SYSTEM_INSTRUCTION[:140] + "...",
+            "iterations_count": iteration,
+            "prompt_tokens": token_usage.get("prompt_tokens", 0),
+            "completion_tokens": token_usage.get("completion_tokens", 0),
+            "total_tokens": token_usage.get("total_tokens", 0),
+            "turn_duration_ms": duration_ms,
+        },
+        "semantic_memory": {
+            "recalled_facts_count": len(recalled_facts),
+            "recalled_facts": recalled_facts,
+            "profile_summary": user_profile or {},
+        },
+        "episodic_memory": {
+            "session_turns_count": len(history_messages),
+            "history_events": [
+                {
+                    "sender": m.sender,
+                    "snippet": m.content[:90] + ("..." if len(m.content) > 90 else ""),
+                    "timestamp": str(m.created_at),
+                }
+                for m in history_messages[-4:]
+            ],
+        },
+        "procedural_memory": {
+            "available_tools_count": len(CHAT_TOOLS_DECLARATIONS[0]["function_declarations"]),
+            "tools_executed_count": len(procedural_tools_executed),
+            "tools_executed": procedural_tools_executed,
+        },
+    }
+
+    return final_response_text, citations, sources, token_usage, memory_trace, "success", None, None
 
 
 def send_chat_message(
@@ -428,7 +505,7 @@ def send_chat_message(
     user_profile = _build_user_context(db, user_id)
 
     # 3. Execute Native Agentic Tool Loop
-    response_text, citations, sources, token_usage, turn_status, error_code, stack_trace = orchestrate_agentic_turn(
+    response_text, citations, sources, token_usage, memory_trace, turn_status, error_code, stack_trace = orchestrate_agentic_turn(
         db=db,
         user_message=content,
         history_messages=session.messages,
@@ -458,6 +535,7 @@ def send_chat_message(
 
     setattr(assistant_msg, "sources", sources)
     setattr(assistant_msg, "token_usage", token_usage)
+    setattr(assistant_msg, "memory_trace", memory_trace)
     setattr(assistant_msg, "status", turn_status)
     setattr(assistant_msg, "error_code", error_code)
     setattr(assistant_msg, "stack_trace", stack_trace)
@@ -473,6 +551,7 @@ async def stream_chat_response(
         assistant_msg = send_chat_message(db, session_id, user_id, content)
 
         turn_status = getattr(assistant_msg, "status", "success")
+        memory_trace = getattr(assistant_msg, "memory_trace", None)
         if turn_status in ("service_unavailable", "rate_limit_exceeded"):
             chunk = {"type": "token", "token": assistant_msg.content, "citations": [], "sources": []}
             yield f"data: {json.dumps(chunk)}\n\n"
@@ -484,7 +563,7 @@ async def stream_chat_response(
                 "stack_trace": getattr(assistant_msg, "stack_trace", None),
             }
             yield f"data: {json.dumps(error_chunk)}\n\n"
-            yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_msg.id})}\n\n"
+            yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_msg.id, 'memory_trace': memory_trace})}\n\n"
             return
 
         words = assistant_msg.content.split(" ")
@@ -497,7 +576,7 @@ async def stream_chat_response(
             }
             yield f"data: {json.dumps(chunk)}\n\n"
 
-        yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_msg.id})}\n\n"
+        yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_msg.id, 'memory_trace': memory_trace})}\n\n"
     except Exception as e:
         logger.error(f"❌ [SSE Stream] Unhandled exception in stream_chat_response: {e}", exc_info=True)
         st_trace = traceback.format_exc()

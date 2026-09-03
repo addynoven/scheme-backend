@@ -196,15 +196,19 @@ def execute_check_eligibility(
         if not bitmask_engine.is_warmed or len(bitmask_engine.scheme_ids) == 0:
             bitmask_engine.warm_up(db)
 
-        # Layer 1: Build factual profile from authenticated user context
+        # Layer 1: Start with user profile context if available
         eval_profile: dict[str, Any] = {}
         if user_profile:
             eval_profile.update({k: v for k, v in user_profile.items() if v is not None})
 
-        # Layer 2: Tool arguments supply ONLY missing facts (authenticated profile facts in user_profile take absolute precedence)
+        # Layer 2: Explicit search tool arguments take precedence for query-specific filters (e.g. searching Gujarat schemes)
         for k in ["state", "occupation", "age", "annual_income", "caste_category", "gender", "jurisdiction"]:
-            if tool_args.get(k) is not None and eval_profile.get(k) is None:
-                eval_profile[k] = tool_args[k]
+            arg_val = tool_args.get(k)
+            if arg_val is not None:
+                if isinstance(arg_val, str) and arg_val.strip() != "":
+                    eval_profile[k] = arg_val.strip()
+                elif isinstance(arg_val, (int, float)):
+                    eval_profile[k] = arg_val
 
         # Identify scheme-dependent missing fields based on active candidate rules
         candidate_fields = set()

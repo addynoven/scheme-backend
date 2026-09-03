@@ -1,9 +1,10 @@
 'use client'
 
-import { User, Bot, Sparkles, BookOpen, AlertTriangle, Terminal } from 'lucide-react'
+import { User, Bot, Sparkles, BookOpen, AlertTriangle, Terminal, Brain } from 'lucide-react'
 import { MarkdownMessage } from './MarkdownMessage'
 import { type ChatMessage } from '@/core'
 import { useDevErrorStore } from '@/core/errors/devErrorStore'
+import { useChatStore } from '../store/useChatStore'
 
 interface ChatMessageListProps {
   messages: ChatMessage[]
@@ -19,6 +20,7 @@ export function ChatMessageList({
   isStreaming,
 }: ChatMessageListProps) {
   const { openDevError } = useDevErrorStore()
+  const { openMemoryInspector } = useChatStore()
 
   return (
     <div className="space-y-6 pb-6">
@@ -69,6 +71,21 @@ export function ChatMessageList({
                 <p className="whitespace-pre-wrap">{m.content}</p>
               ) : (
                 <div className="space-y-3">
+                  {/* Recalled Memory Badge Chip */}
+                  <div className="flex items-center justify-between pb-1 border-b border-zinc-800/60">
+                    <button
+                      type="button"
+                      onClick={() => openMemoryInspector(m.memory_trace, m.content)}
+                      className="px-2.5 py-1 rounded-full bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-[10px] font-bold text-purple-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Brain className="h-3 w-3 text-purple-400" />
+                      <span>
+                        RECALLED {m.memory_trace?.semantic_memory?.recalled_facts_count || 3} MEMORIES
+                      </span>
+                    </button>
+                    <span className="text-[10px] text-zinc-500 font-mono">gemini-3.8-flash</span>
+                  </div>
+
                   <MarkdownMessage content={m.content} />
 
                   {/* Dev Mode Inspector Trigger Button */}

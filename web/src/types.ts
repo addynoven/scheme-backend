@@ -306,6 +306,7 @@ export interface ChatMessage {
   error_code?: string | null
   stack_trace?: string | null
   citations?: string[]
+  memory_trace?: any
   created_at: string
 }
 
