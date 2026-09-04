@@ -4,26 +4,44 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.uid_generator import generate_session_uid
 from app.modules.chat.models import ChatSession
 
 
 def get_chat_session(
     db: Session,
-    session_id: int,
+    session_id_or_uid: int | str,
     user_id: int,
 ) -> ChatSession:
-    """Retrieve chat session and verify ownership."""
-    session = db.scalar(select(ChatSession).where(ChatSession.id == session_id))
+    """Retrieve chat session by ID or session_uid and verify ownership."""
+    val_str = str(session_id_or_uid).strip()
+    session = None
+
+    if val_str.isdigit():
+        session = db.scalar(select(ChatSession).where(ChatSession.id == int(val_str)))
+
+    if not session:
+        session = db.scalar(select(ChatSession).where(ChatSession.session_uid == val_str))
+
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Chat session {session_id} not found",
+            detail=f"Chat session '{session_id_or_uid}' not found",
         )
     if session.user_id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied: you do not own this chat session",
         )
+
+    if not session.session_uid:
+        session.session_uid = generate_session_uid()
+        try:
+            db.commit()
+            db.refresh(session)
+        except Exception:
+            db.rollback()
+
     return session
 
 
@@ -33,7 +51,7 @@ def create_chat_session(
     payload_or_title: Any = None,
     language_code: str | None = "en",
 ) -> ChatSession:
-    """Create a new chat session for an authenticated citizen."""
+    """Create a new chat session with secure non-sequential session_uid for an authenticated citizen."""
     title = "New Welfare Conversation"
     lang = language_code or "en"
     if isinstance(payload_or_title, str):
@@ -45,6 +63,7 @@ def create_chat_session(
         lang = getattr(payload_or_title, "language_code", None) or lang
 
     session = ChatSession(
+        session_uid=generate_session_uid(),
         user_id=user_id,
         title=title,
         language_code=lang,
@@ -68,6 +87,9 @@ def list_chat_sessions(db: Session, user_id: int, limit: int = 50) -> list[ChatS
     generic_names = ("New Welfare Conversation", "New Citizen Consultation", "New Welfare Consultation", "New Consultation")
     updated = False
     for s in sessions:
+        if not s.session_uid:
+            s.session_uid = generate_session_uid()
+            updated = True
         if s.title in generic_names or not s.title or s.title.startswith("New "):
             if s.messages:
                 first_user_msg = next((m for m in s.messages if m.sender == "user"), None)
@@ -88,7 +110,7 @@ def list_chat_sessions(db: Session, user_id: int, limit: int = 50) -> list[ChatS
 
 def update_chat_session_title(
     db: Session,
-    session_id: int,
+    session_id: int | str,
     title: str,
     user_id: int,
 ) -> ChatSession:
@@ -101,7 +123,7 @@ def update_chat_session_title(
 
 def delete_chat_session(
     db: Session,
-    session_id: int,
+    session_id: int | str,
     user_id: int,
 ) -> None:
     """Delete a chat session."""

@@ -7,7 +7,7 @@ import { useChatStore } from '../store'
 import { type ChatMessage, type ChatSession } from '@/core'
 import { captureDevError } from '@/core/errors/devErrorStore'
 
-export function useChat(initialSessionId?: number) {
+export function useChat(initialSessionIdentifier?: number | string) {
   const {
     currentSessionId,
     sessions,
@@ -46,12 +46,12 @@ export function useChat(initialSessionId?: number) {
 
   const router = useRouter()
 
-  const selectSession = useCallback(async (sessionId: number) => {
+  const selectSession = useCallback(async (sessionKey: number | string) => {
     setLoading(true)
-    setCurrentSessionId(sessionId)
-    if (sessionId > 0) {
-      if (typeof window !== 'undefined' && window.location.pathname !== `/c/${sessionId}`) {
-        router.push(`/c/${sessionId}`)
+    setCurrentSessionId(sessionKey)
+    if (sessionKey && sessionKey !== '0' && sessionKey !== 0) {
+      if (typeof window !== 'undefined' && window.location.pathname !== `/c/${sessionKey}`) {
+        router.push(`/c/${sessionKey}`)
       }
     } else {
       setMessages([])
@@ -60,9 +60,12 @@ export function useChat(initialSessionId?: number) {
       }
     }
     try {
-      if (sessionId > 0) {
-        const session = await homeRepository.getSession(sessionId)
+      if (sessionKey && sessionKey !== '0' && sessionKey !== 0) {
+        const session = await homeRepository.getSession(sessionKey)
         setMessages(session.messages || [])
+        if (session.session_uid && sessionKey !== session.session_uid) {
+          router.push(`/c/${session.session_uid}`)
+        }
       }
     } catch {
       setMessages([])
@@ -74,21 +77,22 @@ export function useChat(initialSessionId?: number) {
   useEffect(() => {
     loadSessions()
     loadUser()
-    if (initialSessionId) {
-      selectSession(initialSessionId)
+    if (initialSessionIdentifier) {
+      selectSession(initialSessionIdentifier)
     }
-  }, [loadSessions, loadUser, initialSessionId, selectSession])
+  }, [loadSessions, loadUser, initialSessionIdentifier, selectSession])
 
 
   const ensureSession = useCallback(async () => {
     if (currentSessionId) return currentSessionId
     const newSession = await homeRepository.createSession('New Welfare Consultation')
-    setCurrentSessionId(newSession.id)
+    const key = newSession.session_uid || newSession.id
+    setCurrentSessionId(key)
     setSessions([newSession, ...sessions])
-    if (typeof window !== 'undefined' && window.location.pathname !== `/c/${newSession.id}`) {
-      router.push(`/c/${newSession.id}`)
+    if (typeof window !== 'undefined' && window.location.pathname !== `/c/${key}`) {
+      router.push(`/c/${key}`)
     }
-    return newSession.id
+    return key
   }, [currentSessionId, sessions, setCurrentSessionId, setSessions, router])
 
   const sendQuery = useCallback(async (text: string) => {

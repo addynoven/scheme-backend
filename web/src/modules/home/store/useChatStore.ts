@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { type ChatMessage, type ChatSession } from '@/core'
 
 interface ChatState {
-  currentSessionId: number | null
+  currentSessionId: number | string | null
   sessions: ChatSession[]
   messages: ChatMessage[]
   streamBuffer: string
@@ -14,7 +14,7 @@ interface ChatState {
   isMemoryInspectorOpen: boolean
   activeMemoryTrace: any | null
   activePromptSnippet: string | null
-  setCurrentSessionId: (id: number | null) => void
+  setCurrentSessionId: (id: number | string | null) => void
   setSessions: (sessions: ChatSession[]) => void
   setMessages: (messages: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => void
   setStreamBuffer: (buffer: string) => void

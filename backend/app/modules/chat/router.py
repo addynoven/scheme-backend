@@ -47,17 +47,17 @@ def list_sessions_endpoint(
 
 @router.get("/sessions/{session_id}", response_model=ChatSessionResponse)
 def get_session_endpoint(
-    session_id: int,
+    session_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Retrieve full chat history for a session."""
-    return get_chat_session(db=db, session_id=session_id, user_id=current_user.id)
+    """Retrieve full chat history for a session by ID or session_uid."""
+    return get_chat_session(db=db, session_id_or_uid=session_id, user_id=current_user.id)
 
 
 @router.patch("/sessions/{session_id}", response_model=ChatSessionResponse)
 def update_session_endpoint(
-    session_id: int,
+    session_id: str,
     payload: ChatSessionUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -68,7 +68,7 @@ def update_session_endpoint(
 
 @router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_session_endpoint(
-    session_id: int,
+    session_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -79,7 +79,7 @@ def delete_session_endpoint(
 
 @router.post("/sessions/{session_id}/messages", response_model=ChatMessageResponse)
 def send_message_endpoint(
-    session_id: int,
+    session_id: str,
     payload: ChatMessageCreate,
     request: Request,
     db: Session = Depends(get_db),
@@ -104,7 +104,7 @@ def send_message_endpoint(
 
 @router.post("/sessions/{session_id}/messages/stream")
 async def stream_message_endpoint(
-    session_id: int,
+    session_id: str,
     payload: ChatMessageCreate,
     request: Request,
     db: Session = Depends(get_db),
@@ -119,7 +119,7 @@ async def stream_message_endpoint(
         )
 
     # Validate session ownership before initiating streaming response
-    get_chat_session(db=db, session_id=session_id, user_id=current_user.id)
+    get_chat_session(db=db, session_id_or_uid=session_id, user_id=current_user.id)
     return StreamingResponse(
         stream_chat_response(db=db, session_id=session_id, user_id=current_user.id, content=payload.content),
         media_type="text/event-stream",

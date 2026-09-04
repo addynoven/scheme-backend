@@ -30,7 +30,7 @@ import { useAuth } from '@/modules/auth'
 import { DevErrorModal } from '@/core/components/DevErrorModal'
 import { MemoryEnginePanel } from '@/components/MemoryEnginePanel'
 
-export function HomeScreen({ initialSessionId }: { initialSessionId?: number } = {}) {
+export function HomeScreen({ initialSessionId }: { initialSessionId?: number | string } = {}) {
   const {
     currentSessionId,
     sessions,
@@ -104,9 +104,9 @@ export function HomeScreen({ initialSessionId }: { initialSessionId?: number } =
             sessions.map((s) => (
               <button
                 key={s.id}
-                onClick={() => selectSession(s.id)}
+                onClick={() => selectSession(s.session_uid || s.id)}
                 className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-medium truncate transition-all flex items-center gap-2 ${
-                  currentSessionId === s.id
+                  currentSessionId === s.id || currentSessionId === s.session_uid
                     ? 'bg-zinc-800 text-white shadow-md'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
                 }`}

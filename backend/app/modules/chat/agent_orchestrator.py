@@ -505,7 +505,7 @@ def orchestrate_agentic_turn(
 
 def send_chat_message(
     db: Session,
-    session_id: int,
+    session_id: int | str,
     user_id: int,
     content: str,
     language_code: str | None = "en",
@@ -566,7 +566,7 @@ def send_chat_message(
 
 
 async def stream_chat_response(
-    db: Session, session_id: int, user_id: int, content: str
+    db: Session, session_id: int | str, user_id: int, content: str
 ) -> AsyncGenerator[str, None]:
     """Server-Sent Events (SSE) generator for real-time token streaming with fail-loud error telemetry."""
     try:

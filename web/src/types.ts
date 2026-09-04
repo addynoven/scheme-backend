@@ -312,6 +312,7 @@ export interface ChatMessage {
 
 export interface ChatSession {
   id: number
+  session_uid?: string
   user_id?: number
   title: string
   created_at: string

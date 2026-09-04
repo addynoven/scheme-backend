@@ -12,7 +12,7 @@ export default async function ChatSessionPage({
   params: Promise<{ id: string }>
 }) {
   const resolvedParams = await params
-  const sessionId = parseInt(resolvedParams.id, 10)
+  const sessionKey = resolvedParams.id
 
   return (
     <Suspense
@@ -22,7 +22,7 @@ export default async function ChatSessionPage({
         </div>
       }
     >
-      <HomeScreen initialSessionId={isNaN(sessionId) ? undefined : sessionId} />
+      <HomeScreen initialSessionId={sessionKey} />
     </Suspense>
   )
 }

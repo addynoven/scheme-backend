@@ -728,7 +728,7 @@ export async function createChatSession(title: string = 'New Welfare Assistance'
   return res.json()
 }
 
-export async function getChatSession(sessionId: number): Promise<ChatSession> {
+export async function getChatSession(sessionId: number | string): Promise<ChatSession> {
   const res = await fetch(`${API_BASE}/chat/sessions/${sessionId}`, {
     headers: getCitizenAuthHeaders(),
   })
@@ -736,7 +736,7 @@ export async function getChatSession(sessionId: number): Promise<ChatSession> {
   return res.json()
 }
 
-export async function updateChatSessionTitle(sessionId: number, title: string): Promise<ChatSession> {
+export async function updateChatSessionTitle(sessionId: number | string, title: string): Promise<ChatSession> {
   const res = await fetch(`${API_BASE}/chat/sessions/${sessionId}`, {
     method: 'PATCH',
     headers: {
@@ -749,7 +749,7 @@ export async function updateChatSessionTitle(sessionId: number, title: string): 
   return res.json()
 }
 
-export async function deleteChatSession(sessionId: number): Promise<void> {
+export async function deleteChatSession(sessionId: number | string): Promise<void> {
   const res = await fetch(`${API_BASE}/chat/sessions/${sessionId}`, {
     method: 'DELETE',
     headers: getCitizenAuthHeaders(),
@@ -758,7 +758,7 @@ export async function deleteChatSession(sessionId: number): Promise<void> {
 }
 
 export async function sendChatMessage(
-  sessionId: number,
+  sessionId: number | string,
   content: string,
   languageCode: string = 'en'
 ): Promise<ChatMessage> {
@@ -782,7 +782,7 @@ export async function sendChatMessage(
 }
 
 export async function streamChatMessage(
-  sessionId: number,
+  sessionId: number | string,
   content: string,
   onToken: (token: string, citations?: string[]) => void,
   onDone: (messageId: number, memoryTrace?: any) => void,

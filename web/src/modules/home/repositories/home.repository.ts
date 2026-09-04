@@ -23,16 +23,16 @@ export const homeRepository = {
     return apiListChatSessions()
   },
 
-  async getSession(id: number): Promise<ChatSession> {
+  async getSession(id: number | string): Promise<ChatSession> {
     return apiGetChatSession(id)
   },
 
-  async sendMessage(sessionId: number, content: string): Promise<ChatMessage> {
+  async sendMessage(sessionId: number | string, content: string): Promise<ChatMessage> {
     return apiSendChatMessage(sessionId, content)
   },
 
   async streamMessage(
-    sessionId: number,
+    sessionId: number | string,
     content: string,
     onToken: (token: string, citations?: string[]) => void,
     onDone: (messageId: number) => void,

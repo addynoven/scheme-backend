@@ -23,6 +23,13 @@ def generate_member_uid(relationship: str = "member") -> str:
     return f"MBR-{year}-{suffix}"
 
 
+def generate_session_uid() -> str:
+    """Generate secure non-sequential Chat Session UID, e.g. SES-2026-9A8B7C6D5E4F"""
+    year = datetime.datetime.now().year
+    suffix = uuid.uuid4().hex[:12].upper()
+    return f"SES-{year}-{suffix}"
+
+
 def compute_life_stage(dob: datetime.date | None, age: int | None) -> str:
     """
     Compute demographic life stage:

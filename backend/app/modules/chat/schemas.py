@@ -50,6 +50,7 @@ class ChatSessionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    session_uid: str | None = None
     user_id: int | None
     title: str
     language_code: str
