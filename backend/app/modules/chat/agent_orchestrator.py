@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator
+import asyncio
 import json
 import logging
 from pathlib import Path
@@ -572,8 +573,20 @@ async def stream_chat_response(
     db: Session, session_id: int | str, user_id: int, content: str
 ) -> AsyncGenerator[str, None]:
     """Server-Sent Events (SSE) generator for real-time token streaming with fail-loud error telemetry."""
+    # 1. Immediately yield initial connection ACK event so HTTP response headers flush to client socket instantly (< 1ms)
+    yield f"data: {json.dumps({'type': 'ping', 'status': 'connected'})}\n\n"
+    await asyncio.sleep(0.01)
+
     try:
-        assistant_msg = send_chat_message(db, session_id, user_id, content)
+        # Run agentic turn execution in worker thread while yielding keepalive pings to prevent socket timeout
+        loop = asyncio.get_running_loop()
+        task = loop.run_in_executor(None, send_chat_message, db, session_id, user_id, content)
+
+        while not task.done():
+            yield ": keepalive\n\n"
+            await asyncio.sleep(1.2)
+
+        assistant_msg = await task
 
         turn_status = getattr(assistant_msg, "status", "success")
         memory_trace = getattr(assistant_msg, "memory_trace", None)
@@ -600,6 +613,7 @@ async def stream_chat_response(
                 "sources": getattr(assistant_msg, "sources", []) if i == len(words) - 1 else [],
             }
             yield f"data: {json.dumps(chunk)}\n\n"
+            await asyncio.sleep(0.015)
 
         yield f"data: {json.dumps({'type': 'done', 'message_id': assistant_msg.id, 'memory_trace': memory_trace})}\n\n"
     except Exception as e:
