@@ -33,6 +33,9 @@ export function LoginForm() {
       const res = await authRepository.login({ email, password })
       if (res.ok && res.data.access_token) {
         setCitizenToken(res.data.access_token)
+        if (res.data.refresh_token) {
+          localStorage.setItem('scheme_citizen_refresh', res.data.refresh_token)
+        }
         router.push('/')
       } else {
         setError(!res.ok ? res.error.message : 'Invalid credentials')

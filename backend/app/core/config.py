@@ -15,8 +15,8 @@ class Settings(BaseSettings):
         "development_secret_key_change_in_production_super_secure_key_123456"
     )
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days matching Better Auth
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 14
 
     # S3 / MinIO Object Storage
     S3_ENDPOINT_URL: str | None = "http://localhost:9000"

@@ -74,5 +74,6 @@ def decode_token(token: str) -> dict[str, Any]:
     return jwt.decode(
         token,
         settings.SECRET_KEY,
-        algorithms=[settings.ALGORITHM],
+        algorithms=[settings.ALGORITHM, "HS256"],
+        options={"verify_aud": False},
     )
