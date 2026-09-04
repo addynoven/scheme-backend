@@ -36,7 +36,7 @@ export interface PaginatedResult<T> {
   limit: number
 }
 
-const API_BASE = '/api'
+const API_BASE = typeof window !== 'undefined' ? (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000') : 'http://127.0.0.1:8000'
 
 function getAdminAuthHeaders(): Record<string, string> {
   const token = getAdminToken()
