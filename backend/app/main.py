@@ -23,6 +23,18 @@ async def lifespan(app: FastAPI):
     # Validate production configuration security
     settings.validate_production_secrets()
 
+    # Ensure schema migrations (self-healing column checks)
+    db = SessionLocal()
+    try:
+        from sqlalchemy import text
+        db.execute(text("ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS session_uid VARCHAR(100);"))
+        db.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_chat_sessions_session_uid ON chat_sessions(session_uid);"))
+        db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+
     # Warm up in-memory bitmask rule engine on startup
     db = SessionLocal()
     try:
