@@ -512,16 +512,19 @@ def send_chat_message(
 ) -> ChatMessage:
     session = get_chat_session(db, session_id, user_id)
 
-    # 1. Save Citizen User Message
-    user_msg = ChatMessage(
-        session_id=session.id,
-        sender="user",
-        content=content,
-        intent="CITIZEN_QUERY",
-        citations=[],
-    )
-    db.add(user_msg)
-    db.commit()
+    # 1. Save Citizen User Message if not identical to the most recent user message in session
+    last_msg = session.messages[-1] if session.messages else None
+    if not (last_msg and last_msg.sender == "user" and last_msg.content.strip() == content.strip()):
+        user_msg = ChatMessage(
+            session_id=session.id,
+            sender="user",
+            content=content,
+            intent="CITIZEN_QUERY",
+            citations=[],
+        )
+        db.add(user_msg)
+        db.commit()
+        db.refresh(session)
 
     # 2. Build Injected Profile Facts (PII minimized)
     user_profile = _build_user_context(db, user_id)
