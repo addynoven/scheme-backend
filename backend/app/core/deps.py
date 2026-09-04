@@ -44,6 +44,32 @@ def get_current_user(
     if user is None and email:
         user = db.query(User).filter(User.email == email).first()
 
+    # Auto-provision Better Auth verified user in PostgreSQL if missing
+    if user is None and email:
+        from app.core.uid_generator import generate_citizen_uid, generate_household_uid
+        from app.modules.auth.models import CitizenProfile
+
+        role = "admin" if email.lower() in ("admin@gov.in", "admin@scheme.gov.in") else "citizen"
+        user = User(
+            citizen_uid=generate_citizen_uid(),
+            household_uid=generate_household_uid(),
+            email=email,
+            hashed_password="BETTER_AUTH_MANAGED",
+            role=role,
+            is_verified=True,
+        )
+        db.add(user)
+        try:
+            db.commit()
+            db.refresh(user)
+
+            profile = CitizenProfile(user_id=user.id)
+            db.add(profile)
+            db.commit()
+        except Exception:
+            db.rollback()
+            user = db.query(User).filter(User.email == email).first()
+
     if user is None:
         raise AuthenticationError("User associated with token no longer exists")
 
