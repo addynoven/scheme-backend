@@ -36,21 +36,35 @@ class Settings(BaseSettings):
     TESTING: bool = False
     FRONTEND_URL: str | None = None
 
-    # LangSmith Observability & Tracing
+    # LangSmith Observability & Tracing (supports modern LANGSMITH_* and legacy LANGCHAIN_* vars)
+    LANGSMITH_TRACING: bool | None = None
+    LANGSMITH_API_KEY: str | None = None
+    LANGSMITH_PROJECT: str | None = None
+    LANGSMITH_ENDPOINT: str | None = None
+
     LANGCHAIN_TRACING_V2: bool = False
     LANGCHAIN_API_KEY: str | None = None
-    LANGCHAIN_PROJECT: str = "scheme-backend"
-    LANGCHAIN_ENDPOINT: str = "https://api.smith.langchain.com"
+    LANGCHAIN_PROJECT: str = "schemex"
+    LANGCHAIN_ENDPOINT: str = "https://eu.api.smith.langchain.com"
 
     def setup_langsmith_env(self) -> None:
         """Propagate LangSmith configuration to os.environ so the official SDK automatically ingests traces."""
-        if self.LANGCHAIN_TRACING_V2 and self.LANGCHAIN_API_KEY:
+        tracing_enabled = self.LANGSMITH_TRACING if self.LANGSMITH_TRACING is not None else self.LANGCHAIN_TRACING_V2
+        api_key = self.LANGSMITH_API_KEY or self.LANGCHAIN_API_KEY
+        project = self.LANGSMITH_PROJECT or self.LANGCHAIN_PROJECT or "schemex"
+        endpoint = self.LANGSMITH_ENDPOINT or self.LANGCHAIN_ENDPOINT
+
+        if tracing_enabled and api_key:
             import os
+            os.environ["LANGSMITH_TRACING"] = "true"
             os.environ["LANGCHAIN_TRACING_V2"] = "true"
-            os.environ["LANGCHAIN_API_KEY"] = self.LANGCHAIN_API_KEY
-            os.environ["LANGCHAIN_PROJECT"] = self.LANGCHAIN_PROJECT
-            if self.LANGCHAIN_ENDPOINT:
-                os.environ["LANGCHAIN_ENDPOINT"] = self.LANGCHAIN_ENDPOINT
+            os.environ["LANGSMITH_API_KEY"] = api_key
+            os.environ["LANGCHAIN_API_KEY"] = api_key
+            os.environ["LANGSMITH_PROJECT"] = project
+            os.environ["LANGCHAIN_PROJECT"] = project
+            if endpoint:
+                os.environ["LANGSMITH_ENDPOINT"] = endpoint
+                os.environ["LANGCHAIN_ENDPOINT"] = endpoint
 
     def validate_production_secrets(self) -> None:
         """Halt startup if DEV_MODE is False but insecure default development keys are configured."""
