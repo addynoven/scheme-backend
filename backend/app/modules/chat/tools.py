@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from langsmith import traceable
 from app.modules.eligibility.bitmask_engine import bitmask_engine
 from app.modules.schemes.models import Scheme
 
@@ -148,6 +149,11 @@ KNOWN_SCHEME_SLUGS = {
 }
 
 
+@traceable(
+    run_type="tool",
+    name="search_schemes_directory",
+    process_inputs=lambda d: {k: v for k, v in d.items() if k != "db"},
+)
 def execute_search_schemes_directory(db: Session, tool_args: dict[str, Any]) -> dict[str, Any]:
     """
     Directly queries the database schemes directory and returns the true total count and top sample highlights.
@@ -205,6 +211,11 @@ def execute_search_schemes_directory(db: Session, tool_args: dict[str, Any]) -> 
         }
 
 
+@traceable(
+    run_type="tool",
+    name="check_eligibility",
+    process_inputs=lambda d: {k: v for k, v in d.items() if k != "db"},
+)
 def execute_check_eligibility(
     db: Session, user_profile: dict[str, Any] | None, tool_args: dict[str, Any]
 ) -> dict[str, Any]:
@@ -393,6 +404,11 @@ def execute_check_eligibility(
         }
 
 
+@traceable(
+    run_type="tool",
+    name="get_scheme_details",
+    process_inputs=lambda d: {k: v for k, v in d.items() if k != "db"},
+)
 def execute_get_scheme_details(db: Session, tool_args: dict[str, Any]) -> dict[str, Any]:
     """
     Fetches canonical markdown scheme documentation or database records with strict slug sanitization.
@@ -451,6 +467,11 @@ def execute_get_scheme_details(db: Session, tool_args: dict[str, Any]) -> dict[s
         }
 
 
+@traceable(
+    run_type="tool",
+    name="browse_schemes_and_knowledge",
+    process_inputs=lambda d: {k: v for k, v in d.items() if k != "db"},
+)
 def execute_browse_schemes_and_knowledge(db: Session, tool_args: dict[str, Any]) -> dict[str, Any]:
     """
     Browses scheme directory with multi-field demographic/policy filters AND inspects canonical @knowledge Markdown documentation.

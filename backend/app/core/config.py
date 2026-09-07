@@ -36,6 +36,22 @@ class Settings(BaseSettings):
     TESTING: bool = False
     FRONTEND_URL: str | None = None
 
+    # LangSmith Observability & Tracing
+    LANGCHAIN_TRACING_V2: bool = False
+    LANGCHAIN_API_KEY: str | None = None
+    LANGCHAIN_PROJECT: str = "scheme-backend"
+    LANGCHAIN_ENDPOINT: str = "https://api.smith.langchain.com"
+
+    def setup_langsmith_env(self) -> None:
+        """Propagate LangSmith configuration to os.environ so the official SDK automatically ingests traces."""
+        if self.LANGCHAIN_TRACING_V2 and self.LANGCHAIN_API_KEY:
+            import os
+            os.environ["LANGCHAIN_TRACING_V2"] = "true"
+            os.environ["LANGCHAIN_API_KEY"] = self.LANGCHAIN_API_KEY
+            os.environ["LANGCHAIN_PROJECT"] = self.LANGCHAIN_PROJECT
+            if self.LANGCHAIN_ENDPOINT:
+                os.environ["LANGCHAIN_ENDPOINT"] = self.LANGCHAIN_ENDPOINT
+
     def validate_production_secrets(self) -> None:
         """Halt startup if DEV_MODE is False but insecure default development keys are configured."""
         if not self.DEV_MODE and not self.TESTING:
@@ -59,3 +75,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+settings.setup_langsmith_env()

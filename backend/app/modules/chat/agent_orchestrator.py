@@ -14,6 +14,7 @@ import urllib.request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from langsmith import traceable
 from app.core.config import settings
 from app.modules.auth.models import CitizenFact, User
 from app.modules.chat.models import ChatMessage
@@ -69,6 +70,10 @@ def _build_user_context(db: Session, user_id: int | None) -> dict[str, Any] | No
     return context
 
 
+@traceable(
+    run_type="llm",
+    name="Gemini GenerateContent",
+)
 def _call_gemini_api(contents: list[dict[str, Any]], system_instruction: str) -> dict[str, Any] | None:
     """
     HTTPS caller for Gemini GenerateContent endpoint with exponential backoff on 429/5xx errors.
@@ -162,6 +167,10 @@ AGY_JSON_SCHEMA = {
 }
 
 
+@traceable(
+    run_type="llm",
+    name="AGY CLI Local LLM",
+)
 def _call_agy_cli(contents: list[dict[str, Any]], system_instruction: str) -> dict[str, Any] | None:
     """
     Executes local completion using the agy CLI with strict JSON schema enforcement.
@@ -261,6 +270,22 @@ def call_llm_provider(contents: list[dict[str, Any]], system_instruction: str) -
     return _call_gemini_api(contents, system_instruction)
 
 
+@traceable(
+    run_type="chain",
+    name="Citizen Agentic Turn",
+    process_inputs=lambda d: {
+        "user_message": d.get("user_message"),
+        "user_profile": d.get("user_profile"),
+        "history_turns": len(d.get("history_messages", [])),
+    },
+    process_outputs=lambda res: {
+        "response": res[0],
+        "citations": res[1],
+        "token_usage": res[3],
+        "turn_status": res[5],
+        "tools_executed": res[4].get("procedural_memory", {}).get("tools_executed", []) if isinstance(res[4], dict) else [],
+    },
+)
 def orchestrate_agentic_turn(
     db: Session,
     user_message: str,
