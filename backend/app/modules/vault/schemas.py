@@ -1,13 +1,11 @@
 from typing import Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
-from app.modules.ocr.schemas import (
-    ExtractedDocumentFacts,
-    ExtractedDocumentFactsResponse,
-)
 
 
 class UserDocumentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     user_id: int
     household_member_id: int | None = None
@@ -19,9 +17,6 @@ class UserDocumentResponse(BaseModel):
     mime_type: str
     is_verified: bool
     download_url: str | None = None
-
-    class Config:
-        from_attributes = True
 
 
 class DocumentReadinessItem(BaseModel):
@@ -66,3 +61,31 @@ class ConfirmFactsAndSyncProfileResponse(BaseModel):
     synced_fields: list[str] = Field(..., description="List of profile fields updated in SQL database")
     message: str
     profile: dict[str, Any]
+
+
+class DirectUploadParamsRequest(BaseModel):
+    document_type: str = Field(..., description="Type of document, e.g. 'Aadhaar Card'")
+    file_name: str = Field(..., description="Original filename")
+    household_member_id: int | None = None
+
+
+class DirectUploadParamsResponse(BaseModel):
+    upload_url: str = Field(..., description="Direct Cloudinary upload endpoint")
+    cloud_name: str
+    api_key: str
+    timestamp: int
+    signature: str
+    public_id: str
+    folder: str
+
+
+class DirectUploadConfirmRequest(BaseModel):
+    document_type: str
+    document_number_masked: str | None = None
+    household_member_id: int | None = None
+    public_id: str
+    secure_url: str
+    file_name: str
+    file_size_bytes: int
+    mime_type: str
+

@@ -9,8 +9,7 @@ from app.core.config import settings
 from app.database import Base
 from app.modules.auth.models import Profile, User, CitizenFact
 from app.modules.chat.models import ChatMessage, ChatSession
-from app.modules.household.models import HouseholdMember
-from app.modules.ingestion.models import IngestionSource, IngestionTriageItem
+
 from app.modules.schemes.models import (
     Benefit,
     EligibilityRule,

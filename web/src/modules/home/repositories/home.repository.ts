@@ -4,7 +4,6 @@ import {
   getChatSession as apiGetChatSession,
   sendChatMessage as apiSendChatMessage,
   streamChatMessage as apiStreamChatMessage,
-  transcribeAudio as apiTranscribeAudio,
   citizenGetMe as apiCitizenGetMe,
   type ChatMessage,
   type ChatSession,
@@ -24,11 +23,11 @@ export const homeRepository = {
   },
 
   async getSession(id: number | string): Promise<ChatSession> {
-    return apiGetChatSession(id)
+    return apiGetChatSession(Number(id))
   },
 
   async sendMessage(sessionId: number | string, content: string): Promise<ChatMessage> {
-    return apiSendChatMessage(sessionId, content)
+    return apiSendChatMessage(Number(sessionId), content)
   },
 
   async streamMessage(
@@ -38,10 +37,6 @@ export const homeRepository = {
     onDone: (messageId: number) => void,
     onError: (err: any) => void
   ): Promise<void> {
-    return apiStreamChatMessage(sessionId, content, onToken, onDone, onError)
-  },
-
-  async transcribe(file: File) {
-    return apiTranscribeAudio(file)
+    return apiStreamChatMessage(Number(sessionId), content, onToken, onDone, onError)
   },
 }

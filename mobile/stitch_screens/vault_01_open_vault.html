@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Scheme App - Document Vault</title>
+<!-- Tailwind CSS v3 CDN with forms and container-queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            scheme: {
+              teal: '#0a6345',
+              darkteal: '#084e36',
+              lightgreen: '#e8f5ef',
+              softmint: '#f0f9f4',
+              accent: '#10b981',
+              badge: '#dcfce7',
+              badgetext: '#15803d',
+              border: '#e2e8f0',
+              textdark: '#1e293b',
+              textmuted: '#64748b'
+            }
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-layout">
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      background-color: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    /* Hide scrollbar for clean app feel */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    * {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="flex justify-center items-center min-h-screen p-0 sm:p-4 text-slate-800 antialiased">
+<!-- BEGIN: PhoneContainer -->
+<!-- Mimics standard iOS viewport 390x844 max width container -->
+<div class="w-full max-w-[390px] h-[844px] max-h-screen bg-white rounded-none sm:rounded-[44px] shadow-2xl overflow-hidden flex flex-col relative border border-slate-200" data-purpose="mobile-device-frame">
+<!-- BEGIN: iOSStatusBar -->
+<header class="w-full pt-3 px-7 pb-1 flex justify-between items-center text-xs font-semibold text-slate-800 shrink-0 bg-white z-20" data-purpose="status-bar">
+<span>9:41</span>
+<div class="flex items-center space-x-1.5 text-slate-800">
+<!-- Signal Strength -->
+<svg class="w-3.5 h-3.5 fill-current" viewbox="0 0 24 24">
+<path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L12 22l7.03-4.39C20.26 16.07 21 14.12 21 12c0-4.97-4.03-9-9-9zm0 15l-4.5-2.81C6.58 14.11 6 13.11 6 12c0-3.31 2.69-6 6-6s6 2.69 6 6c0 1.11-.58 2.11-1.5 3.19L12 18z"></path>
+</svg>
+<!-- Wifi Icon -->
+<svg class="w-3.5 h-3.5 fill-current" viewbox="0 0 24 24">
+<path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98A16.88 16.88 0 0 0 12 4zm0 2.9c3.7 0 7.07 1.39 9.68 3.69L12 19.34 2.32 10.59C4.93 8.29 8.3 6.9 12 6.9z"></path>
+</svg>
+<!-- Battery Icon -->
+<div class="w-5 h-2.5 border border-slate-800 rounded-sm p-0.5 flex items-center">
+<div class="h-full w-full bg-slate-800 rounded-2xs"></div>
+</div>
+</div>
+</header>
+<!-- END: iOSStatusBar -->
+<!-- BEGIN: AppHeader -->
+<nav class="w-full px-5 py-2.5 flex items-center justify-between bg-white shrink-0 border-b border-slate-50" data-purpose="app-top-bar">
+<!-- App Brand Logo -->
+<div class="flex items-center space-x-2">
+<div class="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-sm shadow-emerald-500/20">
+<svg class="w-4 h-4 fill-current transform rotate-45" viewbox="0 0 24 24">
+<path d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z"></path>
+</svg>
+</div>
+<span class="text-[17px] font-bold text-slate-800 tracking-tight">Scheme App</span>
+</div>
+<!-- Right Action Icons: Notification & Profile -->
+<div class="flex items-center space-x-3">
+<button aria-label="Notifications" class="p-1.5 rounded-full text-slate-600 hover:bg-slate-100 transition relative">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Profile Avatar -->
+<div class="w-8 h-8 rounded-full bg-amber-100 border-2 border-emerald-600 overflow-hidden shrink-0 flex items-center justify-center">
+<svg class="w-6 h-6 text-amber-700 mt-1" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
+</svg>
+</div>
+</div>
+</nav>
+<!-- END: AppHeader -->
+<!-- BEGIN: MainContentScrollArea -->
+<main class="flex-1 overflow-y-auto px-4 pt-2.5 pb-20 space-y-4 bg-[#fbfdfc]" data-purpose="scrollable-content">
+<!-- BEGIN: HeroCard -->
+<!-- Welcome card featuring text banner and illustrative graphic -->
+<section class="bg-gradient-to-br from-[#eff8f3] to-[#e4f3eb] rounded-2xl p-4 border border-[#d6ecdf] relative overflow-hidden" data-purpose="hero-banner">
+<div class="w-[62%] relative z-10 space-y-1">
+<h1 class="text-lg font-extrabold text-slate-800 leading-snug tracking-tight">
+            Hello!<br/>
+            Keep your documents safe and ready.
+          </h1>
+<p class="text-xs text-slate-600 leading-relaxed font-medium">
+            Upload once, reuse for all scheme applications.
+          </p>
+</div>
+<!-- Illustration: Citizen holding folder with farm/rural backdrop -->
+<div class="absolute -right-2 -bottom-1 w-[130px] h-[135px] pointer-events-none flex items-end justify-center">
+<svg class="w-full h-full" fill="none" viewbox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+<!-- Background Circular Accent -->
+<circle cx="85" cy="70" fill="#a7f3d0" fill-opacity="0.5" r="50"></circle>
+<!-- Farm Hills -->
+<path d="M40 120C60 100 100 110 140 105V140H40V120Z" fill="#34d399" fill-opacity="0.3"></path>
+<path d="M20 125C50 110 90 120 130 115V140H20V125Z" fill="#10b981" fill-opacity="0.4"></path>
+<!-- Person Body / Saree (Yellow & Teal) -->
+<path d="M45 140C45 110 60 95 85 95C110 95 120 110 125 140H45Z" fill="#f59e0b"></path>
+<path d="M85 95L65 140H90L100 115L85 95Z" fill="#0d9488"></path>
+<path d="M70 115L55 140H75L85 125L70 115Z" fill="#047857"></path>
+<!-- Head & Hair -->
+<circle cx="85" cy="65" fill="#78350f" r="16"></circle>
+<circle cx="85" cy="67" fill="#fed7aa" r="14"></circle>
+<path d="M71 65C71 55 78 50 85 50C92 50 99 55 99 65C99 68 85 64 71 65Z" fill="#451a03"></path>
+<!-- Bindi & Face Features -->
+<circle cx="82" cy="63" fill="#dc2626" r="1"></circle>
+<path d="M78 72C82 75 88 75 90 72" stroke="#78350f" stroke-linecap="round" stroke-width="1.5"></path>
+<!-- Document held in hand -->
+<rect fill="#ffffff" height="38" rx="2" stroke="#cbd5e1" stroke-width="1.5" transform="rotate(-10 52 85)" width="28" x="52" y="85"></rect>
+<rect fill="#94a3b8" height="2" rx="1" transform="rotate(-10 58 93)" width="16" x="58" y="93"></rect>
+<rect fill="#94a3b8" height="2" rx="1" transform="rotate(-10 57 99)" width="13" x="57" y="99"></rect>
+<rect fill="#10b981" height="2" rx="1" transform="rotate(-10 56 105)" width="10" x="56" y="105"></rect>
+<!-- Arm Holding Document -->
+<path d="M85 95C75 105 60 108 55 108" stroke="#fed7aa" stroke-linecap="round" stroke-width="5"></path>
+</svg>
+</div>
+</section>
+<!-- END: HeroCard -->
+<!-- BEGIN: SecurityBadge -->
+<section class="flex items-center justify-between bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl px-3 py-2.5 shadow-sm" data-purpose="security-badge">
+<div class="flex items-center space-x-2.5">
+<div class="w-7 h-7 rounded-lg bg-[#dcfce7] flex items-center justify-center text-emerald-700 shrink-0">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 20 20">
+<path clip-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z" fill-rule="evenodd"></path>
+</svg>
+</div>
+<div>
+<div class="flex items-center space-x-1.5">
+<span class="text-xs font-bold text-slate-800 leading-tight">S3 Encrypted</span>
+</div>
+<p class="text-[11px] text-slate-500 leading-tight">Secure. Private. Always with you.</p>
+</div>
+</div>
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+</section>
+<!-- END: SecurityBadge -->
+<!-- BEGIN: PrimaryCTA -->
+<!-- 'Check Readiness for a Scheme' Button -->
+<section data-purpose="primary-action">
+<button class="w-full bg-[#0a6345] hover:bg-[#084e36] text-white font-semibold py-3.5 px-4 rounded-xl shadow-md shadow-[#0a6345]/20 flex items-center justify-between active:scale-[0.99] transition transform">
+<span class="text-sm tracking-wide">Check Readiness for a Scheme</span>
+<svg class="w-5 h-5 text-emerald-200" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</section>
+<!-- END: PrimaryCTA -->
+<!-- BEGIN: QuickActions -->
+<section class="pt-1" data-purpose="quick-actions-section">
+<h2 class="text-xs font-bold text-slate-800 mb-2.5">Quick Actions</h2>
+<div class="grid grid-cols-3 gap-2.5">
+<!-- Action 1: Upload Document -->
+<button class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-white shadow-xs hover:border-emerald-300 hover:bg-emerald-50/30 transition group">
+<div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[11px] font-semibold text-slate-700 leading-tight text-center">Upload<br/>Document</span>
+</button>
+<!-- Action 2: View Documents -->
+<button class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-white shadow-xs hover:border-emerald-300 hover:bg-emerald-50/30 transition group">
+<div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[11px] font-semibold text-slate-700 leading-tight text-center">View<br/>Documents</span>
+</button>
+<!-- Action 3: Saved Data -->
+<button class="flex flex-col items-center justify-center p-3 rounded-xl border border-slate-200 bg-white shadow-xs hover:border-emerald-300 hover:bg-emerald-50/30 transition group">
+<div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center mb-1.5 group-hover:scale-105 transition">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[11px] font-semibold text-slate-700 leading-tight text-center">Saved<br/>Data</span>
+</button>
+</div>
+</section>
+<!-- END: QuickActions -->
+<!-- BEGIN: WhyUseVault -->
+<section class="bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-xs space-y-2.5" data-purpose="features-summary">
+<h2 class="text-xs font-bold text-slate-800">Why use Vault?</h2>
+<ul class="space-y-2">
+<!-- Feature Item 1 -->
+<li class="flex items-center space-x-2.5">
+<div class="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+<svg class="w-2.5 h-2.5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="3" viewbox="0 0 24 24">
+<path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-xs text-slate-600 font-medium">Upload once, reuse everywhere</span>
+</li>
+<!-- Feature Item 2 -->
+<li class="flex items-center space-x-2.5">
+<div class="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+<svg class="w-2.5 h-2.5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="3" viewbox="0 0 24 24">
+<path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-xs text-slate-600 font-medium">Auto-fill forms with extracted data</span>
+</li>
+<!-- Feature Item 3 -->
+<li class="flex items-center space-x-2.5">
+<div class="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+<svg class="w-2.5 h-2.5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="3" viewbox="0 0 24 24">
+<path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-xs text-slate-600 font-medium">Secure and encrypted</span>
+</li>
+</ul>
+</section>
+<!-- END: WhyUseVault -->
+</main>
+<!-- END: MainContentScrollArea -->
+<!-- BEGIN: BottomNavigation -->
+<footer class="w-full absolute bottom-0 left-0 bg-white border-t border-slate-200 py-1.5 px-3 flex justify-around items-center z-30" data-purpose="bottom-navigation-bar">
+<!-- Tab 1: Advisor -->
+<button class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-slate-600">
+<svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-medium leading-none">Advisor</span>
+</button>
+<!-- Tab 2: Vault (ACTIVE) -->
+<button class="flex flex-col items-center justify-center flex-1 py-1 text-emerald-700 relative">
+<div class="p-1 px-3 rounded-full bg-emerald-50 mb-0.5">
+<svg class="w-4 h-4 fill-current text-emerald-700" viewbox="0 0 24 24">
+<path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"></path>
+</svg>
+</div>
+<span class="text-[10px] font-bold leading-none">Vault</span>
+</button>
+<!-- Tab 3: Check -->
+<button class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-slate-600">
+<svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-medium leading-none">Check</span>
+</button>
+<!-- Tab 4: Schemes -->
+<button class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-slate-600">
+<svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-medium leading-none">Schemes</span>
+</button>
+</footer>
+<!-- END: BottomNavigation -->
+</div>
+<!-- END: PhoneContainer -->
+</body></html>

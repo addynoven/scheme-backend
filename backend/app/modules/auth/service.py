@@ -1,6 +1,6 @@
 from typing import Any
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.core.exceptions import AuthenticationError, DuplicateEntityError, UserNotFoundError
 from app.core.security import create_access_token, hash_password, verify_password
@@ -16,15 +16,21 @@ from app.modules.auth.schemas import (
 
 
 def get_user_by_id(db: Session, user_id: int) -> User | None:
-    return db.scalar(select(User).where(User.id == user_id))
+    return db.scalar(
+        select(User).where(User.id == user_id).options(selectinload(User.profile))
+    )
 
 
 def get_user_by_email(db: Session, email: str) -> User | None:
-    return db.scalar(select(User).where(User.email == email))
+    return db.scalar(
+        select(User).where(User.email == email).options(selectinload(User.profile))
+    )
 
 
 def get_user_by_phone(db: Session, phone: str) -> User | None:
-    return db.scalar(select(User).where(User.phone == phone))
+    return db.scalar(
+        select(User).where(User.phone == phone).options(selectinload(User.profile))
+    )
 
 
 def register_user(db: Session, payload: UserRegisterRequest) -> TokenResponse:
@@ -82,6 +88,70 @@ def authenticate_user(db: Session, payload: UserLoginRequest) -> User:
 
 
 register = register_user
+
+
+def authenticate_or_register_google(
+    db: Session, email: str, full_name: str | None = None, id_token: str | None = None
+) -> TokenResponse:
+    import hashlib
+    from datetime import date
+    from app.core.uid_generator import generate_citizen_uid, generate_household_uid
+    from app.modules.auth.models import Profile
+
+    user = get_user_by_email(db, email)
+    if not user:
+        phone_digits = str(int(hashlib.md5(email.encode("utf-8")).hexdigest(), 16))[:10].ljust(10, "0")
+        derived_phone = f"+91{phone_digits}"
+
+        user = User(
+            citizen_uid=generate_citizen_uid(),
+            household_uid=generate_household_uid(),
+            email=email,
+            phone=derived_phone,
+            hashed_password="GOOGLE_AUTH_MANAGED",
+            role="citizen",
+            is_verified=True,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        display_name = full_name or email.split("@")[0].replace(".", " ").title()
+        profile = Profile(
+            user_id=user.id,
+            full_name=display_name,
+            date_of_birth=date(1995, 1, 1),
+            gender="other",
+            state="Maharashtra",
+            district="Mumbai",
+            annual_income=250000,
+            occupation="citizen",
+        )
+        db.add(profile)
+        db.commit()
+        db.refresh(user)
+    else:
+        if not user.is_verified:
+            user.is_verified = True
+            db.commit()
+            db.refresh(user)
+        if not user.profile:
+            display_name = full_name or email.split("@")[0].replace(".", " ").title()
+            profile = Profile(
+                user_id=user.id,
+                full_name=display_name,
+                date_of_birth=date(1995, 1, 1),
+                gender="other",
+                state="Maharashtra",
+                district="Mumbai",
+                annual_income=250000,
+                occupation="citizen",
+            )
+            db.add(profile)
+            db.commit()
+            db.refresh(user)
+
+    return generate_tokens(db=db, user=user)
 
 
 def generate_tokens(db: Session, user: User, family_id: str | None = None) -> TokenResponse:

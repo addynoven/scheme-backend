@@ -8,39 +8,56 @@ from app.modules.auth.router import router as auth_router
 from app.modules.chat.router import router as chat_router
 from app.modules.eligibility.bitmask_engine import bitmask_engine
 from app.modules.eligibility.router import router as eligibility_router
-from app.modules.household.router import router as household_router
-from app.modules.ingestion.router import router as open_data_router
 from app.modules.ocr.router import router as ocr_router
-from app.modules.routing.router import router as routing_router
 from app.modules.schemes.router import router as schemes_router
 from app.modules.vault.router import router as vault_router
 from app.core.config import settings
-from app.modules.voice.router import router as voice_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Validate production configuration security
-    settings.validate_production_secrets()
+    if not settings.TESTING:
+        # Ensure schema migrations (self-healing column checks)
+        db = SessionLocal()
+        try:
+            from sqlalchemy import text
+            from app.database import Base, engine
 
-    # Ensure schema migrations (self-healing column checks)
-    db = SessionLocal()
-    try:
-        from sqlalchemy import text
-        db.execute(text("ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS session_uid VARCHAR(100);"))
-        db.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_chat_sessions_session_uid ON chat_sessions(session_uid);"))
-        db.commit()
-    except Exception:
-        db.rollback()
-    finally:
-        db.close()
+            Base.metadata.create_all(bind=engine, checkfirst=True)
+            db.execute(text("ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS session_uid VARCHAR(100);"))
+            db.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_chat_sessions_session_uid ON chat_sessions(session_uid);"))
+            db.commit()
+        except Exception:
+            db.rollback()
+        finally:
+            db.close()
 
-    # Warm up in-memory bitmask rule engine on startup
-    db = SessionLocal()
-    try:
-        bitmask_engine.warm_up(db)
-    finally:
-        db.close()
+        # Warm up in-memory bitmask rule engine and evaluatable schemes on startup
+        db = SessionLocal()
+        try:
+            bitmask_engine.warm_up(db)
+            from app.modules.eligibility.service import get_cached_active_schemes
+            get_cached_active_schemes(db)
+        finally:
+            db.close()
+
+        # Discover local LAN IP for emulator & physical devices
+        import socket
+        lan_ip = "127.0.0.1"
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                s.connect(("1.1.1.1", 80))
+                lan_ip = s.getsockname()[0]
+        except Exception:
+            pass
+
+        print("\n" + "=" * 62)
+        print("🚀 Server is running across all interfaces (HOST: 0.0.0.0)!")
+        print("  • Localhost:        http://localhost:8000")
+        print("  • Android Emulator: http://10.0.2.2:8000")
+        print(f"  • Network / Phone:  http://{lan_ip}:8000")
+        print("  • Interactive Docs: http://localhost:8000/docs")
+        print("=" * 62 + "\n", flush=True)
     yield
 
 API_DESCRIPTION = """
@@ -232,9 +249,5 @@ app.include_router(schemes_router)
 app.include_router(eligibility_router)
 app.include_router(ocr_router)
 app.include_router(vault_router)
-app.include_router(household_router)
-app.include_router(open_data_router)
 app.include_router(admin_router)
-app.include_router(routing_router)
 app.include_router(chat_router)
-app.include_router(voice_router)

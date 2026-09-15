@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Check Eligibility - Demographics</title>
+<!-- Google Font: Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f9f5',
+              100: '#dcf0e7',
+              500: '#158055',
+              700: '#0e6245',
+              800: '#0b4f37',
+              900: '#083c2a',
+            },
+            surface: {
+              base: '#faf8ff',
+              container: '#ffffff',
+              subtle: '#f4f6f8',
+              muted: '#8e9aa0',
+              border: '#e2e8f0',
+            }
+          },
+          borderRadius: {
+            'custom': '14px',
+            'phone': '40px',
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="base-typography">
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+<style data-purpose="ios-frame-styling">
+    /* Subtle custom box-shadow and scrollbar styling for mobile preview frame */
+    .mobile-frame {
+      box-shadow: 0 25px 50px -12px rgba(14, 98, 69, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-0 sm:p-4 text-slate-800 antialiased">
+<!-- BEGIN: MobileDeviceFrame -->
+<main class="mobile-frame w-full max-w-[400px] h-[844px] bg-white sm:rounded-phone flex flex-col justify-between overflow-hidden relative" data-purpose="ios-container">
+<!-- Scrollable Content Area -->
+<div class="flex-1 overflow-y-auto hide-scrollbar flex flex-col">
+<!-- BEGIN: iOSStatusBar -->
+<header class="w-full pt-3 px-7 pb-1 flex justify-between items-center text-xs font-semibold text-slate-900 z-10 select-none" data-purpose="status-bar">
+<span>9:41</span>
+<div class="flex items-center space-x-2">
+<!-- Signal Icon -->
+<svg class="w-4 h-3.5 fill-current" viewbox="0 0 18 14">
+<path d="M1 10.5h2.5a.5.5 0 0 1 .5.5V13a.5.5 0 0 1-.5.5H1a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 1 .5-.5zm4.5-3H8a.5.5 0 0 1 .5.5V13a.5.5 0 0 1-.5.5H5.5a.5.5 0 0 1-.5-.5V8a.5.5 0 0 1 .5-.5zm4.5-3H12a.5.5 0 0 1 .5.5V13a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5V5a.5.5 0 0 1 .5-.5zm4.5-3H16a.5.5 0 0 1 .5.5V13a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5V2a.5.5 0 0 1 .5-.5z"></path>
+</svg>
+<!-- Wifi Icon -->
+<svg class="w-4 h-3.5 fill-current" viewbox="0 0 16 12">
+<path d="M8 2.5a11.96 11.96 0 0 1 6.55 1.94.75.75 0 0 0 .9-1.2A13.46 13.46 0 0 0 8 1 13.46 13.46 0 0 0 .55 3.24a.75.75 0 0 0 .9 1.2A11.96 11.96 0 0 1 8 2.5zm0 3.5c2.3 0 4.41.83 6.04 2.22a.75.75 0 0 0 .98-1.13A10.96 10.96 0 0 0 8 4.5c-2.6 0-4.99.9-6.98 2.45a.75.75 0 1 0 .94 1.17A9.46 9.46 0 0 1 8 6zm0 3.5a5.5 5.5 0 0 1 3.65 1.37.75.75 0 1 0 .99-1.13A7 7 0 0 0 8 8a7 7 0 0 0-4.64 1.74.75.75 0 1 0 1 1.13A5.5 5.5 0 0 1 8 9.5zm0 3.25a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5z"></path>
+</svg>
+<!-- Battery Icon -->
+<svg class="w-5 h-3 fill-current" viewbox="0 0 24 12">
+<rect fill="none" height="10" rx="3" stroke="currentColor" stroke-width="1.8" width="20" x="1" y="1"></rect>
+<rect height="7" rx="1.5" width="14" x="2.5" y="2.5"></rect>
+<path d="M22 4.5v3a1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1z"></path>
+</svg>
+</div>
+</header>
+<!-- END: iOSStatusBar -->
+<!-- BEGIN: NavigationHeader -->
+<nav class="relative px-5 pt-3 pb-2" data-purpose="app-navigation">
+<!-- Back Button -->
+<button aria-label="Go back" class="absolute left-4 top-3.5 p-1.5 rounded-full hover:bg-slate-100 active:bg-slate-200 transition-colors text-slate-700" type="button">
+<svg class="w-5 h-5 stroke-current stroke-[2.25] fill-none" viewbox="0 0 24 24">
+<path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Title & Subtitle centered -->
+<div class="text-center px-8">
+<span class="text-[11px] font-semibold text-slate-400 tracking-wide uppercase">Step 1 of 3</span>
+<h1 class="text-xl font-bold text-slate-900 tracking-tight mt-0.5">Demographics</h1>
+<p class="text-[13px] text-slate-500 font-medium">Tell us about yourself</p>
+</div>
+</nav>
+<!-- END: NavigationHeader -->
+<!-- BEGIN: StepperIndicator -->
+<section aria-label="Progress Stepper" class="px-7 pt-4 pb-4" data-purpose="stepper">
+<div class="relative flex items-center justify-between">
+<!-- Background track line -->
+<div class="absolute left-6 right-6 top-3.5 h-[2px] bg-slate-200 -z-0"></div>
+<!-- Active Line between 1 and 2 (inactive/light) -->
+<div class="absolute left-6 w-[36%] top-3.5 h-[2px] bg-slate-200 -z-0"></div>
+<!-- Step 1: Active -->
+<div class="flex flex-col items-center z-10 group cursor-default">
+<div class="w-7 h-7 rounded-full bg-brand-700 text-white flex items-center justify-center font-bold text-xs ring-4 ring-brand-50 shadow-sm">
+              1
+            </div>
+<span class="mt-1.5 text-[11px] font-semibold text-brand-800">Demographics</span>
+</div>
+<!-- Step 2: Inactive -->
+<div class="flex flex-col items-center z-10 group cursor-default">
+<div class="w-7 h-7 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-semibold text-xs">
+              2
+            </div>
+<span class="mt-1.5 text-[11px] font-medium text-slate-500">Economic</span>
+</div>
+<!-- Step 3: Inactive -->
+<div class="flex flex-col items-center z-10 group cursor-default">
+<div class="w-7 h-7 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-semibold text-xs">
+              3
+            </div>
+<span class="mt-1.5 text-[11px] font-medium text-slate-500">Assets</span>
+</div>
+</div>
+</section>
+<!-- END: StepperIndicator -->
+<!-- Divider line -->
+<div class="h-[1px] bg-slate-100 mx-5 my-1"></div>
+<!-- BEGIN: FormInputs -->
+<section class="px-5 py-3 space-y-5 flex-1" data-purpose="demographics-form">
+<!-- Field 1: Date of Birth -->
+<div class="space-y-1.5">
+<label class="block text-[13px] font-bold text-slate-700" for="dob">
+            Date of Birth
+          </label>
+<div class="relative">
+<input class="w-full h-12 px-3.5 pr-11 bg-white border border-slate-300 rounded-xl text-slate-800 text-[15px] font-medium focus:outline-none focus:ring-2 focus:ring-brand-700 focus:border-brand-700 transition shadow-sm" id="dob" placeholder="DD/MM/YYYY" type="text" value="15/08/1998"/>
+<!-- Calendar Icon -->
+<div class="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<rect height="18" rx="2" ry="2" width="18" x="3" y="4"></rect>
+<line x1="16" x2="16" y1="2" y2="6"></line>
+<line x1="8" x2="8" y1="2" y2="6"></line>
+<line x1="3" x2="21" y1="10" y2="10"></line>
+</svg>
+</div>
+</div>
+</div>
+<!-- Field 2: Gender Selector -->
+<div class="space-y-1.5" data-purpose="gender-selection">
+<label class="block text-[13px] font-bold text-slate-700">
+            Gender
+          </label>
+<div class="grid grid-cols-3 gap-2.5">
+<!-- Male Option (Selected) -->
+<button class="flex items-center justify-center space-x-1.5 h-11 px-3 bg-brand-700 text-white rounded-xl font-semibold text-[13.5px] shadow-sm transition-all active:scale-[0.98]" data-purpose="gender-pill-male" type="button">
+<!-- Male/User Icon -->
+<svg class="w-4 h-4 fill-none stroke-current stroke-2" viewbox="0 0 24 24">
+<circle cx="12" cy="7" r="4"></circle>
+<path d="M5.5 21a6.5 6.5 0 0 1 13 0"></path>
+</svg>
+<span>Male</span>
+</button>
+<!-- Female Option -->
+<button class="flex items-center justify-center space-x-1.5 h-11 px-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-medium text-[13.5px] hover:bg-slate-50 transition active:scale-[0.98]" data-purpose="gender-pill-female" type="button">
+<svg class="w-4 h-4 fill-none stroke-current stroke-2" viewbox="0 0 24 24">
+<circle cx="12" cy="7" r="4"></circle>
+<path d="M5.5 21a6.5 6.5 0 0 1 13 0"></path>
+</svg>
+<span>Female</span>
+</button>
+<!-- Other Option -->
+<button class="flex items-center justify-center space-x-1.5 h-11 px-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-medium text-[13.5px] hover:bg-slate-50 transition active:scale-[0.98]" data-purpose="gender-pill-other" type="button">
+<svg class="w-4 h-4 fill-none stroke-current stroke-2" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="8"></circle>
+</svg>
+<span>Other</span>
+</button>
+</div>
+</div>
+<!-- Field 3: State Dropdown -->
+<div class="space-y-1.5">
+<label class="block text-[13px] font-bold text-slate-700" for="state-select">
+            State
+          </label>
+<div class="relative">
+<select class="w-full h-12 pl-3.5 pr-10 bg-white border border-slate-300 rounded-xl text-slate-800 text-[15px] font-medium appearance-none focus:outline-none focus:ring-2 focus:ring-brand-700 focus:border-brand-700 transition shadow-sm" id="state-select">
+<option selected="" value="Maharashtra">Maharashtra</option>
+<option value="Karnataka">Karnataka</option>
+<option value="Gujarat">Gujarat</option>
+<option value="Uttar Pradesh">Uttar Pradesh</option>
+<option value="Madhya Pradesh">Madhya Pradesh</option>
+</select>
+<!-- Down Chevron Icon -->
+<div class="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+<svg class="w-4 h-4 stroke-current stroke-[2.2] fill-none" viewbox="0 0 24 24">
+<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- Field 4: District Dropdown -->
+<div class="space-y-1.5">
+<label class="block text-[13px] font-bold text-slate-700" for="district-select">
+            District
+          </label>
+<div class="relative">
+<select class="w-full h-12 pl-3.5 pr-10 bg-white border border-slate-300 rounded-xl text-slate-800 text-[15px] font-medium appearance-none focus:outline-none focus:ring-2 focus:ring-brand-700 focus:border-brand-700 transition shadow-sm" id="district-select">
+<option selected="" value="Pune">Pune</option>
+<option value="Mumbai Suburban">Mumbai Suburban</option>
+<option value="Nagpur">Nagpur</option>
+<option value="Nashik">Nashik</option>
+<option value="Aurangabad">Aurangabad</option>
+</select>
+<!-- Down Chevron Icon -->
+<div class="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+<svg class="w-4 h-4 stroke-current stroke-[2.2] fill-none" viewbox="0 0 24 24">
+<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</div>
+</div>
+</section>
+<!-- END: FormInputs -->
+</div>
+<!-- BEGIN: BottomStickyCTA -->
+<footer class="p-5 pt-3 bg-white/95 backdrop-blur-sm border-t border-slate-100 z-20" data-purpose="form-actions">
+<!-- Main Action Button -->
+<button class="w-full h-[52px] bg-brand-700 hover:bg-brand-800 active:bg-brand-900 text-white font-semibold rounded-custom flex items-center justify-center space-x-2 text-[15px] transition shadow-md shadow-brand-700/20 active:scale-[0.99]" type="button">
+<span>Next: Economic Details</span>
+<!-- Right Arrow -->
+<svg class="w-4 h-4 stroke-current stroke-[2.2] fill-none" viewbox="0 0 24 24">
+<path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- iOS Home Indicator Indicator Bar -->
+<div class="w-32 h-1 bg-slate-900 rounded-full mx-auto mt-4 mb-0.5"></div>
+</footer>
+<!-- END: BottomStickyCTA -->
+</main>
+<!-- END: MobileDeviceFrame -->
+</body></html>

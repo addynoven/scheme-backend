@@ -44,6 +44,8 @@ def setup_schemes(db_session: Session):
                 db_session.add(EligibilityRule(scheme_id=s.id, field_name=f_name, operator=op, rule_value=val))
     
     db_session.commit()
+    from app.modules.eligibility.bitmask_engine import bitmask_engine
+    bitmask_engine.warm_up(db_session)
 
 
 # ==============================================================================

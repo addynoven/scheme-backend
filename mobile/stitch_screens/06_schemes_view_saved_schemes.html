@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>View Saved Schemes - Scheme App</title>
+<!-- Tailwind CSS v3 CDN with forms and container queries plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', 'Segoe UI', 'Roboto', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<!-- BEGIN: Custom Layout Styles -->
+<style data-purpose="layout">
+    /* Hide scrollbars for filter chip carousels while maintaining functionality */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* iOS device frame styling */
+    .ios-device-container {
+      max-width: 412px;
+      min-height: 844px;
+    }
+  </style>
+<!-- END: Custom Layout Styles -->
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-0 sm:p-4 text-slate-800 antialiased font-sans select-none">
+<!-- BEGIN: MobileDeviceFrame -->
+<div class="ios-device-container w-full bg-white sm:rounded-[44px] shadow-2xl overflow-hidden flex flex-col relative border border-slate-200">
+<!-- BEGIN: iOSStatusBar -->
+<header class="w-full pt-3 px-7 pb-1 flex justify-between items-center text-slate-900 bg-white z-20" data-purpose="status-bar">
+<!-- Time -->
+<span class="text-[15px] font-semibold tracking-tight">9:41</span>
+<!-- iOS Notch / Island Indicator Spacer -->
+<div class="w-20 h-4 bg-transparent"></div>
+<!-- Device Status Icons -->
+<div class="flex items-center space-x-1.5">
+<!-- Cellular Signal -->
+<svg class="w-4 h-3 fill-current" viewbox="0 0 17 11">
+<rect height="3" rx="0.5" width="2.5" x="0" y="8"></rect>
+<rect height="5" rx="0.5" width="2.5" x="4" y="6"></rect>
+<rect height="8" rx="0.5" width="2.5" x="8" y="3"></rect>
+<rect height="11" rx="0.5" width="2.5" x="12" y="0"></rect>
+</svg>
+<!-- Wi-Fi -->
+<svg class="w-4 h-3 fill-current" viewbox="0 0 16 12">
+<path d="M8 2.8c2.8 0 5.3 1.1 7.2 2.9l1-1.1C13.9 2.5 11.1 1.3 8 1.3S2.1 2.5.8 4.6l1 1.1C3.7 3.9 6.2 2.8 8 2.8zm0 4c1.7 0 3.3.7 4.5 1.8l1.1-1.1c-1.5-1.4-3.5-2.2-5.6-2.2S3.9 6.1 2.4 7.5L3.5 8.6C4.7 7.5 6.3 6.8 8 6.8zm0 4.1c1 0 1.9.4 2.5 1.1l1.1-1.1c-.9-.9-2.2-1.5-3.6-1.5s-2.7.6-3.6 1.5l1.1 1.1c.6-.7 1.5-1.1 2.5-1.1z"></path>
+</svg>
+<!-- Battery Icon -->
+<div class="w-6 h-3 border border-slate-900 rounded-sm p-0.5 flex items-center">
+<div class="h-full w-full bg-slate-900 rounded-[1px]"></div>
+</div>
+</div>
+</header>
+<!-- END: iOSStatusBar -->
+<!-- BEGIN: TopBar -->
+<section class="px-4 py-3 flex items-center justify-between border-b border-slate-50 bg-white" data-purpose="app-navigation-header">
+<!-- Back Arrow -->
+<button aria-label="Go back" class="p-2 -ml-1 text-slate-700 hover:text-slate-900 transition-colors">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Page Title -->
+<h1 class="text-base font-bold text-slate-900 tracking-tight">Schemes</h1>
+<!-- User Profile Avatar -->
+<div class="relative w-8 h-8 rounded-full overflow-hidden border border-amber-300 bg-amber-50">
+<img alt="User avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIsQbM8_2Cuk-FFNdPgnSF1CAG4G-DqcSKpi3Rd2kJHh6204QtA3OJ2XfOLGjVn4g88dTexeywGc7ew-P12mjv6HC08uEhOGqO8plggP42tzAQa3lbMW1aDEVam8pYOXNfE05VYoOyE0Uc2kPZGXagjk9Eaw02t7yIiGlodYbMSJgO-XYGYWHybCvIxhBFfxFiisTPBHLdyVbdJo4pXM5vjmNARK4GSvp6xrjPKhFw9NmObeur9kyv"/>
+</div>
+</section>
+<!-- END: TopBar -->
+<!-- BEGIN: MainContent -->
+<main class="flex-1 overflow-y-auto px-4 pb-24 pt-2 bg-slate-50/50" data-purpose="saved-schemes-content">
+<!-- BEGIN: SearchBar -->
+<div class="relative mt-2 mb-3" data-purpose="search-box">
+<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<input class="w-full bg-white text-xs text-slate-700 rounded-xl pl-9 pr-4 py-2.5 border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-600 focus:border-brand-600 placeholder-slate-400 transition" placeholder="Search saved schemes..." type="text"/>
+</div>
+<!-- END: SearchBar -->
+<!-- BEGIN: FilterChips -->
+<nav aria-label="Category filters" class="flex items-center space-x-2 overflow-x-auto no-scrollbar py-1 mb-4">
+<!-- All Chip -->
+<button class="px-4 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-slate-200 shrink-0 hover:bg-slate-100 transition">
+          All
+        </button>
+<!-- Active Saved Chip -->
+<button class="px-4 py-1.5 rounded-full text-xs font-semibold text-white bg-[#004e38] shadow-sm shrink-0 flex items-center space-x-1">
+<span>Saved (3)</span>
+</button>
+<!-- Cash Grants Chip -->
+<button class="px-4 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-slate-200 shrink-0 hover:bg-slate-100 transition">
+          Cash Grants
+        </button>
+<!-- Subsidies Chip -->
+<button class="px-4 py-1.5 rounded-full text-xs font-medium text-slate-600 bg-white border border-slate-200 shrink-0 hover:bg-slate-100 transition">
+          Subsidies
+        </button>
+</nav>
+<!-- END: FilterChips -->
+<!-- BEGIN: SavedSchemeList -->
+<div class="space-y-3" data-purpose="scheme-cards-list">
+<!-- Scheme Card 1: PM Kisan Samman Nidhi -->
+<article class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm relative hover:border-brand-100 transition">
+<div class="flex items-start justify-between">
+<div class="flex items-start space-x-3">
+<!-- Icon Container -->
+<div class="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
+<svg class="w-5 h-5 text-emerald-600" fill="currentColor" viewbox="0 0 24 24">
+<!-- Sprout / Agriculture Icon -->
+<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.93V18h-2v-1.07c-2.83-.48-5-2.94-5-5.93h2c0 2.21 1.79 4 4 4s4-1.79 4-4h2c0 2.99-2.17 5.45-5 5.93zM12 4c2.21 0 4 1.79 4 4h-8c0-2.21 1.79-4 4-4z"></path>
+</svg>
+</div>
+<!-- Details -->
+<div>
+<h2 class="text-sm font-bold text-slate-900 leading-snug">PM Kisan Samman Nidhi</h2>
+<p class="text-xs text-slate-500 mt-0.5 font-normal">Ministry of Agriculture</p>
+<div class="text-xs font-bold text-[#004e38] mt-1.5">₹6,000 / year</div>
+<!-- Tags -->
+<div class="flex items-center space-x-2 mt-2">
+<span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">All India</span>
+<span class="text-[10px] bg-amber-50 text-amber-700 border border-amber-200/50 px-2 py-0.5 rounded font-medium">Cash Grant</span>
+</div>
+</div>
+</div>
+<!-- Filled Bookmark Icon (Active Saved) -->
+<button aria-label="Remove from saved" class="text-[#004e38] p-1 -mr-1">
+<svg class="w-5 h-5 fill-[#004e38]" viewbox="0 0 24 24">
+<path d="M5 3c-.55 0-1 .45-1 1v17l8-4 8 4V4c0-.55-.45-1-1-1H5z"></path>
+</svg>
+</button>
+</div>
+</article>
+<!-- Scheme Card 2: PM Ujjwala Yojana -->
+<article class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm relative hover:border-brand-100 transition">
+<div class="flex items-start justify-between">
+<div class="flex items-start space-x-3">
+<!-- Gas Cylinder / Flame Icon -->
+<div class="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center shrink-0">
+<svg class="w-5 h-5 text-orange-500" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 12.9a3.1 3.1 0 0 0-3.1 3.1c0 1.71 1.39 3.1 3.1 3.1s3.1-1.39 3.1-3.1c0-1.71-1.39-3.1-3.1-3.1zm1.5-8.4h-3v1.5h3V4.5zm-5 4.5h7v10h-7V9zm7-2H8.5c-.83 0-1.5.67-1.5 1.5v11c0 .83.67 1.5 1.5 1.5h7c.83 0 1.5-.67 1.5-1.5v-11c0-.83-.67-1.5-1.5-1.5z"></path>
+</svg>
+</div>
+<!-- Details -->
+<div>
+<h2 class="text-sm font-bold text-slate-900 leading-snug">PM Ujjwala Yojana</h2>
+<div class="text-xs font-medium text-emerald-700 mt-1">Free LPG Connection</div>
+<!-- Tags -->
+<div class="flex items-center space-x-2 mt-2.5">
+<span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">All India</span>
+<span class="text-[10px] bg-red-50 text-red-600 border border-red-100 px-2 py-0.5 rounded font-medium">Subsidy</span>
+</div>
+</div>
+</div>
+<!-- Filled Bookmark Icon (Active Saved) -->
+<button aria-label="Remove from saved" class="text-[#004e38] p-1 -mr-1">
+<svg class="w-5 h-5 fill-[#004e38]" viewbox="0 0 24 24">
+<path d="M5 3c-.55 0-1 .45-1 1v17l8-4 8 4V4c0-.55-.45-1-1-1H5z"></path>
+</svg>
+</button>
+</div>
+</article>
+<!-- Scheme Card 3: Ayushman Bharat -->
+<article class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm relative hover:border-brand-100 transition">
+<div class="flex items-start justify-between">
+<div class="flex items-start space-x-3">
+<!-- Health Cross Icon -->
+<div class="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+<svg class="w-5 h-5 text-blue-600" fill="currentColor" viewbox="0 0 24 24">
+<path d="M19 10.5h-5.5V5c0-.55-.45-1-1-1h-1c-.55 0-1 .45-1 1v5.5H5c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1h5.5V19c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-5.5H19c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1z"></path>
+</svg>
+</div>
+<!-- Details -->
+<div>
+<h2 class="text-sm font-bold text-slate-900 leading-snug">Ayushman Bharat</h2>
+<div class="text-xs font-medium text-emerald-700 mt-1">Free Health Coverage</div>
+<!-- Tags -->
+<div class="flex items-center space-x-2 mt-2.5">
+<span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">All India</span>
+<span class="text-[10px] bg-amber-50 text-amber-700 border border-amber-200/50 px-2 py-0.5 rounded font-medium">Health</span>
+</div>
+</div>
+</div>
+<!-- Filled Bookmark Icon (Active Saved) -->
+<button aria-label="Remove from saved" class="text-[#004e38] p-1 -mr-1">
+<svg class="w-5 h-5 fill-[#004e38]" viewbox="0 0 24 24">
+<path d="M5 3c-.55 0-1 .45-1 1v17l8-4 8 4V4c0-.55-.45-1-1-1H5z"></path>
+</svg>
+</button>
+</div>
+</article>
+</div>
+<!-- END: SavedSchemeList -->
+<!-- BEGIN: InformationalBanner -->
+<section class="mt-4 bg-sky-50/70 border border-sky-100 rounded-2xl p-3.5 flex items-center space-x-3.5" data-purpose="encouragement-banner">
+<!-- Woman Student Illustration Placeholder -->
+<div class="relative w-14 h-14 rounded-full overflow-hidden bg-sky-100 border border-sky-200 shrink-0 flex items-center justify-center">
+<img alt="Student holding books" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMSamQGRbcS8WoXRQ0Sy2UVkuq0vTQwLq49cRyFVxYWw7wONqxDEm9CJIHdi2yNaSbo7JfqlSqI9v5IP1Bmg4PJABYYHm8X3HZQGyjgmHfah1FfGBQt8938cm9GNCfq1dYOGUK471T65aoLVpPtXHUOX203bo8zgVsOO0WbFv0CP3W55VbmI6hojIUnH-Y5LkXxGKYvcp3FQ6LE547oHMvRxLsOewnyX-9AgfTw_bnKB79X5G2WnoQ"/>
+</div>
+<!-- Banner Copy -->
+<div class="flex-1 pr-1">
+<p class="text-xs font-bold text-slate-800 leading-snug">You've saved 3 schemes</p>
+<p class="text-[11px] text-slate-600 mt-0.5 leading-tight">Keep exploring to build more opportunities for your family.</p>
+</div>
+</section>
+<!-- END: InformationalBanner -->
+</main>
+<!-- END: MainContent -->
+<!-- BEGIN: PersistentBottomNavbar -->
+<nav class="absolute bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-4 py-2 z-30" data-purpose="bottom-navigation-bar">
+<div class="grid grid-cols-4 items-center max-w-sm mx-auto text-center">
+<!-- Tab 1: Advisor -->
+<a class="flex flex-col items-center py-1 text-slate-500 hover:text-slate-800 transition" href="#">
+<svg class="w-5 h-5 stroke-current fill-none" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] mt-1 font-medium">Advisor</span>
+</a>
+<!-- Tab 2: Vault -->
+<a class="flex flex-col items-center py-1 text-slate-500 hover:text-slate-800 transition" href="#">
+<svg class="w-5 h-5 stroke-current fill-none" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] mt-1 font-medium">Vault</span>
+</a>
+<!-- Tab 3: Check -->
+<a class="flex flex-col items-center py-1 text-slate-500 hover:text-slate-800 transition" href="#">
+<svg class="w-5 h-5 stroke-current fill-none" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] mt-1 font-medium">Check</span>
+</a>
+<!-- Tab 4: Schemes (Active) -->
+<a class="flex flex-col items-center py-1 text-[#004e38] transition" href="#">
+<div class="relative">
+<svg class="w-5 h-5 stroke-current fill-none" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="absolute -top-1 -right-1 w-2 h-2 bg-[#004e38] rounded-full"></span>
+</div>
+<span class="text-[10px] mt-1 font-bold">Schemes</span>
+</a>
+</div>
+<!-- iOS Home Indicator Bar -->
+<div class="w-32 h-1 bg-slate-900/40 rounded-full mx-auto mt-2"></div>
+</nav>
+<!-- END: PersistentBottomNavbar -->
+</div>
+<!-- END: MobileDeviceFrame -->
+</body></html>

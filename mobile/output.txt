@@ -1,0 +1,76 @@
+.
+├── AGENTS.md
+├── app.json
+├── ARCHITECTURE_BLUEPRINT v2.md
+├── assets
+│   ├── fonts
+│   │   └── SpaceMono-Regular.ttf
+│   └── images
+│       ├── adaptive-icon.png
+│       ├── favicon.png
+│       ├── icon.png
+│       └── splash-icon.png
+├── CLAUDE.md
+├── .gitignore
+├── output.txt
+├── package.json
+├── pnpm-lock.yaml
+├── src
+│   ├── app
+│   │   ├── +html.tsx
+│   │   ├── _layout.tsx
+│   │   ├── modal.tsx
+│   │   ├── +not-found.tsx
+│   │   └── (tabs)
+│   │       ├── index.tsx
+│   │       ├── _layout.tsx
+│   │       └── two.tsx
+│   ├── core
+│   │   ├── api
+│   │   │   ├── client.ts
+│   │   │   ├── entityMappers.ts
+│   │   │   ├── httpClient.ts
+│   │   │   └── index.ts
+│   │   ├── components
+│   │   │   ├── Badge.tsx
+│   │   │   ├── Button.tsx
+│   │   │   ├── Card.tsx
+│   │   │   ├── ExternalLink.tsx
+│   │   │   ├── FeatureGate.tsx
+│   │   │   ├── index.ts
+│   │   │   ├── Input.tsx
+│   │   │   ├── Toast.tsx
+│   │   │   └── TopBar.tsx
+│   │   ├── config
+│   │   │   ├── config.schema.ts
+│   │   │   ├── config.ts
+│   │   │   ├── flags.ts
+│   │   │   └── index.ts
+│   │   ├── errors
+│   │   │   ├── ErrorBoundary.tsx
+│   │   │   ├── error-handler.ts
+│   │   │   ├── index.ts
+│   │   │   └── result.ts
+│   │   ├── index.ts
+│   │   ├── network
+│   │   │   ├── index.ts
+│   │   │   └── useNetworkStatus.ts
+│   │   ├── query
+│   │   │   ├── index.ts
+│   │   │   ├── queryClient.ts
+│   │   │   └── QueryProvider.tsx
+│   │   ├── storage
+│   │   │   ├── index.ts
+│   │   │   ├── mmkv.ts
+│   │   │   └── secureStorage.ts
+│   │   └── theme
+│   │       ├── colors.ts
+│   │       ├── index.ts
+│   │       ├── shadows.ts
+│   │       ├── spacing.ts
+│   │       └── typography.ts
+│   ├── features
+│   └── types.ts
+└── tsconfig.json
+
+17 directories, 57 files

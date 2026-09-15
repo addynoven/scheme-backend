@@ -8,7 +8,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.modules.auth.models import Profile, User
+from app.modules.auth.models import Profile
 from app.modules.ocr.schemas import (
     ExtractedDocumentFacts,
     ExtractedDocumentFactsResponse,
@@ -42,7 +42,7 @@ def test_v20_extract_facts_from_pan_card(client: TestClient, db_session: Session
     headers = {"Authorization": f"Bearer {token}"}
 
     # 1. Upload a PAN Card mock binary to Vault
-    pan_bytes = b"MOCK_IMAGE_BYTES_PAN_CARD"
+    pan_bytes = b"\x89PNG\r\n\x1a\n" + b"MOCK_IMAGE_BYTES_PAN_CARD"
     res_upload = client.post(
         "/vault/documents/upload",
         data={"document_type": "PAN Card"},
@@ -130,7 +130,7 @@ def test_v20_progressive_profile_enrichment_with_income_certificate(
     )
 
     # Upload Income Certificate
-    income_cert_bytes = b"MOCK_IMAGE_REVENUE_DEPARTMENT_ANNUAL_INCOME_CERTIFICATE"
+    income_cert_bytes = b"%PDF-1.4\n" + b"MOCK_IMAGE_REVENUE_DEPARTMENT_ANNUAL_INCOME_CERTIFICATE"
     res_upload = client.post(
         "/vault/documents/upload",
         data={"document_type": "Income Certificate"},

@@ -414,13 +414,22 @@ def execute_get_scheme_details(db: Session, tool_args: dict[str, Any]) -> dict[s
     Fetches canonical markdown scheme documentation or database records with strict slug sanitization.
     """
     try:
-        raw_slug = str(tool_args.get("scheme_slug", "")).strip().lower()
+        raw_slug = str(
+            tool_args.get("scheme_slug")
+            or tool_args.get("scheme_name")
+            or tool_args.get("slug")
+            or tool_args.get("name")
+            or ""
+        ).strip().lower()
         if raw_slug == "ab-pmjay":
             raw_slug = "ayushman-bharat-pmjay"
 
-        slug = re.sub(r"[^a-z0-9\-]", "", raw_slug)
+        # Sanitize spaces to dashes for slug normalization
+        slug = re.sub(r"[^a-z0-9\-\s]", "", raw_slug).strip().replace(" ", "-")
+        # Remove consecutive dashes
+        slug = re.sub(r"-+", "-", slug)
         if not slug:
-            return {"status": "not_found", "message": "No scheme slug specified."}
+            return {"status": "not_found", "message": "No scheme slug or name specified."}
 
         # 1. Exact markdown file lookup
         if KNOWLEDGE_SCHEMES_DIR.exists():
@@ -447,10 +456,40 @@ def execute_get_scheme_details(db: Session, tool_args: dict[str, Any]) -> dict[s
         db_scheme = db.scalar(
             select(Scheme).where(Scheme.slug == slug)
         )
+        if not db_scheme:
+            from sqlalchemy import or_, and_
+            clean_name = slug.replace("-", " ")
+            db_scheme = db.scalar(
+                select(Scheme).where(
+                    or_(
+                        Scheme.slug.ilike(f"%{slug}%"),
+                        Scheme.name.ilike(f"%{clean_name}%"),
+                    )
+                )
+            )
+
+        if not db_scheme:
+            from sqlalchemy import or_, and_
+            state_abbrs = {
+                "up": "uttar-pradesh", "mp": "madhya-pradesh", "mh": "maharashtra",
+                "tn": "tamil-nadu", "rj": "rajasthan", "ap": "andhra-pradesh",
+            }
+            tokens = [t for t in re.findall(r"[a-z0-9]+", raw_slug.lower())]
+            expanded = []
+            for t in tokens:
+                if t in state_abbrs:
+                    expanded.extend(state_abbrs[t].split("-"))
+                elif len(t) >= 3 and t not in {"the", "for", "and", "scheme", "yojana", "subsidies", "subsidy", "grant", "assistance"}:
+                    expanded.append(t)
+
+            if expanded:
+                word_conds = [or_(Scheme.name.ilike(f"%{w}%"), Scheme.slug.ilike(f"%{w}%")) for w in expanded]
+                db_scheme = db.scalar(select(Scheme).where(and_(*word_conds)))
+
         if db_scheme:
             return {
                 "status": "success",
-                "slug": slug,
+                "slug": db_scheme.slug,
                 "name": db_scheme.name,
                 "state": db_scheme.state,
                 "category": db_scheme.category,
@@ -531,3 +570,68 @@ def execute_browse_schemes_and_knowledge(db: Session, tool_args: dict[str, Any])
             "status": "error",
             "message": "Failed to browse schemes registry with @knowledge inspection.",
         }
+
+
+# ============================================================================
+# LANGGRAPH TOOL DEFINITIONS
+# ============================================================================
+from langchain_core.tools import tool
+
+
+@tool("check_eligibility")
+def tool_check_eligibility(
+    category: str | None = None,
+    topic: str | None = None,
+    state: str | None = None,
+    occupation: str | None = None,
+    age: int | None = None,
+    annual_income: float | None = None,
+    caste_category: str | None = None,
+    gender: str | None = None,
+    jurisdiction: str = "both",
+) -> str:
+    """Check which government welfare schemes a citizen qualifies for based on demographic criteria and optional sector/category. Pass state (e.g. 'Uttar Pradesh', 'Goa'), category (e.g. 'Education', 'Agriculture'), occupation (e.g. 'student', 'farmer'), age, annual_income."""
+    return "executed"
+
+
+@tool("search_schemes_directory")
+def tool_search_schemes_directory(
+    state: str | None = None,
+    category: str | None = None,
+    search_query: str | None = None,
+) -> str:
+    """Directly queries the database schemes directory and returns the true total count and top sample highlights."""
+    return "executed"
+
+
+@tool("get_scheme_details")
+def tool_get_scheme_details(
+    scheme_slug: str,
+) -> str:
+    """Fetches canonical markdown scheme documentation or database records for a specific scheme slug."""
+    return "executed"
+
+
+@tool("browse_schemes_and_knowledge")
+def tool_browse_schemes_and_knowledge(
+    search_query: str | None = None,
+    state: str | None = None,
+    category: str | None = None,
+    occupation: str | None = None,
+    gender: str | None = None,
+    caste_category: str | None = None,
+    annual_income: float | None = None,
+    has_land: bool | None = None,
+    include_knowledge_md: bool = True,
+) -> str:
+    """Browses scheme directory with multi-field demographic/policy filters AND inspects canonical @knowledge Markdown documentation."""
+    return "executed"
+
+
+LANGGRAPH_TOOLS = [
+    tool_check_eligibility,
+    tool_search_schemes_directory,
+    tool_get_scheme_details,
+    tool_browse_schemes_and_knowledge,
+]
+

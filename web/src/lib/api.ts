@@ -256,6 +256,36 @@ export async function searchSchemes(q?: string, category?: string, state?: strin
   return data.items || []
 }
 
+export async function listSchemesPaginated(params?: {
+  skip?: number
+  limit?: number
+  category?: string
+  state?: string
+  ministry?: string
+  search?: string
+  sort_by?: string
+}): Promise<PaginatedResult<Scheme>> {
+  const query = new URLSearchParams()
+  if (params?.skip !== undefined) query.set('skip', String(params.skip))
+  if (params?.limit !== undefined) query.set('limit', String(params.limit))
+  if (params?.category && params.category !== 'All') query.set('category', params.category)
+  if (params?.state && params.state !== 'ALL_INDIA' && params.state !== 'All') query.set('state', params.state)
+  if (params?.ministry && params.ministry !== 'All') query.set('ministry', params.ministry)
+  if (params?.search) query.set('search', params.search)
+  if (params?.sort_by) query.set('sort_by', params.sort_by)
+  query.set('status', 'active')
+
+  const res = await fetch(`${API_BASE}/schemes?${query.toString()}`)
+  if (!res.ok) throw new Error('Failed to load schemes')
+  return res.json()
+}
+
+export async function getSchemeCategories(): Promise<Array<{ category: string; count: number }>> {
+  const res = await fetch(`${API_BASE}/schemes/categories`)
+  if (!res.ok) throw new Error('Failed to load categories')
+  return res.json()
+}
+
 export async function getSchemeBySlug(slug: string): Promise<Scheme> {
   const res = await fetch(`${API_BASE}/schemes/slug/${slug}`)
   if (!res.ok) throw new Error('Scheme not found')
@@ -517,14 +547,6 @@ export async function adminListSchemes(params?: {
   return res.json()
 }
 
-export async function adminGetScheme(id: number): Promise<Scheme> {
-  const res = await fetch(`${API_BASE}/admin/schemes/${id}`, {
-    headers: getAdminAuthHeaders(),
-  })
-  if (!res.ok) throw new Error('Scheme not found')
-  return res.json()
-}
-
 export async function adminCreateScheme(payload: any): Promise<Scheme> {
   const res = await fetch(`${API_BASE}/admin/schemes`, {
     method: 'POST',
@@ -559,286 +581,9 @@ export async function adminDeleteScheme(id: number): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete scheme')
 }
 
-// ============================================================================
-// V1.5 INGESTION & TRIAGE APIS
-// ============================================================================
 
-export interface IngestionSource {
-  id: number
-  source_key: string
-  name: string
-  endpoint_url: string
-  source_type: string
-  etag: string | null
-  last_modified_header: string | null
-  content_hash: string | null
-  status: string
-  failure_count: number
-  last_checked_at: string | null
-  last_synced_at: string | null
-}
 
-export interface IngestionTriageItem {
-  id: number
-  source_id: number
-  scheme_slug: string
-  scheme_name: string
-  change_type: string
-  impact_level: string
-  diff_summary: string
-  diff_payload: {
-    before_state?: any
-    after_state?: any
-  }
-  status: string
-  reviewed_by: string | null
-  reviewed_at: string | null
-  created_at: string
-}
 
-export interface IngestionSyncRunResult {
-  source_key: string
-  status: string
-  http_status: number | null
-  bytes_downloaded: number
-  raw_s3_key: string | null
-  semantic_hash: string | null
-  schemes_created: number
-  schemes_updated: number
-  breaking_changes_triaged: number
-  message: string
-  duration_ms: number
-}
-
-export async function adminListIngestionSources(): Promise<IngestionSource[]> {
-  const res = await fetch(`${API_BASE}/admin/ingestion/sources`, {
-    headers: getAdminAuthHeaders(),
-  })
-  if (!res.ok) throw new Error('Failed to load ingestion sources')
-  return res.json()
-}
-
-export async function adminRunIngestionSync(sourceKey?: string): Promise<IngestionSyncRunResult[]> {
-  const url = sourceKey
-    ? `${API_BASE}/admin/ingestion/run?source_key=${encodeURIComponent(sourceKey)}`
-    : `${API_BASE}/admin/ingestion/run`
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: getAdminAuthHeaders(),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message || 'Ingestion sync failed')
-  }
-  return res.json()
-}
-
-export async function adminListTriageItems(statusFilter: string = 'pending_review'): Promise<IngestionTriageItem[]> {
-  const url = statusFilter
-    ? `${API_BASE}/admin/ingestion/triage?status_filter=${encodeURIComponent(statusFilter)}`
-    : `${API_BASE}/admin/ingestion/triage`
-  const res = await fetch(url, {
-    headers: getAdminAuthHeaders(),
-  })
-  if (!res.ok) throw new Error('Failed to load triage items')
-  return res.json()
-}
-
-export async function adminApproveTriageItem(id: number): Promise<IngestionTriageItem> {
-  const res = await fetch(`${API_BASE}/admin/ingestion/triage/${id}/approve`, {
-    method: 'POST',
-    headers: getAdminAuthHeaders(),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message || 'Failed to approve triage item')
-  }
-  return res.json()
-}
-
-export async function adminRejectTriageItem(id: number): Promise<IngestionTriageItem> {
-  const res = await fetch(`${API_BASE}/admin/ingestion/triage/${id}/reject`, {
-    method: 'POST',
-    headers: getAdminAuthHeaders(),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message || 'Failed to reject triage item')
-  }
-  return res.json()
-}
-
-// ============================================================================
-// V2.6 TWO-STAGE QUERY ROUTER APIS
-// ============================================================================
-
-export interface QueryRouteResponse {
-  route_type: string
-  normalized_intent: string
-  answer: string
-  citations: string[]
-  matched_schemes: Array<{
-    name: string
-    slug: string
-    state?: string
-    benefit_title?: string
-    application_url?: string
-  }>
-  execution_plan?: {
-    sql_facts?: any
-    okf_paths?: string[]
-    web_queries?: string[]
-  }
-}
-
-export async function queryRouter(question: string, state?: string): Promise<QueryRouteResponse> {
-  const res = await fetch(`${API_BASE}/routing/query`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getCitizenAuthHeaders(),
-    },
-    body: JSON.stringify({ question, state }),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message || 'Query routing failed')
-  }
-  return res.json()
-}
-
-// ============================================================================
-// V2.7 HOUSEHOLD & FAMILY WELFARE GRAPH APIS
-// ============================================================================
-
-export interface HouseholdMember {
-  id: number
-  primary_user_id?: number
-  citizen_uid: string
-  member_uid: string
-  household_uid: string
-  full_name: string
-  relationship: string
-  life_stage: 'MINOR' | 'ADULT' | 'SENIOR'
-  verification_status: 'UNVERIFIED' | 'PENDING_DOCS' | 'DOCUMENT_VERIFIED'
-  date_of_birth?: string | null
-  age: number
-  gender: string
-  occupation?: string | null
-  caste_category?: string | null
-  annual_income?: number | null
-  is_student: boolean
-  is_disabled?: boolean
-  has_disability?: boolean
-  aadhaar_last_four?: string | null
-  created_at?: string
-  updated_at?: string
-}
-
-export interface HouseholdMemberReport {
-  member_id: number
-  citizen_uid: string
-  member_uid: string
-  full_name: string
-  relationship: string
-  life_stage: string
-  verification_status: string
-  age: number
-  gender: string
-  eligible_schemes_count: number
-  eligible_schemes: Array<{
-    name: string
-    slug: string
-    benefit_title?: string
-    application_url?: string
-  }>
-}
-
-export interface FamilyEligibilityReport {
-  household_uid: string
-  total_family_members: number
-  total_collective_schemes: number
-  family_members_reports: HouseholdMemberReport[]
-}
-
-export async function listHouseholdMembers(): Promise<HouseholdMember[]> {
-  const res = await fetch(`${API_BASE}/household/members`, {
-    headers: getCitizenAuthHeaders(),
-  })
-  if (!res.ok) throw new Error('Failed to load household members')
-  return res.json()
-}
-
-export async function getHouseholdMember(id: number): Promise<HouseholdMember> {
-  const res = await fetch(`${API_BASE}/household/members/${id}`, {
-    headers: getCitizenAuthHeaders(),
-  })
-  if (!res.ok) throw new Error('Failed to fetch family member')
-  return res.json()
-}
-
-export async function addHouseholdMember(payload: {
-  full_name: string
-  relationship: string
-  age: number
-  date_of_birth?: string | null
-  gender: string
-  occupation?: string | null
-  caste_category?: string | null
-  annual_income?: number | null
-  is_student?: boolean
-  is_disabled?: boolean
-  aadhaar_last_four?: string | null
-}): Promise<HouseholdMember> {
-  const res = await fetch(`${API_BASE}/household/members`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getCitizenAuthHeaders(),
-    },
-    body: JSON.stringify(payload),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message || 'Failed to add family member')
-  }
-  return res.json()
-}
-
-export async function updateHouseholdMember(
-  id: number,
-  payload: Partial<HouseholdMember>
-): Promise<HouseholdMember> {
-  const res = await fetch(`${API_BASE}/household/members/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getCitizenAuthHeaders(),
-    },
-    body: JSON.stringify(payload),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message || 'Failed to update family member')
-  }
-  return res.json()
-}
-
-export async function deleteHouseholdMember(id: number): Promise<void> {
-  const res = await fetch(`${API_BASE}/household/members/${id}`, {
-    method: 'DELETE',
-    headers: getCitizenAuthHeaders(),
-  })
-  if (!res.ok) throw new Error('Failed to delete family member')
-}
-
-export async function getFamilyEligibility(): Promise<FamilyEligibilityReport> {
-  const res = await fetch(`${API_BASE}/household/eligibility`, {
-    headers: getCitizenAuthHeaders(),
-  })
-  if (!res.ok) throw new Error('Failed to run family welfare scan')
-  return res.json()
-}
 
 // ============================================================================
 // V2.8 CONVERSATIONAL CITIZEN CHAT APIS
@@ -983,91 +728,6 @@ export async function streamChatMessage(
   }
 }
 
-// ============================================================================
-// V2.9 VOICE-FIRST SPEECH INTERFACE APIS
-// ============================================================================
 
-export interface VoiceTranscriptionResponse {
-  transcribed_text: string
-  detected_language: string
-  confidence: number
-}
-
-export interface VoiceChatResponse {
-  session_id?: number
-  transcribed_text: string
-  detected_language: string
-  answer: string
-  citations: string[]
-  matched_schemes: Array<{
-    name: string
-    slug: string
-    benefit_title?: string
-    application_url?: string
-  }>
-  synthesized_speech_base64: string | null
-}
-
-export interface VoiceSynthesisResponse {
-  language_code: string
-  audio_format: string
-  audio_base64: string
-  synthesized_text: string
-}
-
-export async function transcribeAudio(file: File): Promise<VoiceTranscriptionResponse> {
-  const formData = new FormData()
-  formData.append('file', file)
-
-  const res = await fetch(`${API_BASE}/voice/transcribe`, {
-    method: 'POST',
-    headers: getCitizenAuthHeaders(),
-    body: formData,
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message || 'Audio transcription failed')
-  }
-  return res.json()
-}
-
-export async function voiceChat(file: File, sessionId?: number): Promise<VoiceChatResponse> {
-  const formData = new FormData()
-  formData.append('file', file)
-
-  const url = sessionId ? `${API_BASE}/voice/chat?session_id=${sessionId}` : `${API_BASE}/voice/chat`
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: getCitizenAuthHeaders(),
-    body: formData,
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message || 'Voice chat failed')
-  }
-  return res.json()
-}
-
-export async function synthesizeSpeech(text: string, languageCode: string = 'hi'): Promise<VoiceSynthesisResponse> {
-  const res = await fetch(`${API_BASE}/voice/synthesize`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getCitizenAuthHeaders(),
-    },
-    body: JSON.stringify({ text, language_code: languageCode }),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message || 'Speech synthesis failed')
-  }
-  return res.json()
-}
-
-export async function getVoiceTools(): Promise<any> {
-  const res = await fetch(`${API_BASE}/voice/tools`)
-  if (!res.ok) throw new Error('Failed to fetch voice tools')
-  return res.json()
-}
 
 

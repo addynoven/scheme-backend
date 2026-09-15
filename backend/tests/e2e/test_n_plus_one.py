@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.modules.auth.models import Profile, User
+from app.modules.chat.models import ChatMessage, ChatSession
 from app.modules.schemes.models import (
     Benefit,
     EligibilityRule,
@@ -121,22 +122,36 @@ def test_users_list_has_no_n_plus_one(
     # Seed 10 users with profiles
     seed_users_with_profiles(db_session, count=10)
 
+    from app.core.security import create_access_token
+    admin_user = User(
+        email="admin_nplus1@gov.in",
+        phone="+919999900001",
+        hashed_password="hashed_admin_password",
+        role="admin",
+        is_verified=True,
+    )
+    db_session.add(admin_user)
+    db_session.commit()
+    token = create_access_token(
+        subject=admin_user.id, extra_claims={"email": admin_user.email}
+    )
+    headers = {"Authorization": f"Bearer {token}"}
+
     with query_counter() as counter:
-        response = client.get("/users?skip=0&limit=10")
+        response = client.get("/users?skip=0&limit=10", headers=headers)
 
     assert response.status_code == 200
     data = response.json()
-    assert data["total"] == 10
+    assert data["total"] >= 10
     assert len(data["items"]) == 10
 
     for item in data["items"]:
-        assert item["profile"] is not None
+        assert item["profile"] is not None or item["role"] == "admin"
 
     # N+1 Detection:
-    # If N+1 existed: 1 (count) + 1 (users) + 10 (individual profile queries) = 12 queries.
-    # With eager loading (selectinload): exactly 1 (count) + 1 (users) + 1 (batch profiles IN query) = 3 queries.
-    assert counter.count <= 3, (
-        f"N+1 problem detected! Expected <= 3 queries, but executed {counter.count} queries:\n"
+    # Auth user lookup (1) + Auth user profile (1) + count (1) + users (1) + batch profiles (1) = 5 queries total.
+    assert counter.count <= 5, (
+        f"N+1 problem detected! Expected <= 5 queries, but executed {counter.count} queries:\n"
         + "\n---\n".join(counter.queries)
     )
 
@@ -161,5 +176,59 @@ def test_eligibility_matching_has_no_n_plus_one(
     # Eager loading loads all schemes + 4 batch relation queries = 5 queries total.
     assert counter.count <= 5, (
         f"N+1 problem detected in eligibility engine! Executed {counter.count} queries:\n"
+        + "\n---\n".join(counter.queries)
+    )
+
+
+def test_chat_sessions_list_has_no_n_plus_one(
+    client: TestClient, db_session: Session, query_counter
+):
+    from app.core.security import create_access_token
+
+    user = User(
+        email="chat_citizen@gov.in",
+        phone="+919870001122",
+        hashed_password="hashed_password",
+        role="citizen",
+        is_verified=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+
+    # Create 5 chat sessions, each with 3 messages
+    for i in range(5):
+        session = ChatSession(
+            session_uid=f"session-test-{i}",
+            user_id=user.id,
+            title=f"Conversation {i}",
+            language_code="en",
+        )
+        db_session.add(session)
+        db_session.flush()
+        for m in range(3):
+            db_session.add(
+                ChatMessage(
+                    session_id=session.id,
+                    sender="user" if m % 2 == 0 else "assistant",
+                    content=f"Message {m} for session {i}",
+                )
+            )
+    db_session.commit()
+
+    token = create_access_token(subject=user.id, extra_claims={"email": user.email})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    with query_counter() as counter:
+        response = client.get("/chat/sessions", headers=headers)
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 5
+
+    # N+1 Detection:
+    # Auth user lookup (1) + Auth user profile (1) + Sessions query (1) + Batch messages selectin query (1) = 4 queries total.
+    # Without selectinload, this would execute 1 + 1 + 1 + 5 = 8 queries.
+    assert counter.count <= 4, (
+        f"N+1 problem detected in chat sessions list! Expected <= 4 queries, but executed {counter.count}:\n"
         + "\n---\n".join(counter.queries)
     )

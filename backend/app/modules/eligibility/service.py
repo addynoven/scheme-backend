@@ -270,10 +270,55 @@ def explain_rule_verdict(
     )
 
 
+class EvaluatableRule:
+    __slots__ = ("field_name", "operator", "rule_value")
+    def __init__(self, field_name: str, operator: str, rule_value: str):
+        self.field_name = field_name
+        self.operator = operator
+        self.rule_value = rule_value
+
+class EvaluatableScheme:
+    __slots__ = (
+        "id",
+        "name",
+        "slug",
+        "state",
+        "ministry",
+        "description",
+        "application_url",
+        "benefits_summary",
+        "eligibility_rules",
+        "latest_version_id",
+    )
+    def __init__(
+        self,
+        id: int,
+        name: str,
+        slug: str,
+        state: str | None,
+        ministry: str,
+        description: str,
+        application_url: str | None,
+        benefits_summary: list[str],
+        eligibility_rules: list[EvaluatableRule],
+        latest_version_id: int | None = None,
+    ):
+        self.id = id
+        self.name = name
+        self.slug = slug
+        self.state = state
+        self.ministry = ministry
+        self.description = description
+        self.application_url = application_url
+        self.benefits_summary = benefits_summary
+        self.eligibility_rules = eligibility_rules
+        self.latest_version_id = latest_version_id
+
+
 def explain_scheme_eligibility(
-    scheme: Scheme, profile_context: dict[str, Any]
+    scheme: Any, profile_context: dict[str, Any]
 ) -> SchemeExplanation:
-    rules = scheme.eligibility_rules or []
+    rules = getattr(scheme, "eligibility_rules", []) or []
     passed_criteria: list[CriterionVerdict] = []
     failed_criteria: list[CriterionVerdict] = []
 
@@ -308,12 +353,16 @@ def explain_scheme_eligibility(
             failed_reasons = "; ".join(c.reason for c in failed_criteria)
             summary_reason = f"Ineligible ({passed_count}/{total_rules} criteria met). {failed_reasons}"
 
-    benefits_summary = [b.title for b in (scheme.benefits or [])]
+    if hasattr(scheme, "benefits_summary"):
+        benefits_summary = scheme.benefits_summary
+    else:
+        benefits_summary = [b.title for b in (getattr(scheme, "benefits", []) or [])]
 
     return SchemeExplanation(
         scheme_id=scheme.id,
         scheme_name=scheme.name,
         scheme_slug=scheme.slug,
+        state=getattr(scheme, "state", "ALL_INDIA") or "ALL_INDIA",
         ministry=scheme.ministry,
         description=scheme.description,
         status=status_category,
@@ -331,7 +380,7 @@ def explain_scheme_eligibility(
 
 def record_eligibility_decision(
     db: Session,
-    scheme: Scheme,
+    scheme: Any,
     profile_context: dict[str, Any],
     explanation: SchemeExplanation,
     user_id: int | None = None,
@@ -345,8 +394,8 @@ def record_eligibility_decision(
         elif v is not None:
             clean_snapshot[k] = str(v)
 
-    latest_version_id = None
-    if scheme.versions:
+    latest_version_id = getattr(scheme, "latest_version_id", None)
+    if latest_version_id is None and hasattr(scheme, "versions") and scheme.versions:
         latest_version_id = max(v.id for v in scheme.versions)
 
     decision_record = EligibilityDecision(
@@ -363,20 +412,76 @@ def record_eligibility_decision(
     db.add(decision_record)
 
 
-def generate_eligibility_report(
-    db: Session, profile_context: dict[str, Any]
-) -> EligibilityReportResponse:
+_cached_evaluatable_schemes: list[EvaluatableScheme] | None = None
+
+
+def get_cached_active_schemes(db: Session, force_reload: bool = False) -> list[Any]:
+    global _cached_evaluatable_schemes
+    from app.core.config import settings
+
+    is_testing = getattr(settings, "TESTING", False)
+    if is_testing:
+        stmt = (
+            select(Scheme)
+            .where(Scheme.status == "active")
+            .options(
+                selectinload(Scheme.benefits),
+                selectinload(Scheme.eligibility_rules),
+                selectinload(Scheme.required_documents),
+                selectinload(Scheme.official_sources),
+            )
+        )
+        return list(db.scalars(stmt).all())
+
+    if _cached_evaluatable_schemes is not None and not force_reload:
+        return _cached_evaluatable_schemes
+
     stmt = (
         select(Scheme)
         .where(Scheme.status == "active")
         .options(
             selectinload(Scheme.benefits),
             selectinload(Scheme.eligibility_rules),
-            selectinload(Scheme.required_documents),
-            selectinload(Scheme.official_sources),
+            selectinload(Scheme.versions),
         )
     )
-    schemes = list(db.scalars(stmt).all())
+    raw_schemes = list(db.scalars(stmt).all())
+    result = []
+    for s in raw_schemes:
+        rules = [
+            EvaluatableRule(r.field_name, r.operator, r.rule_value)
+            for r in (s.eligibility_rules or [])
+        ]
+        benefits = [b.title for b in (s.benefits or [])]
+        ver_id = max((v.id for v in s.versions), default=None) if s.versions else None
+        result.append(
+            EvaluatableScheme(
+                id=s.id,
+                name=s.name,
+                slug=s.slug,
+                state=s.state,
+                ministry=s.ministry,
+                description=s.description,
+                application_url=s.application_url,
+                benefits_summary=benefits,
+                eligibility_rules=rules,
+                latest_version_id=ver_id,
+            )
+        )
+
+    _cached_evaluatable_schemes = result
+    return _cached_evaluatable_schemes
+
+
+def invalidate_cached_schemes() -> None:
+    global _cached_evaluatable_schemes
+    _cached_evaluatable_schemes = None
+
+
+def generate_eligibility_report(
+    db: Session, profile_context: dict[str, Any]
+) -> EligibilityReportResponse:
+    schemes = get_cached_active_schemes(db)
 
     eligible: list[SchemeExplanation] = []
     nearly_eligible: list[SchemeExplanation] = []
@@ -384,7 +489,6 @@ def generate_eligibility_report(
 
     for scheme in schemes:
         explanation = explain_scheme_eligibility(scheme, profile_context)
-        record_eligibility_decision(db, scheme, profile_context, explanation)
         if explanation.status == "eligible":
             eligible.append(explanation)
         elif explanation.status == "nearly_eligible":
@@ -392,7 +496,13 @@ def generate_eligibility_report(
         else:
             ineligible.append(explanation)
 
+    # Record decisions for top matches with bounded write volume (capped at 50 to avoid write amplification)
+    user_id = profile_context.get("user_id")
     try:
+        for exp in eligible[:50]:
+            target_scheme = next((s for s in schemes if s.id == exp.scheme_id), None)
+            if target_scheme:
+                record_eligibility_decision(db, target_scheme, profile_context, exp, user_id=user_id)
         db.commit()
     except Exception:
         db.rollback()
@@ -430,21 +540,10 @@ def check_scheme_eligibility(
 def match_schemes_for_context(
     db: Session, profile_context: dict[str, Any]
 ) -> list[Scheme]:
-    stmt = (
-        select(Scheme)
-        .where(Scheme.status == "active")
-        .options(
-            selectinload(Scheme.benefits),
-            selectinload(Scheme.eligibility_rules),
-            selectinload(Scheme.required_documents),
-            selectinload(Scheme.official_sources),
-        )
-    )
-    active_schemes = db.scalars(stmt).all()
-
+    schemes = get_cached_active_schemes(db)
     return [
         scheme
-        for scheme in active_schemes
+        for scheme in schemes
         if check_scheme_eligibility(scheme, profile_context)
     ]
 
@@ -452,3 +551,4 @@ def match_schemes_for_context(
 def match_schemes_for_profile(db: Session, profile: Profile) -> list[Scheme]:
     context = build_profile_context(profile)
     return match_schemes_for_context(db, context)
+

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Logout Confirmation - Scheme App</title>
+<!-- Tailwind CSS CDN with forms and container queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#0B735F',
+            danger: '#DC2626',
+            'danger-hover': '#B91C1C',
+            'modal-bg': '#F8FAFC'
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-ios-styling">
+    /* iOS device container simulation styles */
+    .ios-device-frame {
+      max-width: 390px;
+      min-height: 844px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+    .modal-shadow {
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+    }
+  </style>
+</head>
+<body class="bg-slate-800 min-h-screen flex items-center justify-center p-0 sm:p-4 font-sans antialiased selection:bg-red-500 selection:text-white">
+<!-- BEGIN: MobileDeviceContainer -->
+<!-- Container replicating the mobile screen viewport -->
+<div class="ios-device-frame relative w-full h-[844px] bg-neutral-900 overflow-hidden flex flex-col justify-between sm:rounded-[48px] border-0 sm:border-[8px] sm:border-neutral-800 select-none">
+<!-- BEGIN: BackgroundScreenContent -->
+<!-- Dimmed underlying Settings Screen visible beneath the overlay -->
+<div class="absolute inset-0 bg-[#F4F6F8] opacity-25 pointer-events-none flex flex-col">
+<!-- iOS Status Bar Placeholder -->
+<div class="h-11 px-7 pt-3 flex justify-between items-center text-xs font-semibold text-gray-800">
+<span>9:41</span>
+<div class="flex items-center space-x-1.5">
+<svg class="w-4 h-3.5 fill-current" viewbox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 18.25A9.957 9.957 0 0 1 2 12C2 6.48 6.48 2 12 2s10 4.48 10 10c0 2.32-.8 4.45-2.14 6.15l-.62-.62A8.966 8.966 0 0 0 21 12c0-4.97-4.03-9-9-9z"></path></svg>
+<div class="w-5 h-2.5 border border-current rounded-sm p-0.5"><div class="h-full w-full bg-current rounded-2xs"></div></div>
+</div>
+</div>
+<!-- Background Header -->
+<div class="px-5 py-3 flex items-center justify-between border-b border-gray-200">
+<span class="text-gray-600 font-bold">←</span>
+<span class="font-semibold text-gray-800 text-base">Settings</span>
+<span class="w-4"></span>
+</div>
+<!-- Background List Items Mock -->
+<div class="p-4 space-y-4">
+<div class="bg-white p-4 rounded-xl shadow-sm h-14"></div>
+<div class="bg-white p-4 rounded-xl shadow-sm h-14"></div>
+<div class="bg-white p-4 rounded-xl shadow-sm h-14"></div>
+</div>
+</div>
+<!-- END: BackgroundScreenContent -->
+<!-- BEGIN: BackdropOverlay -->
+<!-- Darkened semi-transparent overlay covering the screen -->
+<div class="absolute inset-0 bg-neutral-900/60 backdrop-blur-[2px] transition-opacity"></div>
+<!-- END: BackdropOverlay -->
+<!-- BEGIN: TopBar -->
+<!-- iOS Dynamic Island / Notch and Status Bar -->
+<header class="relative z-20 px-8 pt-3 pb-2 flex justify-between items-center text-white text-xs font-semibold">
+<span class="tracking-tight text-sm font-medium">9:41</span>
+<!-- Speaker Notch representation -->
+<div class="w-24 h-4 bg-black/80 rounded-full mx-auto"></div>
+<div class="flex items-center space-x-1.5">
+<!-- Signal strength icon -->
+<svg class="w-4 h-3 fill-current" viewbox="0 0 17 12">
+<rect height="5" rx="0.5" width="2.5" y="7"></rect>
+<rect height="7" rx="0.5" width="2.5" x="4.5" y="5"></rect>
+<rect height="9.5" rx="0.5" width="2.5" x="9" y="2.5"></rect>
+<rect height="12" rx="0.5" width="2.5" x="13.5"></rect>
+</svg>
+<!-- Wifi icon -->
+<svg class="w-4 h-3.5 fill-current" viewbox="0 0 24 24">
+<path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98C20.93 5.9 16.69 4 12 4z"></path>
+</svg>
+<!-- Battery Icon -->
+<div class="w-5 h-2.5 border border-white/80 rounded-sm p-0.5 flex items-center">
+<div class="h-full w-full bg-white rounded-xs"></div>
+</div>
+</div>
+</header>
+<!-- END: TopBar -->
+<!-- Back Arrow subtle overlay icon (as visible in reference screen) -->
+<div class="relative z-10 px-6 pt-1">
+<button aria-label="Go back" class="p-1 text-white/70 hover:text-white transition-colors" type="button">
+<svg class="w-5 h-5 stroke-[2.5]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15.75 19.5L8.25 12l7.5-7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- BEGIN: LogoutConfirmationModal -->
+<!-- Centered dialog card matches Row 2 Screen 6 exact specifications -->
+<main class="relative z-30 flex-1 flex items-center justify-center px-6">
+<div class="w-full max-w-[325px] bg-white rounded-[24px] p-6 text-center modal-shadow transition-all transform scale-100" data-purpose="logout-confirmation-dialog">
+<!-- Circle icon container with subtle soft red tint -->
+<div class="mx-auto w-14 h-14 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4 ring-8 ring-red-50/50" data-purpose="dialog-icon-container">
+<!-- Logout icon (box with exit arrow) -->
+<svg class="w-6 h-6 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l3 3m0 0l-3 3m3-3H3" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<!-- Dialog Title -->
+<h2 class="text-[17px] font-bold text-gray-900 tracking-tight leading-snug mb-2">
+          Are you sure you want<br/>to log out?
+        </h2>
+<!-- Dialog Subtitle / Helper Message -->
+<p class="text-[13px] text-gray-500 font-normal leading-relaxed px-1 mb-6">
+          You'll need to sign in again to access your account.
+        </p>
+<!-- BEGIN: DialogActionButtons -->
+<!-- Buttons Group -->
+<div class="flex flex-col space-y-3">
+<!-- Primary Destructive Action: Log Out -->
+<button class="w-full h-11 bg-[#D9383A] hover:bg-[#C52F31] active:bg-[#B32729] text-white font-medium text-[14px] rounded-xl transition-colors duration-150 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2" data-purpose="confirm-logout-button" type="button">
+            Log Out
+          </button>
+<!-- Secondary Action: Cancel -->
+<button class="w-full h-11 bg-[#F1F3F5] hover:bg-[#E9ECEF] active:bg-[#DEE2E6] text-gray-700 font-medium text-[14px] rounded-xl transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-gray-300" data-purpose="cancel-logout-button" type="button">
+            Cancel
+          </button>
+</div>
+<!-- END: DialogActionButtons -->
+</div>
+</main>
+<!-- END: LogoutConfirmationModal -->
+<!-- BEGIN: iOSHomeIndicator -->
+<!-- Home swipe indicator bar -->
+<footer class="relative z-30 pb-3 flex justify-center">
+<div class="w-32 h-1 bg-white/40 rounded-full"></div>
+</footer>
+<!-- END: iOSHomeIndicator -->
+</div>
+<!-- END: MobileDeviceContainer -->
+</body></html>

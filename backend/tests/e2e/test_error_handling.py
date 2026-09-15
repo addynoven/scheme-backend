@@ -9,7 +9,10 @@ def test_404_entity_not_found_standard_response(client: TestClient):
     assert "Scheme with identifier '99999' was not found" in data["message"]
     assert data["status_code"] == 404
 
-    res_user = client.get("/users/88888")
+    # Create an admin to query nonexistent user
+    from app.core.security import create_access_token
+    token = create_access_token(subject="admin@gov.in", extra_claims={"email": "admin@gov.in"})
+    res_user = client.get("/users/88888", headers={"Authorization": f"Bearer {token}"})
     assert res_user.status_code == 404
     assert res_user.json()["error"] == "ENTITY_NOT_FOUND"
 

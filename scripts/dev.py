@@ -112,7 +112,28 @@ def main():
     print("  ⚡ Backend API:      \033[1;32mhttp://localhost:8000\033[0m")
     print("  📖 Swagger Docs:     \033[1;33mhttp://localhost:8000/docs\033[0m")
     print("  🗄️ MinIO S3 Console: \033[1;35mhttp://localhost:9001\033[0m (minioadmin/minioadmin)")
-    print("  🤖 AI LLM Provider:  \033[1;32mLocal CLI (agy / gemini-3.7-flash-low)\033[0m")
+    # Detect active AI Provider from environment or backend/.env
+    env_file = BACKEND_DIR / ".env"
+    env_vars: dict[str, str] = {}
+    if env_file.exists():
+        for line in env_file.read_text().splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                env_vars[k.strip()] = v.strip().strip('"').strip("'")
+
+    active_provider = (os.getenv("LLM_PROVIDER") or env_vars.get("LLM_PROVIDER") or "gemini").lower()
+    if active_provider == "groq":
+        model_name = os.getenv("GROQ_MODEL") or env_vars.get("GROQ_MODEL") or "qwen/qwen3.8-27b"
+        provider_display = f"\033[1;32mGroq Cloud API ({model_name})\033[0m"
+    elif active_provider == "gemini":
+        model_name = os.getenv("GEMINI_MODEL") or env_vars.get("GEMINI_MODEL") or "gemini-3.8-flash"
+        provider_display = f"\033[1;32mGoogle Gemini API ({model_name})\033[0m \033[0;36m[Groq 429 failover active]\033[0m"
+    else:
+        model_name = os.getenv("AGY_MODEL") or env_vars.get("AGY_MODEL") or "gemini-3.7-flash-low"
+        provider_display = f"\033[1;33mLocal CLI AI (agy / {model_name})\033[0m"
+
+    print("  🤖 AI LLM Provider:  " + provider_display)
     print("=" * 60)
     print("  Press \033[1;31mCtrl+C\033[0m anytime to stop all servers cleanly.\n")
 

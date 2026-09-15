@@ -1,0 +1,143 @@
+{
+  "displayName": "Citizen Welfare Navigator",
+  "styleGuidelines": "## Brand & Style\n\nThis design system delivers a civic welfare experience built for millions of Indian citizens across diverse digital literacy levels, languages, and device constraints. The interface balances high institutional trust with human warmth, transforming complex governmental documentation and eligibility frameworks into transparent, actionable milestones.\n\n### Emotional Objectives\n- **Dignity & Respect:** Clean, dignified interactions devoid of bureaucratic friction or patronizing patterns.\n- **Trust & Authenticity:** Authoritative civic cues, verified status badges, and crystal-clear data security signals.\n- **Empowerment & Clarity:** Step-by-step progress tracking, predictable tap responses, and legible financial summaries (\u20b9 currency clarity).\n\n### Visual Aesthetic: Modern Civic Humanism\nThe aesthetic combines **Modern Minimalist Utility** with **Tactile Civic Components**:\n- Deep emerald and forest green foundations anchor national governance and stability.\n- Crisp mint surfaces soften complex forms into approachable steps.\n- Warm marigold saffron highlights provide vibrant cues for important actions, alerts, and critical opportunities.\n- Surfaces are treated as soft, tactile rounded cards (`rounded-2xl` and `rounded-3xl`) set against clean off-white canvases, prioritizing one-thumb mobile reachability and clear visual boundaries.\n\n## Layout & Spacing\n\nThe layout is built mobile-first, targeting one-handed ergonomics within the primary thumb reach zone.\n\n### Mobile Grid & Rhythm\n- **Base Grid:** 4-column layout on mobile devices (`360px` to `428px`), transitioning to 8 columns on tablets (`768px`) and 12 columns on desktop (`1024px+`).\n- **Screen Margins:** Fixed `16px` (`1rem`) outer gutters ensure safe spacing away from curved phone edges and system gestural rails.\n- **Thumb Zone Design:** Critical action triggers (e.g., \"Next\", \"Check My Schemes\", \"Apply Online\") are anchored into sticky bottom action bars with an integrated `16px` padding container above hardware home indicators.\n- **Step Flow Vertical Spacing:** Progressive question sequences use `16px` gaps between standalone cards and `12px` gaps between grouped selection items.\n- **Bottom Sheet Insets:** Modal bottom sheets occupy 90% viewport height maximum, with top handle grips and sticky internal footer controls.\n\n## Elevation & Depth\n\nVisual hierarchy uses soft tonal layer separation paired with subtle diffuse ambient shadows, avoiding harsh stark borders or cluttered drop shadows.\n\n### Elevation Levels\n- **Canvas Base (Level 0):** `#F8FAFC` to `#F1F5F9`. The grounding background upon which all content structures sit.\n- **Content Cards & Panels (Level 1):** `#FFFFFF` surface accompanied by a subtle hairline border (`1px solid #E2E8F0`) and an ambient shadow: `0px 2px 8px rgba(15, 23, 42, 0.04)`.\n- **Interactive Floating Elements (Level 2):** Applied to active category pills, bottom bars, and floating search panels: `0px 8px 24px rgba(14, 98, 69, 0.08)`.\n- **Modals & Bottom Sheets (Level 3):** Modal overlays feature a deep charcoal scrim (`rgba(15, 23, 42, 0.48)`) coupled with top-lifted surface cards: `0px -8px 32px rgba(15, 23, 42, 0.12)`.\n- **Active State Depths:** Selected cards (such as an active occupation tile or chosen category) shift their border to `1.5px solid #0E6245` with a delicate inner tint (`#F0FDF4`).\n\n## Components\n\n### 1. Action Buttons\n- **Primary Sticky Button:** Deep emerald (`#0E6245`) background, white text (`#FFFFFF`), full width (`min-height: 52px`), `rounded-xl`, bold label with trailing arrow icon.\n- **Secondary Outlined Button:** White background, emerald border (`1.5px solid #0E6245`), emerald text (`#0E6245`), `rounded-xl`.\n- **Chat/Micro Buttons:** Pill-shaped icons (`48px x 48px`) with high contrast voice-input mic states in emerald or saffron.\n\n### 2. Selection Chips & Filter Pills\n- **Unselected:** Pure white background, `1px solid #CBD5E1` border, slate text (`#475569`).\n- **Active:** Emerald background (`#0E6245`) with white text (`#FFFFFF`), or light tint background (`#E8F5E9`) with dark emerald text (`#0E6245`) and check icon.\n\n### 3. Scheme Overview Cards\n- **Structure:** Pure white surface, `16px` inner padding, `rounded-2xl`.\n- **Header:** Ministry badge or civic icon (`40px x 40px`, soft mint container `#E8F5E9`), scheme title in `16px` bold, bookmark action right-aligned.\n- **Benefit Highlight:** Prominent green numerical figure (`#15803D`, e.g., \"\u20b96,000 / year\").\n- **Eligibility Bullets:** Green check icons (`16px`) paired with concise eligibility conditions.\n- **Footer Actions:** Split dual buttons (`Apply Online` in primary emerald, `Details` in subtle outline).\n\n### 4. Form Inputs & Select Controls\n- **Height:** Minimum `50px` tap boundary.\n- **Border & Background:** `#FFFFFF` background, `1.5px solid #E2E8F0` border, `12px` radius. Focus ring: `2px solid #0E6245`.\n- **Trailing Affordances:** Clean calendar, chevron, or unit labels (\"\u20b9\", \"acres\").\n\n### 5. Multi-Step Wizard & Step Bar\n- **Progress Line:** Horizontal connecting track (`4px` height) with completed nodes filled in deep emerald containing checkmarks, current step highlighted with an emerald circular halo, and upcoming steps in light slate (`#E2E8F0`).\n- **Step Header:** Display step count (\"Step 2 of 3\") in muted slate, paired with strong title (\"Economic Details\").\n\n### 6. Document Vault Tiles & Status Badges\n- **Status Pills:** \n  - *Verified / Uploaded:* Green surface (`#DCFCE7`), deep green text (`#166534`), leading checkmark.\n  - *Missing / Action Required:* Soft red surface (`#FEE2E2`), red text (`#991B1B`), alert icon.\n  - *Under Review / Pending:* Saffron surface (`#FEF3C7`), amber text (`#92400E`), clock icon.\n- **Document Card:** Left file icon with colored badge, title, subtitle with file size/format, and vertical three-dot contextual action menu.",
+  "theme": {
+    "colorMode": "LIGHT",
+    "font": "PLUS_JAKARTA_SANS",
+    "roundness": "ROUND_EIGHT",
+    "customColor": "#0e6245",
+    "headlineFont": "PLUS_JAKARTA_SANS",
+    "bodyFont": "INTER",
+    "labelFont": "INTER",
+    "namedColors": {
+      "surface_dim": "#d2d9f4",
+      "surface_tint": "#1c6b4d",
+      "surface_container_highest": "#dae2fd",
+      "surface_bright": "#faf8ff",
+      "on_secondary": "#ffffff",
+      "secondary_container": "#92f5a4",
+      "surface_variant": "#dae2fd",
+      "on_surface": "#131b2e",
+      "surface_container_low": "#f2f3ff",
+      "secondary_fixed_dim": "#79db8d",
+      "error": "#ba1a1a",
+      "tertiary": "#5a3700",
+      "outline": "#6f7973",
+      "primary": "#004831",
+      "on_tertiary": "#ffffff",
+      "inverse_on_surface": "#eef0ff",
+      "tertiary_fixed": "#ffddb8",
+      "on_surface_variant": "#3f4943",
+      "tertiary_fixed_dim": "#ffb95f",
+      "inverse_surface": "#283044",
+      "on_primary_fixed": "#002114",
+      "on_background": "#131b2e",
+      "surface": "#faf8ff",
+      "primary_fixed_dim": "#8bd6b1",
+      "primary_fixed": "#a6f2cc",
+      "on_secondary_container": "#007233",
+      "on_tertiary_fixed": "#2a1700",
+      "on_tertiary_fixed_variant": "#653e00",
+      "primary_container": "#0e6245",
+      "secondary_fixed": "#95f8a7",
+      "on_primary_fixed_variant": "#005138",
+      "on_secondary_fixed_variant": "#005323",
+      "on_error": "#ffffff",
+      "background": "#faf8ff",
+      "on_error_container": "#93000a",
+      "inverse_primary": "#8bd6b1",
+      "on_tertiary_container": "#ffc072",
+      "surface_container_high": "#e2e7ff",
+      "error_container": "#ffdad6",
+      "on_primary_container": "#90dbb6",
+      "outline_variant": "#bfc9c1",
+      "surface_container_lowest": "#ffffff",
+      "secondary": "#006d30",
+      "on_primary": "#ffffff",
+      "on_secondary_fixed": "#00210a",
+      "surface_container": "#eaedff",
+      "tertiary_container": "#7a4c00"
+    },
+    "designMd": "---\nname: Citizen Welfare Navigator\ncolors:\n  surface: '#faf8ff'\n  surface-dim: '#d2d9f4'\n  surface-bright: '#faf8ff'\n  surface-container-lowest: '#ffffff'\n  surface-container-low: '#f2f3ff'\n  surface-container: '#eaedff'\n  surface-container-high: '#e2e7ff'\n  surface-container-highest: '#dae2fd'\n  on-surface: '#131b2e'\n  on-surface-variant: '#3f4943'\n  inverse-surface: '#283044'\n  inverse-on-surface: '#eef0ff'\n  outline: '#6f7973'\n  outline-variant: '#bfc9c1'\n  surface-tint: '#1c6b4d'\n  primary: '#004831'\n  on-primary: '#ffffff'\n  primary-container: '#0e6245'\n  on-primary-container: '#90dbb6'\n  inverse-primary: '#8bd6b1'\n  secondary: '#006d30'\n  on-secondary: '#ffffff'\n  secondary-container: '#92f5a4'\n  on-secondary-container: '#007233'\n  tertiary: '#5a3700'\n  on-tertiary: '#ffffff'\n  tertiary-container: '#7a4c00'\n  on-tertiary-container: '#ffc072'\n  error: '#ba1a1a'\n  on-error: '#ffffff'\n  error-container: '#ffdad6'\n  on-error-container: '#93000a'\n  primary-fixed: '#a6f2cc'\n  primary-fixed-dim: '#8bd6b1'\n  on-primary-fixed: '#002114'\n  on-primary-fixed-variant: '#005138'\n  secondary-fixed: '#95f8a7'\n  secondary-fixed-dim: '#79db8d'\n  on-secondary-fixed: '#00210a'\n  on-secondary-fixed-variant: '#005323'\n  tertiary-fixed: '#ffddb8'\n  tertiary-fixed-dim: '#ffb95f'\n  on-tertiary-fixed: '#2a1700'\n  on-tertiary-fixed-variant: '#653e00'\n  background: '#faf8ff'\n  on-background: '#131b2e'\n  surface-variant: '#dae2fd'\ntypography:\n  headline-xl:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 32px\n    fontWeight: '700'\n    lineHeight: 40px\n  headline-lg:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 24px\n    fontWeight: '700'\n    lineHeight: 32px\n  headline-md:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 20px\n    fontWeight: '600'\n    lineHeight: 28px\n  headline-sm:\n    fontFamily: Plus Jakarta Sans\n    fontSize: 18px\n    fontWeight: '600'\n    lineHeight: 24px\n  body-lg:\n    fontFamily: Inter\n    fontSize: 16px\n    fontWeight: '400'\n    lineHeight: 24px\n  body-md:\n    fontFamily: Inter\n    fontSize: 14px\n    fontWeight: '400'\n    lineHeight: 20px\n  body-sm:\n    fontFamily: Inter\n    fontSize: 12px\n    fontWeight: '400'\n    lineHeight: 16px\n  label-lg:\n    fontFamily: Inter\n    fontSize: 15px\n    fontWeight: '600'\n    lineHeight: 20px\n  label-md:\n    fontFamily: Inter\n    fontSize: 13px\n    fontWeight: '600'\n    lineHeight: 18px\n  label-sm:\n    fontFamily: Inter\n    fontSize: 11px\n    fontWeight: '600'\n    lineHeight: 14px\nrounded:\n  sm: 0.25rem\n  DEFAULT: 0.5rem\n  md: 0.75rem\n  lg: 1rem\n  xl: 1.5rem\n  full: 9999px\nspacing:\n  gutter: 1rem\n  margin: 1rem\n  space-xs: 0.25rem\n  space-sm: 0.5rem\n  space-md: 1rem\n  space-lg: 1.5rem\n  space-xl: 2rem\n---\n\n## Brand & Style\n\nThis design system delivers a civic welfare experience built for millions of Indian citizens across diverse digital literacy levels, languages, and device constraints. The interface balances high institutional trust with human warmth, transforming complex governmental documentation and eligibility frameworks into transparent, actionable milestones.\n\n### Emotional Objectives\n- **Dignity & Respect:** Clean, dignified interactions devoid of bureaucratic friction or patronizing patterns.\n- **Trust & Authenticity:** Authoritative civic cues, verified status badges, and crystal-clear data security signals.\n- **Empowerment & Clarity:** Step-by-step progress tracking, predictable tap responses, and legible financial summaries (\u20b9 currency clarity).\n\n### Visual Aesthetic: Modern Civic Humanism\nThe aesthetic combines **Modern Minimalist Utility** with **Tactile Civic Components**:\n- Deep emerald and forest green foundations anchor national governance and stability.\n- Crisp mint surfaces soften complex forms into approachable steps.\n- Warm marigold saffron highlights provide vibrant cues for important actions, alerts, and critical opportunities.\n- Surfaces are treated as soft, tactile rounded cards (`rounded-2xl` and `rounded-3xl`) set against clean off-white canvases, prioritizing one-thumb mobile reachability and clear visual boundaries.\n\n## Colors\n\nThe palette establishes an immediate institutional yet approachable presence. Deep emeralds evoke governance, security, and institutional legitimacy, complemented by energizing agricultural and civic saffron accents.\n\n### Palette Breakdown\n- **Primary (`#0E6245`):** Used for primary conversion paths, sticky action buttons, top navigation titles, verified emblems, and primary active states.\n- **Secondary (`#15803D`):** Applied to success states, active step indicators, affirmative verification tags, and secondary action highlights.\n- **Tertiary (`#F59E0B`):** Warm marigold saffron. Used selectively for high-visibility highlights, pending verification warnings, informational banners, and eligibility badges.\n- **Surface Canvas (`#F8FAFC` to `#F1F5F9`):** Subdued, cool off-white neutral ensuring high contrast against elevated pure white cards.\n- **Surface Card (`#FFFFFF`):** Pure white container surfaces for optimal legibility and component separation.\n- **Mint Accent (`#E8F5E9` / `#D1FAE5`):** Soft contextual backgrounds for active category chips, eligibility highlights, and system success notifications.\n- **Neutral Foreground (`#0F172A`):** High-contrast deep slate for maximum readability on bright sunlight outdoor mobile viewports.\n- **Muted Gray (`#64748B`):** Secondary text, supporting labels, and unselected control states.\n\n## Typography\n\nTypography prioritizes extreme clarity, fast scanning, and consistent visual weighting across multilingual translations (Hindi, Tamil, Marathi, Bengali, Telugu, and English).\n\n### Hierarchy & Usage Rules\n- **Display & Section Titles (`Plus Jakarta Sans`):** Rounded geometric terminals provide human warmth and welcoming authority. Used exclusively for step screens, scheme names, and hero greetings.\n- **Body & Controls (`Inter`):** Selected for its tall x-height, pristine legibility on low-cost IPS mobile screens, and neutral geometric structure. Used across field entries, document details, descriptions, and eligibility checklists.\n- **Numerical Financial Display:** Currency amounts (`\u20b96,000 / year`) must always use medium or bold weights (`600` or `700`) to stand out instantly within scheme discovery cards.\n- **Text Scaling Safeguards:** Mobile line-heights are intentionally loose (1.4x to 1.5x) to accommodate complex compound scripts and diacritics in Indic regional alphabets without vertical clipping.\n\n## Layout & Spacing\n\nThe layout is built mobile-first, targeting one-handed ergonomics within the primary thumb reach zone.\n\n### Mobile Grid & Rhythm\n- **Base Grid:** 4-column layout on mobile devices (`360px` to `428px`), transitioning to 8 columns on tablets (`768px`) and 12 columns on desktop (`1024px+`).\n- **Screen Margins:** Fixed `16px` (`1rem`) outer gutters ensure safe spacing away from curved phone edges and system gestural rails.\n- **Thumb Zone Design:** Critical action triggers (e.g., \"Next\", \"Check My Schemes\", \"Apply Online\") are anchored into sticky bottom action bars with an integrated `16px` padding container above hardware home indicators.\n- **Step Flow Vertical Spacing:** Progressive question sequences use `16px` gaps between standalone cards and `12px` gaps between grouped selection items.\n- **Bottom Sheet Insets:** Modal bottom sheets occupy 90% viewport height maximum, with top handle grips and sticky internal footer controls.\n\n## Elevation & Depth\n\nVisual hierarchy uses soft tonal layer separation paired with subtle diffuse ambient shadows, avoiding harsh stark borders or cluttered drop shadows.\n\n### Elevation Levels\n- **Canvas Base (Level 0):** `#F8FAFC` to `#F1F5F9`. The grounding background upon which all content structures sit.\n- **Content Cards & Panels (Level 1):** `#FFFFFF` surface accompanied by a subtle hairline border (`1px solid #E2E8F0`) and an ambient shadow: `0px 2px 8px rgba(15, 23, 42, 0.04)`.\n- **Interactive Floating Elements (Level 2):** Applied to active category pills, bottom bars, and floating search panels: `0px 8px 24px rgba(14, 98, 69, 0.08)`.\n- **Modals & Bottom Sheets (Level 3):** Modal overlays feature a deep charcoal scrim (`rgba(15, 23, 42, 0.48)`) coupled with top-lifted surface cards: `0px -8px 32px rgba(15, 23, 42, 0.12)`.\n- **Active State Depths:** Selected cards (such as an active occupation tile or chosen category) shift their border to `1.5px solid #0E6245` with a delicate inner tint (`#F0FDF4`).\n\n## Shapes\n\nThe design system employs a soft, highly approachable curvature philosophy (`rounded-2xl` to `rounded-3xl` equivalents) that eliminates sharp bureaucratic edges in favor of accessible, friendly enclosures.\n\n### Radius System\n- **Pill Shapes (`rounded-full`):** Used for status tags, eligibility pills (\"Eligible\", \"Missing\", \"Cash Grant\"), filter chips, and primary chat suggestion triggers.\n- **Large Cards (`16px` to `20px` / `rounded-2xl`):** Standard container radius for scheme listing cards, document vault tiles, and multi-option selection blocks.\n- **Hero Containers & Bottom Sheets (`24px` to `28px` / `rounded-3xl`):** Used for onboarding cards, modal bottom sheet top corners, and step wizard milestone summaries.\n- **Inputs & Field Controls (`12px`):** Form fields, date pickers, and select boxes maintain a balanced `12px` radius for clear input affordance.\n\n## Components\n\n### 1. Action Buttons\n- **Primary Sticky Button:** Deep emerald (`#0E6245`) background, white text (`#FFFFFF`), full width (`min-height: 52px`), `rounded-xl`, bold label with trailing arrow icon.\n- **Secondary Outlined Button:** White background, emerald border (`1.5px solid #0E6245`), emerald text (`#0E6245`), `rounded-xl`.\n- **Chat/Micro Buttons:** Pill-shaped icons (`48px x 48px`) with high contrast voice-input mic states in emerald or saffron.\n\n### 2. Selection Chips & Filter Pills\n- **Unselected:** Pure white background, `1px solid #CBD5E1` border, slate text (`#475569`).\n- **Active:** Emerald background (`#0E6245`) with white text (`#FFFFFF`), or light tint background (`#E8F5E9`) with dark emerald text (`#0E6245`) and check icon.\n\n### 3. Scheme Overview Cards\n- **Structure:** Pure white surface, `16px` inner padding, `rounded-2xl`.\n- **Header:** Ministry badge or civic icon (`40px x 40px`, soft mint container `#E8F5E9`), scheme title in `16px` bold, bookmark action right-aligned.\n- **Benefit Highlight:** Prominent green numerical figure (`#15803D`, e.g., \"\u20b96,000 / year\").\n- **Eligibility Bullets:** Green check icons (`16px`) paired with concise eligibility conditions.\n- **Footer Actions:** Split dual buttons (`Apply Online` in primary emerald, `Details` in subtle outline).\n\n### 4. Form Inputs & Select Controls\n- **Height:** Minimum `50px` tap boundary.\n- **Border & Background:** `#FFFFFF` background, `1.5px solid #E2E8F0` border, `12px` radius. Focus ring: `2px solid #0E6245`.\n- **Trailing Affordances:** Clean calendar, chevron, or unit labels (\"\u20b9\", \"acres\").\n\n### 5. Multi-Step Wizard & Step Bar\n- **Progress Line:** Horizontal connecting track (`4px` height) with completed nodes filled in deep emerald containing checkmarks, current step highlighted with an emerald circular halo, and upcoming steps in light slate (`#E2E8F0`).\n- **Step Header:** Display step count (\"Step 2 of 3\") in muted slate, paired with strong title (\"Economic Details\").\n\n### 6. Document Vault Tiles & Status Badges\n- **Status Pills:** \n  - *Verified / Uploaded:* Green surface (`#DCFCE7`), deep green text (`#166534`), leading checkmark.\n  - *Missing / Action Required:* Soft red surface (`#FEE2E2`), red text (`#991B1B`), alert icon.\n  - *Under Review / Pending:* Saffron surface (`#FEF3C7`), amber text (`#92400E`), clock icon.\n- **Document Card:** Left file icon with colored badge, title, subtitle with file size/format, and vertical three-dot contextual action menu.",
+    "colorVariant": "FIDELITY",
+    "overridePrimaryColor": "#0e6245",
+    "overrideSecondaryColor": "#15803d",
+    "overrideTertiaryColor": "#f59e0b",
+    "overrideNeutralColor": "#0f172a",
+    "spacingScale": 2,
+    "typography": {
+      "label-sm": {
+        "fontFamily": "Inter",
+        "fontSize": "11px",
+        "fontWeight": "600",
+        "lineHeight": "14px"
+      },
+      "label-md": {
+        "fontFamily": "Inter",
+        "fontSize": "13px",
+        "fontWeight": "600",
+        "lineHeight": "18px"
+      },
+      "headline-md": {
+        "fontFamily": "Plus Jakarta Sans",
+        "fontSize": "20px",
+        "fontWeight": "600",
+        "lineHeight": "28px"
+      },
+      "body-lg": {
+        "fontFamily": "Inter",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "lineHeight": "24px"
+      },
+      "headline-lg": {
+        "fontFamily": "Plus Jakarta Sans",
+        "fontSize": "24px",
+        "fontWeight": "700",
+        "lineHeight": "32px"
+      },
+      "label-lg": {
+        "fontFamily": "Inter",
+        "fontSize": "15px",
+        "fontWeight": "600",
+        "lineHeight": "20px"
+      },
+      "headline-sm": {
+        "fontFamily": "Plus Jakarta Sans",
+        "fontSize": "18px",
+        "fontWeight": "600",
+        "lineHeight": "24px"
+      },
+      "body-md": {
+        "fontFamily": "Inter",
+        "fontSize": "14px",
+        "fontWeight": "400",
+        "lineHeight": "20px"
+      },
+      "body-sm": {
+        "fontFamily": "Inter",
+        "fontSize": "12px",
+        "fontWeight": "400",
+        "lineHeight": "16px"
+      },
+      "headline-xl": {
+        "fontFamily": "Plus Jakarta Sans",
+        "fontSize": "32px",
+        "fontWeight": "700",
+        "lineHeight": "40px"
+      }
+    },
+    "spacing": {
+      "space-xl": "2rem",
+      "margin": "1rem",
+      "space-lg": "1.5rem",
+      "space-md": "1rem",
+      "space-xs": "0.25rem",
+      "space-sm": "0.5rem",
+      "gutter": "1rem"
+    },
+    "headlineFontFamily": "Plus Jakarta Sans",
+    "bodyFontFamily": "Inter",
+    "labelFontFamily": "Inter"
+  }
+}

@@ -6,6 +6,7 @@ from app.core.exceptions import PermissionDeniedError, ProfileNotFoundError, Use
 from app.modules.auth.models import User
 from app.modules.auth.schemas import (
     CitizenFactsAuditResponse,
+    GoogleAuthRequest,
     ProfileCreate,
     ProfileResponse,
     ProfileUpdate,
@@ -20,6 +21,7 @@ from app.modules.auth.schemas import (
 )
 from app.modules.auth.service import (
     authenticate_user,
+    authenticate_or_register_google,
     create_or_update_profile,
     create_user,
     delete_profile,
@@ -30,7 +32,6 @@ from app.modules.auth.service import (
     get_user_by_id,
     list_users,
     refresh_access_token,
-    register_user,
     update_profile,
     update_user,
 )
@@ -66,6 +67,23 @@ def login_endpoint(
 ):
     user = authenticate_user(db=db, payload=payload)
     return generate_tokens(db=db, user=user)
+
+
+@router.post(
+    "/auth/google",
+    response_model=TokenResponse,
+    summary="Sign in or register with Google One-Tap account",
+)
+def google_auth_endpoint(
+    payload: GoogleAuthRequest,
+    db: Session = Depends(get_db),
+):
+    return authenticate_or_register_google(
+        db=db,
+        email=payload.email,
+        full_name=payload.full_name,
+        id_token=payload.id_token,
+    )
 
 
 @router.post(

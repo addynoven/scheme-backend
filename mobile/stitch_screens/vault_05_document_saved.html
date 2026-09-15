@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Document Saved - Vault Flow</title>
+<!-- Tailwind CSS CDN with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Custom Config -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d'
+            },
+            civic: {
+              dark: '#0f172a',
+              muted: '#64748b',
+              surface: '#f8fafc',
+              border: '#e2e8f0'
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Styles for visual polish and confetti -->
+<style data-purpose="status-bar-and-confetti">
+    .confetti-dot {
+      position: absolute;
+      border-radius: 9999px;
+      pointer-events: none;
+    }
+    .confetti-dash {
+      position: absolute;
+      border-radius: 4px;
+      pointer-events: none;
+      transform-origin: center;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 flex justify-center items-center min-h-screen p-0 sm:p-4 text-slate-800 font-sans antialiased selection:bg-brand-100 selection:text-brand-900">
+<!-- BEGIN: MobileDeviceFrame -->
+<main class="w-full max-w-[390px] h-[844px] max-h-screen bg-white shadow-2xl relative flex flex-col justify-between overflow-hidden sm:rounded-[44px] border-0 sm:border-[8px] sm:border-slate-900">
+<!-- BEGIN: iOSStatusBar -->
+<header class="w-full pt-3 px-7 pb-2 flex justify-between items-center z-20 select-none" data-purpose="ios-status-bar">
+<!-- Time display -->
+<span class="text-sm font-semibold tracking-tight text-slate-900">9:41</span>
+<!-- Dynamic island placeholder for modern iOS look -->
+<div class="w-24 h-4 bg-transparent"></div>
+<!-- System status icons -->
+<div class="flex items-center space-x-1.5 text-slate-900">
+<!-- Cellular Icon -->
+<svg class="w-4 h-3.5 fill-current" viewbox="0 0 17 12">
+<rect height="4" rx="0.5" width="2.5" x="0" y="8"></rect>
+<rect height="6" rx="0.5" width="2.5" x="4.5" y="6"></rect>
+<rect height="9" rx="0.5" width="2.5" x="9" y="3"></rect>
+<rect height="12" rx="0.5" width="2.5" x="13.5" y="0"></rect>
+</svg>
+<!-- Wifi Icon -->
+<svg class="w-4 h-3.5 fill-current" viewbox="0 0 16 12">
+<path d="M8 12a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm4.95-4.95a7 7 0 0 0-9.9 0l1.414 1.414a5 5 0 0 1 7.072 0l1.414-1.414zm2.828-2.828a11 11 0 0 0-15.556 0l1.414 1.414a9 9 0 0 1 12.728 0l1.414-1.414z"></path>
+</svg>
+<!-- Battery Icon -->
+<div class="flex items-center">
+<div class="w-5 h-2.5 border border-slate-900 rounded-sm p-0.5 flex items-center">
+<div class="h-full w-full bg-slate-900 rounded-2xs"></div>
+</div>
+<div class="w-0.5 h-1 bg-slate-900 rounded-r-xs -ml-px"></div>
+</div>
+</div>
+</header>
+<!-- END: iOSStatusBar -->
+<!-- BEGIN: SuccessCelebrationContent -->
+<div class="flex-1 flex flex-col items-center justify-center px-6 relative" data-purpose="success-body">
+<!-- Confetti Elements Overlay -->
+<div aria-hidden="true" class="absolute inset-0 overflow-hidden pointer-events-none">
+<!-- Left Side Sprinkles -->
+<div class="confetti-dash w-3 h-1 bg-amber-400 top-16 left-12 rotate-45"></div>
+<div class="confetti-dot w-2.5 h-2.5 bg-rose-400 top-24 left-24"></div>
+<div class="confetti-dash w-3.5 h-1 bg-sky-400 top-36 left-8 -rotate-12"></div>
+<div class="confetti-dot w-2 h-2 bg-emerald-400 top-48 left-16"></div>
+<!-- Right Side Sprinkles -->
+<div class="confetti-dot w-2 h-2 bg-purple-400 top-16 right-20"></div>
+<div class="confetti-dash w-3 h-1 bg-rose-500 top-24 right-10 rotate-45"></div>
+<div class="confetti-dot w-2.5 h-2.5 bg-amber-400 top-36 right-24"></div>
+<div class="confetti-dash w-3.5 h-1 bg-teal-400 top-44 right-8 -rotate-45"></div>
+</div>
+<!-- Main Success Graphic Badge -->
+<div class="relative mb-8 mt-2" data-purpose="success-icon-badge">
+<!-- Soft Outer Glow Ring -->
+<div class="w-28 h-28 rounded-full bg-emerald-50 flex items-center justify-center shadow-inner">
+<!-- Inner Filled Circle -->
+<div class="w-20 h-20 rounded-full bg-gradient-to-tr from-brand-600 to-emerald-500 flex items-center justify-center shadow-lg shadow-brand-600/30">
+<!-- White Check Icon -->
+<svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" viewbox="0 0 24 24">
+<polyline points="20 6 9 17 4 12"></polyline>
+</svg>
+</div>
+</div>
+</div>
+<!-- Success Header Text -->
+<section class="text-center mb-10 w-full" data-purpose="success-messaging">
+<h1 class="text-2xl sm:text-[26px] font-bold text-slate-900 tracking-tight mb-2">
+          Document Saved!
+        </h1>
+<p class="text-base text-slate-600">
+<span class="font-semibold text-slate-800">Aadhaar Card</span> has been saved to your Vault.
+        </p>
+</section>
+<!-- Benefits / Value Proposition Card -->
+<section class="w-full bg-slate-50/90 rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4" data-purpose="saved-benefits">
+<!-- Benefit 1: Profile Extraction -->
+<div class="flex items-center space-x-3.5">
+<div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+<svg class="w-4 h-4 text-brand-700" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewbox="0 0 24 24">
+<polyline points="20 6 9 17 4 12"></polyline>
+</svg>
+</div>
+<span class="text-sm font-medium text-slate-700 leading-snug">
+            Information extracted and saved to your profile
+          </span>
+</div>
+<!-- Benefit 2: Multi-scheme Reusability -->
+<div class="flex items-center space-x-3.5">
+<div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+<svg class="w-4 h-4 text-brand-700" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3L21.5 8M22 12.5a10 10 0 0 1-18.8 4.2L2.5 16"></path>
+</svg>
+</div>
+<span class="text-sm font-medium text-slate-700 leading-snug">
+            Can be reused across all schemes
+          </span>
+</div>
+</section>
+</div>
+<!-- END: SuccessCelebrationContent -->
+<!-- BEGIN: ActionButtonsFooter -->
+<footer class="p-6 pt-2 pb-8 w-full flex flex-col space-y-3 z-10" data-purpose="navigation-actions">
+<!-- Secondary Outline Button: View Document -->
+<button class="w-full py-3.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-800 font-semibold text-base shadow-xs transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-slate-300" type="button">
+        View Document
+      </button>
+<!-- Primary Action Button: Done -->
+<button class="w-full py-3.5 px-4 rounded-xl bg-brand-700 hover:bg-brand-800 active:bg-brand-900 text-white font-semibold text-base shadow-md shadow-brand-700/20 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2" type="button">
+        Done
+      </button>
+<!-- iOS Home Indicator -->
+<div class="pt-3 flex justify-center">
+<div class="w-32 h-1 bg-slate-300 rounded-full"></div>
+</div>
+</footer>
+<!-- END: ActionButtonsFooter -->
+</main>
+<!-- END: MobileDeviceFrame -->
+</body></html>

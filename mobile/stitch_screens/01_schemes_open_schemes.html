@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Scheme App - Browse Schemes</title>
+<!-- Tailwind CSS v3 with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              200: '#a7f3d0',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b'
+            },
+            schemeNavy: '#0f2942',
+            schemeBg: '#f8fafc'
+          },
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'system-ui', '-apple-system', 'sans-serif']
+          },
+          boxShadow: {
+            subtle: '0 2px 8px -2px rgba(16, 185, 129, 0.08), 0 1px 4px -1px rgba(0, 0, 0, 0.04)',
+            card: '0 4px 20px -2px rgba(15, 23, 42, 0.06)'
+          }
+        }
+      }
+    }
+  </script>
+<!-- Google Font: Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Custom Stylesheet for mobile device simulator and micro-details -->
+<style data-purpose="device-viewport">
+    body {
+      background-color: #f1f5f9;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Emulate Mobile iOS Shell */
+    .ios-container {
+      width: 100%;
+      max-width: 412px;
+      min-height: 100vh;
+      background-color: #ffffff;
+      position: relative;
+      margin: 0 auto;
+      box-shadow: 0 10px 40px -10px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Custom Hide Scrollbar */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen py-0 sm:py-6">
+<!-- BEGIN: MobileDeviceFrame -->
+<main class="ios-container" data-purpose="screen-container">
+<!-- BEGIN: iOSStatusBar -->
+<header class="w-full bg-white pt-3 px-7 pb-2 flex items-center justify-between z-30 select-none" data-purpose="ios-status-bar">
+<!-- Time -->
+<span class="text-[15px] font-semibold text-slate-900 tracking-tight">9:41</span>
+<!-- System Icons -->
+<div class="flex items-center space-x-2 text-slate-900">
+<!-- Cellular Signal -->
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.35 19.68 10.63 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z" opacity="0"></path>
+<path d="M2 17h3v4H2v-4zm6-5h3v9H8v-9zm6-5h3v14h-3V7zm6-4h3v18h-3V3z"></path>
+</svg>
+<!-- Wifi -->
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98A16.88 16.88 0 0012 4zm0 3.5c3.55 0 6.78 1.43 9.14 3.75L12 19.34 2.86 11.25A13.43 13.43 0 0112 7.5z"></path>
+</svg>
+<!-- Battery Pill -->
+<div class="w-6 h-3 border border-slate-900 rounded-[4px] p-0.5 flex items-center">
+<div class="bg-slate-900 h-full w-4 rounded-[1.5px]"></div>
+</div>
+</div>
+</header>
+<!-- END: iOSStatusBar -->
+<!-- BEGIN: AppHeader -->
+<header class="px-5 py-2.5 bg-white flex items-center justify-between border-b border-slate-100" data-purpose="app-navbar">
+<!-- App Brand Logo & Title -->
+<div class="flex items-center space-x-2.5">
+<!-- Logo Leaf / Emblem -->
+<div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-sm shadow-emerald-500/20">
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
+<path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 008 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"></path>
+</svg>
+</div>
+<div>
+<h1 class="text-[17px] font-bold text-slate-900 leading-tight flex items-center">
+            Scheme App
+          </h1>
+<p class="text-[11px] font-medium text-emerald-700 leading-none mt-0.5">For a Brighter Tomorrow</p>
+</div>
+</div>
+<!-- Header Action Icons: Notification & Citizen Profile -->
+<div class="flex items-center space-x-2.5">
+<!-- Notification Button with Unread Pip -->
+<button aria-label="Notifications" class="relative p-2 rounded-full text-slate-600 hover:bg-slate-50 transition" data-purpose="notification-button" type="button">
+<svg class="w-5 h-5 stroke-current fill-none stroke-[2]" viewbox="0 0 24 24">
+<path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-white"></span>
+</button>
+<!-- Citizen Avatar (Rohit) -->
+<button class="relative ring-2 ring-emerald-500/20 rounded-full focus:outline-none focus:ring-emerald-500" data-purpose="profile-avatar-button" type="button">
+<img alt="Citizen Avatar Rohit" class="w-8 h-8 rounded-full object-cover border border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVmYLJ7y_8LHYyNZsp-pBeieuWQLM9T-atEVWVq0I1vMTKtzGY-vlOME1jlaScv6Vm_7rl5YHDWHVmnl1Ct5pZ5_7Q4AuDfdwTJrG_poD3mG9P-r9KGOgBR2VER1nK9huYRdYpBSAPwK0emw348xoI_FAjd0z9nRovrKWmXrob-gtwGTRf9oOnDVvojYcpHH0NQpvVutDZyxUhxU_hRKz_QlE3KbgHx_jHLJWIq6-wSu_ZvGCKkN2W"/>
+</button>
+</div>
+</header>
+<!-- END: AppHeader -->
+<!-- BEGIN: ScrollableMainContent -->
+<div class="flex-1 overflow-y-auto no-scrollbar px-4 pt-3 pb-24 space-y-4" data-purpose="main-scroll-view">
+<!-- BEGIN: HeroBanner -->
+<section class="relative rounded-2xl bg-gradient-to-r from-emerald-50 via-[#e8f8f2] to-[#d8f3e5] p-5 overflow-hidden border border-emerald-100/70 shadow-subtle" data-purpose="hero-banner">
+<div class="relative z-10 w-3/5 pr-1">
+<h2 class="text-base font-extrabold text-slate-900 leading-snug tracking-tight">
+            Discovery creates new opportunities.
+          </h2>
+<p class="text-[12px] text-slate-600 mt-2 font-normal leading-relaxed">
+            Explore government schemes for you, your family and your community.
+          </p>
+</div>
+<!-- Banner Citizen Illustration / Image -->
+<div class="absolute -right-2 bottom-0 w-36 h-36 flex items-end justify-end pointer-events-none" data-purpose="banner-illustration">
+<img alt="Smiling Indian citizen woman in yellow attire" class="h-full w-auto object-contain object-bottom drop-shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4TH5Qw682gyOzB2NOFb_-sUqNX6zoYBMs0Habruo1lCNhBu7TnsX59490-bM2EQ0h1Yn2U9rwVuU7JmOoR_YA5er9eocY6UGMe89rvb5py7GLoYZf5W82OOT_OtdA7eJjZ-Hnqmi96lcPizHYAxdA8ajjsre2XwnmFoTLunxefgMFjhG5wBavKwRv_Q4nah0AZLXhCPriPtM42XeQSGkpUE64ECVbnAUH1ggIt82zJ_2Pbv0ilnZe"/>
+</div>
+<!-- Ambient decorative shapes in background -->
+<div class="absolute -left-6 -top-6 w-24 h-24 bg-emerald-200/40 rounded-full blur-xl pointer-events-none"></div>
+</section>
+<!-- END: HeroBanner -->
+<!-- BEGIN: SearchBarSection -->
+<section class="relative" data-purpose="search-input-wrapper">
+<div class="relative flex items-center">
+<span class="absolute left-3.5 text-slate-400 pointer-events-none">
+<svg class="w-5 h-5 stroke-[2] stroke-current fill-none" viewbox="0 0 24 24">
+<path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</span>
+<input class="w-full bg-slate-50 hover:bg-slate-100/80 transition text-slate-800 text-[13px] rounded-xl pl-10 pr-4 py-3 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 cursor-pointer shadow-sm placeholder:text-slate-400" data-purpose="search-field" placeholder="Search schemes, benefits, or keywords..." readonly="" type="text"/>
+</div>
+</section>
+<!-- END: SearchBarSection -->
+<!-- BEGIN: CategoryGrid -->
+<section class="pt-1" data-purpose="categories-section">
+<!-- Row 1: All Schemes, Agriculture, Education -->
+<div class="grid grid-cols-3 gap-2.5">
+<!-- All Schemes (Highlighted Card) -->
+<button class="flex flex-col items-center justify-center p-3 rounded-2xl bg-emerald-50/60 border border-emerald-200/70 hover:bg-emerald-100/50 transition text-center shadow-subtle group" data-purpose="category-card-all" type="button">
+<div class="w-11 h-11 rounded-xl bg-emerald-700 text-white flex items-center justify-center mb-2 shadow-sm group-hover:scale-105 transition-transform">
+<svg class="w-6 h-6 stroke-current fill-none stroke-[2]" viewbox="0 0 24 24">
+<path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[12px] font-bold text-emerald-950 leading-tight">All Schemes</span>
+<span class="text-[10px] font-semibold text-emerald-600 mt-0.5">4,160+</span>
+</button>
+<!-- Agriculture -->
+<button class="flex flex-col items-center justify-center p-3 rounded-2xl bg-white border border-slate-100 hover:border-slate-200 hover:bg-slate-50/80 transition text-center shadow-subtle group" data-purpose="category-card-agriculture" type="button">
+<div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+<svg class="w-6 h-6 stroke-current fill-none stroke-[1.8]" viewbox="0 0 24 24">
+<path d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.439a8.966 8.966 0 00-6 0m6 0v.5a2.25 2.25 0 01-4.5 0v-.5m4.5 0c0-1.875 1.5-3 3-3s3 1.125 3 3m-9-3c0-1.875-1.5-3-3-3s-3 1.125-3 3" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M12 12.75c1.657 0 3-1.679 3-3.75 0-2.485-3-6-3-6s-3 3.515-3 6c0 2.071 1.343 3.75 3 3.75z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[12px] font-semibold text-slate-800 leading-tight">Agriculture</span>
+<span class="text-[10px] text-transparent mt-0.5 select-none">.</span>
+</button>
+<!-- Education -->
+<button class="flex flex-col items-center justify-center p-3 rounded-2xl bg-white border border-slate-100 hover:border-slate-200 hover:bg-slate-50/80 transition text-center shadow-subtle group" data-purpose="category-card-education" type="button">
+<div class="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+<svg class="w-6 h-6 stroke-current fill-none stroke-[1.8]" viewbox="0 0 24 24">
+<path d="M4.26 10.147L12 5.5l7.74 4.647a.75.75 0 010 1.286L12 16.082l-7.74-4.649a.75.75 0 010-1.286z" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M6 12.75v3.25c0 2.071 2.686 3.75 6 3.75s6-1.679 6-3.75v-3.25" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[12px] font-semibold text-slate-800 leading-tight">Education</span>
+<span class="text-[10px] text-transparent mt-0.5 select-none">.</span>
+</button>
+</div>
+<!-- Row 2: Health, Women, MSME, More -->
+<div class="grid grid-cols-4 gap-2 mt-2.5">
+<!-- Health -->
+<button class="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-slate-200 hover:bg-slate-50/80 transition text-center shadow-subtle group" data-purpose="category-card-health" type="button">
+<div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform">
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
+<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path>
+</svg>
+</div>
+<span class="text-[11px] font-medium text-slate-700">Health</span>
+</button>
+<!-- Women -->
+<button class="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-slate-200 hover:bg-slate-50/80 transition text-center shadow-subtle group" data-purpose="category-card-women" type="button">
+<div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform">
+<svg class="w-5 h-5 stroke-current fill-none stroke-[2]" viewbox="0 0 24 24">
+<path d="M12 14a5 5 0 100-10 5 5 0 000 10zm0 0v7m-3-3h6" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[11px] font-medium text-slate-700">Women</span>
+</button>
+<!-- MSME -->
+<button class="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-slate-200 hover:bg-slate-50/80 transition text-center shadow-subtle group" data-purpose="category-card-msme" type="button">
+<div class="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform">
+<svg class="w-5 h-5 stroke-current fill-none stroke-[2]" viewbox="0 0 24 24">
+<path d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.75a1.5 1.5 0 011.5-1.5h3a1.5 1.5 0 011.5 1.5V21" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[11px] font-medium text-slate-700">MSME</span>
+</button>
+<!-- More -->
+<button class="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border border-slate-100 hover:border-slate-200 hover:bg-slate-50/80 transition text-center shadow-subtle group" data-purpose="category-card-more" type="button">
+<div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform">
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
+<circle cx="5" cy="12" r="2"></circle>
+<circle cx="12" cy="12" r="2"></circle>
+<circle cx="19" cy="12" r="2"></circle>
+</svg>
+</div>
+<span class="text-[11px] font-medium text-slate-700">More</span>
+</button>
+</div>
+</section>
+<!-- END: CategoryGrid -->
+<!-- BEGIN: StartPromptBanner -->
+<section class="mt-4 rounded-2xl bg-amber-50/70 border border-amber-200/60 p-3.5 flex items-center space-x-3 shadow-subtle" data-purpose="guidance-banner">
+<!-- Farmer Avatar -->
+<div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-amber-300 bg-amber-100 shadow-sm">
+<img alt="Indian Farmer with Turban" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYfTHSzlx5rH8qZlB0WiFkdVuXuPUIJlmHTPGSC5ICfuMkr4YzNfJtmyjFiMVkKm2wkUSS6Ti3yQ6m9fQ2jMHqXKSbqG91f_ksBOcxSwfyskPd86NiHDCbcDTM47gmgXiV29xx3Oo-4Q6B1dww8OR5zBb7atk8Bbjcq-PMuWX-KajZ8ELwslEDTm52hWv_YhZxC2_tgdWnZtApka3hc_Wg8bfLE_Omdy6Jf7vR8R7rvxuKcJcXT5oy"/>
+</div>
+<!-- Banner Text & Call to Action -->
+<div class="flex-1">
+<h3 class="text-[13px] font-bold text-slate-900 leading-tight">
+            Not sure where to start?
+          </h3>
+<p class="text-[11px] text-slate-600 font-normal leading-snug mt-0.5">
+            Browse all schemes and discover new opportunities.
+          </p>
+</div>
+<!-- Forward Chevron -->
+<div class="text-amber-700">
+<svg class="w-4 h-4 stroke-current stroke-[2.5] fill-none" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</section>
+<!-- END: StartPromptBanner -->
+</div>
+<!-- END: ScrollableMainContent -->
+<!-- BEGIN: BottomNavigationBar -->
+<nav class="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-100 px-3 pt-2 pb-5 flex items-center justify-around z-40" data-purpose="bottom-navigation-bar">
+<!-- Tab: Advisor -->
+<a class="flex flex-col items-center text-slate-400 hover:text-slate-600 transition group py-1" data-purpose="nav-tab-advisor" href="#">
+<svg class="w-6 h-6 stroke-current fill-none stroke-[1.8]" viewbox="0 0 24 24">
+<path d="M8.625 9.75a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375m-13.5 3.01c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v5.018z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10.5px] font-medium mt-1">Advisor</span>
+</a>
+<!-- Tab: Vault -->
+<a class="flex flex-col items-center text-slate-400 hover:text-slate-600 transition group py-1" data-purpose="nav-tab-vault" href="#">
+<svg class="w-6 h-6 stroke-current fill-none stroke-[1.8]" viewbox="0 0 24 24">
+<path d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10.5px] font-medium mt-1">Vault</span>
+</a>
+<!-- Tab: Check -->
+<a class="flex flex-col items-center text-slate-400 hover:text-slate-600 transition group py-1" data-purpose="nav-tab-check" href="#">
+<svg class="w-6 h-6 stroke-current fill-none stroke-[1.8]" viewbox="0 0 24 24">
+<path d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10.5px] font-medium mt-1">Check</span>
+</a>
+<!-- Tab: Schemes (ACTIVE) -->
+<a class="flex flex-col items-center transition py-1 relative text-emerald-600" data-purpose="nav-tab-schemes-active" href="#">
+<!-- Rounded active badge capsule -->
+<div class="px-4 py-1 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
+<path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4.86 8.86l-3 3.87L9 13.14 6 17h12l-3.86-5.14z"></path>
+</svg>
+</div>
+<span class="text-[10.5px] font-bold text-emerald-700 mt-0.5">Schemes</span>
+</a>
+</nav>
+<!-- END: BottomNavigationBar -->
+<!-- BEGIN: iOSHomeIndicator -->
+<div class="absolute bottom-1 left-1/2 -translate-x-1/2 w-32 h-1 bg-slate-300 rounded-full z-50 pointer-events-none" data-purpose="ios-home-indicator"></div>
+<!-- END: iOSHomeIndicator -->
+</main>
+<!-- END: MobileDeviceFrame -->
+</body></html>

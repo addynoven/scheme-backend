@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Complete Your Profile - Scheme App</title>
+<!-- Tailwind CSS CDN with forms and container plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Custom Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              DEFAULT: '#00695C',
+              dark: '#004D40',
+              light: '#E0F2F1'
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Styles for iOS frame & UI refinement -->
+<style data-purpose="base-styling">
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    input, select {
+      outline: none !important;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-0 sm:p-4 text-slate-800 antialiased font-sans">
+<!-- BEGIN: MobileDeviceFrame -->
+<main class="w-full max-w-[390px] h-[100dvh] sm:h-[844px] bg-white sm:rounded-[44px] shadow-2xl overflow-hidden flex flex-col relative border-0 sm:border-[8px] sm:border-slate-800">
+<!-- BEGIN: iOSStatusBar -->
+<header class="w-full pt-3 px-7 flex justify-between items-center text-xs font-semibold text-slate-900 select-none z-10 shrink-0">
+<!-- Time display -->
+<span>9:41</span>
+<!-- Right status icons -->
+<div class="flex items-center space-x-1.5">
+<!-- Signal strength bars -->
+<svg class="w-4 h-3 fill-current" viewbox="0 0 17 12">
+<rect height="4" rx="0.5" width="2.5" x="0" y="8"></rect>
+<rect height="6.5" rx="0.5" width="2.5" x="4" y="5.5"></rect>
+<rect height="9" rx="0.5" width="2.5" x="8" y="3"></rect>
+<rect height="12" rx="0.5" width="2.5" x="12" y="0"></rect>
+</svg>
+<!-- Wifi icon -->
+<svg class="w-4 h-3 fill-current" viewbox="0 0 16 12">
+<path d="M8 2.8C5.2 2.8 2.6 3.9 0.7 5.7L0 4.9C2.1 2.9 5 1.7 8 1.7C11 1.7 13.9 2.9 16 4.9L15.3 5.7C13.4 3.9 10.8 2.8 8 2.8Z"></path>
+<path d="M8 5.8C6.1 5.8 4.3 6.6 3 7.8L2.2 7.1C3.8 5.6 5.8 4.7 8 4.7C10.2 4.7 12.2 5.6 13.8 7.1L13 7.8C11.7 6.6 9.9 5.8 8 5.8Z"></path>
+<path d="M8 8.8C6.9 8.8 6 9.3 5.3 10.1L4.6 9.3C5.5 8.3 6.7 7.7 8 7.7C9.3 7.7 10.5 8.3 11.4 9.3L10.7 10.1C10 9.3 9.1 8.8 8 8.8Z"></path>
+<circle cx="8" cy="11.5" r="1.1"></circle>
+</svg>
+<!-- Battery icon -->
+<div class="flex items-center">
+<div class="w-5 h-2.5 border border-slate-900 rounded-sm p-0.5 flex items-center">
+<div class="h-full w-full bg-slate-900 rounded-[1px]"></div>
+</div>
+<div class="w-[1px] h-1 bg-slate-900 rounded-r-xs ml-[0.5px]"></div>
+</div>
+</div>
+</header>
+<!-- END: iOSStatusBar -->
+<!-- BEGIN: NavigationBar -->
+<nav class="px-5 pt-3 pb-2 flex items-center shrink-0">
+<!-- Back button -->
+<button aria-label="Go back" class="p-1 -ml-1 text-slate-700 hover:text-slate-900 focus:outline-none transition-colors" type="button">
+<svg class="w-6 h-6 stroke-[2.2] stroke-current fill-none" viewbox="0 0 24 24">
+<path d="M15.75 19.5L8.25 12l7.5-7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</nav>
+<!-- END: NavigationBar -->
+<!-- BEGIN: MainContent -->
+<div class="flex-1 px-6 flex flex-col overflow-y-auto">
+<!-- Heading section -->
+<section class="mt-1 mb-6 text-center" data-purpose="header-text">
+<h1 class="text-xl font-bold text-slate-900 tracking-tight">Complete Your Profile</h1>
+<p class="text-xs text-slate-500 mt-1">Just a few details to get started.</p>
+</section>
+<!-- Avatar photo upload section -->
+<section class="flex flex-col items-center justify-center mb-6" data-purpose="avatar-upload">
+<div class="relative">
+<!-- Circular avatar image container -->
+<div class="w-20 h-20 rounded-full overflow-hidden border border-slate-200 bg-amber-50 shadow-sm flex items-center justify-center">
+<svg class="w-full h-full text-slate-300" fill="currentColor" viewbox="0 0 80 80">
+<!-- Default placeholder avatar background representation -->
+<rect fill="#E8EDEB" height="80" width="80"></rect>
+<path d="M40 43C47.1797 43 53 37.1797 53 30C53 22.8203 47.1797 17 40 17C32.8203 17 27 22.8203 27 30C27 37.1797 32.8203 43 40 43Z" fill="#A0AEC0"></path>
+<path d="M18 69.5C18 56.5213 28.5213 46 41.5 46H38.5C51.4787 46 62 56.5213 62 69.5V74H18V69.5Z" fill="#718096"></path>
+</svg>
+</div>
+<!-- Camera action badge -->
+<button aria-label="Add photo" class="absolute -bottom-1 right-0 bg-[#00695C] text-white p-1.5 rounded-full shadow-md hover:bg-[#004D40] transition-colors flex items-center justify-center" type="button">
+<svg class="w-3.5 h-3.5 fill-none stroke-current stroke-[2]" viewbox="0 0 24 24">
+<path d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<span class="text-xs font-medium text-slate-800 mt-2">Add Photo</span>
+<span class="text-[11px] text-slate-400 -mt-0.5">(optional)</span>
+</section>
+<!-- Profile Form -->
+<form class="space-y-4" data-purpose="profile-form" onsubmit="event.preventDefault();">
+<!-- Email field -->
+<div>
+<label class="block text-xs font-medium text-slate-600 mb-1.5" for="email">
+            Email <span class="text-slate-400 font-normal">(optional)</span>
+</label>
+<div class="relative">
+<input class="w-full text-sm text-slate-900 border border-slate-300 rounded-xl px-3.5 py-2.5 focus:border-[#00695C] focus:ring-1 focus:ring-[#00695C] transition-all bg-white" id="email" name="email" type="email" value="rohit@example.com"/>
+</div>
+</div>
+<!-- State field -->
+<div>
+<label class="block text-xs font-medium text-slate-600 mb-1.5" for="state">
+            State <span class="text-slate-400 font-normal">(optional)</span>
+</label>
+<div class="relative">
+<select class="w-full text-sm text-slate-900 border border-slate-300 rounded-xl px-3.5 py-2.5 appearance-none bg-white focus:border-[#00695C] focus:ring-1 focus:ring-[#00695C] transition-all pr-10" id="state" name="state">
+<option selected="" value="Maharashtra">Maharashtra</option>
+<option value="Gujarat">Gujarat</option>
+<option value="Karnataka">Karnataka</option>
+<option value="Delhi">Delhi</option>
+<option value="Uttar Pradesh">Uttar Pradesh</option>
+</select>
+<!-- Custom chevron icon for select dropdown -->
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-500">
+<svg class="w-4 h-4 stroke-[2.2] stroke-current fill-none" viewbox="0 0 24 24">
+<path d="M19.5 8.25l-7.5 7.5-7.5-7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- Primary Call to Action Button -->
+<div class="pt-4">
+<button class="w-full bg-[#00695C] hover:bg-[#004D40] active:scale-[0.99] text-white font-medium text-sm py-3 px-4 rounded-xl transition shadow-sm text-center" type="submit">
+            Create Account
+          </button>
+</div>
+</form>
+</div>
+<!-- END: MainContent -->
+<!-- BEGIN: iOSHomeIndicator -->
+<footer class="w-full pb-2 pt-1 flex justify-center items-center shrink-0">
+<div class="w-32 h-1 bg-slate-900/40 rounded-full"></div>
+</footer>
+<!-- END: iOSHomeIndicator -->
+</main>
+<!-- END: MobileDeviceFrame -->
+</body></html>

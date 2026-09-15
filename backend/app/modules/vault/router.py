@@ -2,27 +2,71 @@ from fastapi import APIRouter, Depends, File, Form, Header, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user, get_db
-from app.core.security import decode_token
+from app.core.storage import storage_service
 from app.modules.auth.models import User
 from app.modules.ocr.schemas import ExtractedDocumentFactsResponse
-from app.modules.ocr.service import extract_document_facts_pipeline
 from app.modules.vault.schemas import (
     ConfirmFactsAndSyncProfileRequest,
     ConfirmFactsAndSyncProfileResponse,
+    DirectUploadConfirmRequest,
+    DirectUploadParamsRequest,
+    DirectUploadParamsResponse,
     SchemeDocumentReadinessResponse,
     UserDocumentResponse,
 )
 from app.modules.vault.service import (
     confirm_and_sync_profile_from_facts,
+    confirm_direct_upload,
     delete_user_document,
     evaluate_document_readiness,
     extract_facts_from_user_document,
-    get_user_document_content,
     list_user_documents,
     upload_user_document,
 )
 
 router = APIRouter(prefix="/vault", tags=["Document Vault & Readiness"])
+
+
+@router.post(
+    "/documents/direct-upload-params",
+    response_model=DirectUploadParamsResponse,
+    summary="Get signed direct upload parameters for Cloudinary (Zero double-upload)",
+    description="Generates cryptographically signed upload parameters so mobile/web clients can upload files directly to Cloudinary CDN, bypassing server bandwidth and RAM limits.",
+)
+def get_direct_upload_params_endpoint(
+    payload: DirectUploadParamsRequest,
+    current_user: User = Depends(get_current_user),
+):
+    sig_data = storage_service.generate_upload_signature(user_id=current_user.id, folder="vault")
+    return DirectUploadParamsResponse(
+        upload_url=sig_data["upload_url"],
+        cloud_name=sig_data["cloud_name"],
+        api_key=sig_data["api_key"],
+        timestamp=sig_data["timestamp"],
+        signature=sig_data["signature"],
+        public_id=sig_data["public_id"],
+        folder=sig_data["folder"],
+    )
+
+
+@router.post(
+    "/documents/direct-upload-confirm",
+    response_model=UserDocumentResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Confirm direct upload and register document in citizen vault",
+    description="Called after client successfully uploads file directly to Cloudinary to save document metadata and trigger readiness evaluation.",
+)
+def confirm_direct_upload_endpoint(
+    payload: DirectUploadConfirmRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return confirm_direct_upload(
+        db=db,
+        user_id=current_user.id,
+        payload=payload,
+    )
+
 
 
 @router.post(
@@ -132,7 +176,7 @@ def delete_vault_document_endpoint(
     response_description="Document readiness score and checklist (available vs missing)",
 )
 def get_scheme_document_readiness_endpoint(
-    scheme_id: int,
+    scheme_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):

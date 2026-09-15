@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Schemes - Search &amp; Filter</title>
+<!-- Tailwind CSS CDN with forms and container queries plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#15803d',
+              600: '#166534',
+              700: '#064e3b',
+              800: '#043427',
+              dark: '#0e382b'
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Styles for iOS scrollbar and touch layout -->
+<style data-purpose="scroll-and-layout">
+    /* Hide scrollbars for clean horizontal pill scrolling */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    body {
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-0 sm:p-4 text-slate-800 antialiased font-sans select-none">
+<!-- BEGIN: MobileDeviceFrame -->
+<main class="w-full max-w-[390px] h-[844px] max-h-[844px] bg-slate-50 flex flex-col shadow-2xl relative overflow-hidden sm:rounded-[44px] border border-slate-200">
+<!-- BEGIN: iOSStatusBar -->
+<header class="pt-3 px-7 flex justify-between items-center bg-white z-20 shrink-0" data-purpose="status-bar">
+<span class="text-sm font-semibold tracking-tight text-slate-900">9:41</span>
+<div class="flex items-center space-x-2 text-slate-900">
+<!-- Cellular Signal Icon -->
+<svg class="w-4 h-3.5 fill-current" viewbox="0 0 17 12">
+<rect height="3" rx="0.5" width="2.5" x="0" y="9"></rect>
+<rect height="5.5" rx="0.5" width="2.5" x="4" y="6.5"></rect>
+<rect height="8" rx="0.5" width="2.5" x="8" y="4"></rect>
+<rect height="11" rx="0.5" width="2.5" x="12" y="1"></rect>
+</svg>
+<!-- Wifi Icon -->
+<svg class="w-4 h-3.5 fill-current" viewbox="0 0 16 12">
+<path d="M8 2.8C5.2 2.8 2.7 3.9 0.8 5.7L0 4.8C2.1 2.8 5 1.5 8 1.5C11 1.5 13.9 2.8 16 4.8L15.2 5.7C13.3 3.9 10.8 2.8 8 2.8ZM8 6.5C6.3 6.5 4.8 7.2 3.6 8.3L2.8 7.5C4.2 6.1 6 5.2 8 5.2C10 5.2 11.8 6.1 13.2 7.5L12.4 8.3C11.2 7.2 9.7 6.5 8 6.5ZM8 10.2C7.3 10.2 6.7 10.5 6.2 11L8 12.8L9.8 11C9.3 10.5 8.7 10.2 8 10.2Z"></path>
+</svg>
+<!-- Battery Icon -->
+<div class="w-5 h-2.5 border border-slate-800 rounded-[3px] p-0.5 flex items-center">
+<div class="w-full h-full bg-slate-800 rounded-[1.5px]"></div>
+</div>
+</div>
+</header>
+<!-- END: iOSStatusBar -->
+<!-- BEGIN: TopBar -->
+<section class="bg-white px-4 py-3 flex items-center justify-between border-b border-slate-100 z-10 shrink-0" data-purpose="top-navigation">
+<button aria-label="Go back" class="p-1 -ml-1 text-slate-700 hover:text-slate-900 transition-colors">
+<svg class="w-6 h-6 stroke-[2.2] stroke-current fill-none" viewbox="0 0 24 24">
+<path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<h1 class="text-base font-bold text-slate-800 tracking-tight">Schemes</h1>
+<div class="w-6"></div> <!-- Spacer to keep title centered -->
+</section>
+<!-- END: TopBar -->
+<!-- BEGIN: ScrollableContent -->
+<div class="flex-1 overflow-y-auto no-scrollbar pb-24" data-purpose="main-scroll-view">
+<!-- BEGIN: SearchSection -->
+<section class="bg-white px-4 pt-3 pb-3" data-purpose="search-input-area">
+<div class="relative flex items-center">
+<!-- Search Icon -->
+<span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+<svg class="w-4 h-4 fill-none stroke-current stroke-2" viewbox="0 0 24 24">
+<circle cx="11" cy="11" r="8"></circle>
+<line x1="21" x2="16.65" y1="21" y2="16.65"></line>
+</svg>
+</span>
+<input class="w-full pl-10 pr-9 py-2 bg-slate-50 hover:bg-slate-100/80 focus:bg-white text-slate-800 text-sm font-medium rounded-full border border-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-700 focus:border-emerald-700" data-purpose="search-input" readonly="" type="text" value="farmer"/>
+<!-- Clear Search Button -->
+<button aria-label="Clear search" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+<svg class="w-4 h-4 fill-none stroke-current stroke-2" viewbox="0 0 24 24">
+<circle class="stroke-[1.5]" cx="12" cy="12" r="9"></circle>
+<path d="M15 9l-6 6M9 9l6 6" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</section>
+<!-- END: SearchSection -->
+<!-- BEGIN: DropdownFiltersRow -->
+<section class="bg-white px-4 pb-3 flex items-center gap-2" data-purpose="dropdown-selectors">
+<!-- All India Dropdown -->
+<button class="flex items-center justify-between gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-800 text-white text-xs font-semibold shadow-xs">
+<span>All India</span>
+<svg class="w-3.5 h-3.5 stroke-current fill-none stroke-2" viewbox="0 0 24 24">
+<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Maharashtra Dropdown -->
+<button class="flex items-center justify-between gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-semibold shadow-xs">
+<span>Maharashtra</span>
+<svg class="w-3.5 h-3.5 stroke-current fill-none stroke-2 text-slate-500" viewbox="0 0 24 24">
+<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</section>
+<!-- END: DropdownFiltersRow -->
+<!-- BEGIN: FilterChipsHorizontalScroll -->
+<section class="bg-white px-4 pb-3 flex items-center gap-2 overflow-x-auto no-scrollbar" data-purpose="category-pills">
+<!-- Chip: All (Active) -->
+<button class="px-3.5 py-1 bg-emerald-800 text-white rounded-full text-xs font-medium shrink-0">
+          All
+        </button>
+<!-- Chip: Cash Grants -->
+<button class="px-3.5 py-1 border border-slate-200 bg-slate-50 text-slate-600 rounded-full text-xs font-medium shrink-0 hover:bg-slate-100">
+          Cash Grants
+        </button>
+<!-- Chip: Subsidies -->
+<button class="px-3.5 py-1 border border-slate-200 bg-slate-50 text-slate-600 rounded-full text-xs font-medium shrink-0 hover:bg-slate-100">
+          Subsidies
+        </button>
+<!-- Chip: Loans -->
+<button class="px-3.5 py-1 border border-slate-200 bg-slate-50 text-slate-600 rounded-full text-xs font-medium shrink-0 hover:bg-slate-100">
+          Loans
+        </button>
+</section>
+<!-- END: FilterChipsHorizontalScroll -->
+<!-- BEGIN: IconCategoryBadges -->
+<section class="bg-white px-4 pb-4 pt-1 border-b border-slate-200 flex justify-between items-center text-center" data-purpose="icon-categories">
+<!-- Agriculture -->
+<div class="flex flex-col items-center gap-1.5 flex-1 cursor-pointer">
+<div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shadow-xs">
+<svg class="w-6 h-6 fill-emerald-600" viewbox="0 0 24 24">
+<path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"></path>
+</svg>
+</div>
+<span class="text-[11px] font-medium text-slate-700">Agriculture</span>
+</div>
+<!-- Farmers -->
+<div class="flex flex-col items-center gap-1.5 flex-1 cursor-pointer">
+<div class="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 shadow-xs">
+<svg class="w-6 h-6 stroke-indigo-600 fill-none stroke-2" viewbox="0 0 24 24">
+<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke-linecap="round" stroke-linejoin="round"></path>
+<circle cx="9" cy="7" r="4"></circle>
+<path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke-linecap="round" stroke-linejoin="round"></path>
+<path d="M16 3.13a4 4 0 0 1 0 7.75" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[11px] font-medium text-slate-700">Farmers</span>
+</div>
+<!-- Women -->
+<div class="flex flex-col items-center gap-1.5 flex-1 cursor-pointer">
+<div class="w-12 h-12 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 shadow-xs">
+<svg class="w-6 h-6 stroke-amber-600 fill-none stroke-2" viewbox="0 0 24 24">
+<circle cx="12" cy="8" r="4"></circle>
+<path d="M6 21v-2a6 6 0 0 1 12 0v2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[11px] font-medium text-slate-700">Women</span>
+</div>
+<!-- MSME -->
+<div class="flex flex-col items-center gap-1.5 flex-1 cursor-pointer">
+<div class="w-12 h-12 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 shadow-xs">
+<svg class="w-6 h-6 stroke-sky-600 fill-none stroke-2" viewbox="0 0 24 24">
+<path d="M3 21h18M3 7v14M21 7v14M6 11h4M6 15h4M14 11h4M14 15h4M12 3l9 4H3l9-4z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[11px] font-medium text-slate-700">MSME</span>
+</div>
+</section>
+<!-- END: IconCategoryBadges -->
+<!-- BEGIN: ResultsSummaryHeader -->
+<section class="px-4 py-3 flex items-center justify-between" data-purpose="results-summary">
+<span class="text-xs font-bold text-slate-900">142 schemes found</span>
+<button class="flex items-center gap-1 text-xs font-medium text-slate-700 hover:text-slate-900">
+<span>Sort</span>
+<svg class="w-3.5 h-3.5 stroke-current fill-none stroke-2" viewbox="0 0 24 24">
+<path d="M7 16V4m0 0L3 8m4-4l4 4m6 4v12m0 0l4-4m-4 4l-4-4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</section>
+<!-- END: ResultsSummaryHeader -->
+<!-- BEGIN: SchemesList -->
+<div class="px-4 space-y-3" data-purpose="schemes-list">
+<!-- Card 1: PM Kisan Samman Nidhi -->
+<article class="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-xs flex flex-col gap-2.5" data-purpose="scheme-card">
+<div class="flex items-start justify-between">
+<div class="flex items-start gap-3">
+<!-- Scheme Icon Badge -->
+<div class="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 mt-0.5">
+<svg class="w-5 h-5 fill-emerald-600" viewbox="0 0 24 24">
+<path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"></path>
+</svg>
+</div>
+<!-- Title & Ministry -->
+<div>
+<h2 class="text-xs font-bold text-slate-900 leading-snug">PM Kisan Samman Nidhi</h2>
+<p class="text-[11px] text-slate-500 font-normal mt-0.5">Ministry of Agriculture</p>
+<p class="text-xs font-bold text-emerald-700 mt-1">₹6,000 <span class="text-[10px] font-normal text-slate-500">/ year</span></p>
+</div>
+</div>
+<!-- Bookmark Action Outline -->
+<button aria-label="Save Scheme" class="text-slate-400 hover:text-emerald-700 p-0.5">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24">
+<path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- Scheme Tags -->
+<div class="flex items-center gap-1.5 pt-0.5 border-t border-slate-100">
+<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium">All India</span>
+<span class="px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200/60 text-[10px] font-medium">Cash Grant</span>
+</div>
+</article>
+<!-- Card 2: Kisan Credit Card (KCC) -->
+<article class="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-xs flex flex-col gap-2.5" data-purpose="scheme-card">
+<div class="flex items-start justify-between">
+<div class="flex items-start gap-3">
+<!-- Scheme Icon Badge -->
+<div class="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 mt-0.5">
+<svg class="w-5 h-5 fill-emerald-600" viewbox="0 0 24 24">
+<path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z"></path>
+</svg>
+</div>
+<!-- Title & Ministry -->
+<div>
+<h2 class="text-xs font-bold text-slate-900 leading-snug">Kisan Credit Card (KCC)</h2>
+<p class="text-[11px] text-slate-500 font-normal mt-0.5">Ministry of Agriculture</p>
+<p class="text-xs font-bold text-emerald-700 mt-1"><span class="text-[10px] font-normal text-slate-500">Up to </span>₹3,00,000</p>
+</div>
+</div>
+<!-- Bookmark Action Outline -->
+<button aria-label="Save Scheme" class="text-slate-400 hover:text-emerald-700 p-0.5">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24">
+<path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- Scheme Tags -->
+<div class="flex items-center gap-1.5 pt-0.5 border-t border-slate-100">
+<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium">All India</span>
+<span class="px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200/60 text-[10px] font-medium">Loan</span>
+</div>
+</article>
+</div>
+<!-- END: SchemesList -->
+</div>
+<!-- END: ScrollableContent -->
+<!-- BEGIN: BottomNavigationBar -->
+<nav class="absolute bottom-0 inset-x-0 bg-white border-t border-slate-200 px-6 py-2 pb-5 flex items-center justify-between z-30" data-purpose="bottom-tab-bar">
+<!-- Tab 1: Advisor -->
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600" href="#">
+<svg class="w-5 h-5 stroke-current fill-none stroke-[1.75]" viewbox="0 0 24 24">
+<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-medium tracking-tight">Advisor</span>
+</a>
+<!-- Tab 2: Vault -->
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600" href="#">
+<svg class="w-5 h-5 stroke-current fill-none stroke-[1.75]" viewbox="0 0 24 24">
+<path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-medium tracking-tight">Vault</span>
+</a>
+<!-- Tab 3: Check -->
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600" href="#">
+<svg class="w-5 h-5 stroke-current fill-none stroke-[1.75]" viewbox="0 0 24 24">
+<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-medium tracking-tight">Check</span>
+</a>
+<!-- Tab 4: Schemes (Active) -->
+<a class="flex flex-col items-center gap-1 text-emerald-800 font-bold" href="#">
+<div class="relative">
+<svg class="w-5 h-5 stroke-emerald-800 fill-emerald-100 stroke-[2]" viewbox="0 0 24 24">
+<rect height="16" rx="3" stroke-linecap="round" stroke-linejoin="round" width="18" x="3" y="4"></rect>
+<path d="M7 8h10M7 12h7M7 16h4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[10px] tracking-tight">Schemes</span>
+</a>
+</nav>
+<!-- END: BottomNavigationBar -->
+</main>
+<!-- END: MobileDeviceFrame -->
+</body></html>

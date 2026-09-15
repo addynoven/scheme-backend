@@ -3,7 +3,7 @@ import logging
 from typing import Any
 from sqlalchemy.orm import Session, selectinload
 
-from app.modules.schemes.models import Scheme, EligibilityRule
+from app.modules.schemes.models import Scheme
 
 logger = logging.getLogger(__name__)
 
@@ -33,20 +33,47 @@ class BitmaskRuleEngine:
 
     def warm_up(self, db: Session):
         """Loads active, published schemes and pre-compiles bitmasks from PostgreSQL."""
+        from app.modules.schemes.models import EligibilityRule, Benefit, RequiredDocument
+        from sqlalchemy import func
+
+        # Bulk fetch lightweight flat attributes
         schemes = (
-            db.query(Scheme)
-            .filter(Scheme.status == "active", Scheme.publication_state == "published")
-            .options(
-                selectinload(Scheme.eligibility_rules),
-                selectinload(Scheme.benefits),
-                selectinload(Scheme.required_documents),
+            db.query(
+                Scheme.id,
+                Scheme.slug,
+                Scheme.name,
+                Scheme.state,
+                Scheme.category,
+                Scheme.ministry,
+                Scheme.application_url,
             )
+            .filter(Scheme.status == "active", Scheme.publication_state == "published")
+            .order_by(Scheme.id.asc())
             .all()
         )
 
         self.scheme_ids = [s.id for s in schemes]
         self.scheme_id_to_idx = {s.id: i for i, s in enumerate(schemes)}
         self.idx_to_slug = {i: s.slug for i, s in enumerate(schemes)}
+
+        # Fetch first benefit per scheme
+        first_benefits: dict[int, str] = {}
+        for row in db.query(Benefit.scheme_id, Benefit.title).order_by(Benefit.id.asc()).all():
+            if row.scheme_id not in first_benefits:
+                first_benefits[row.scheme_id] = row.title
+
+        # Fetch counts of rules and docs
+        rule_counts = dict(
+            db.query(EligibilityRule.scheme_id, func.count(EligibilityRule.id))
+            .group_by(EligibilityRule.scheme_id)
+            .all()
+        )
+        doc_counts = dict(
+            db.query(RequiredDocument.scheme_id, func.count(RequiredDocument.id))
+            .group_by(RequiredDocument.scheme_id)
+            .all()
+        )
+
         self.idx_to_scheme = {
             i: {
                 "id": s.id,
@@ -56,9 +83,9 @@ class BitmaskRuleEngine:
                 "category": s.category or "General Welfare",
                 "ministry": s.ministry or "Government of India",
                 "application_url": s.application_url,
-                "benefit_title": s.benefits[0].title if s.benefits else "Government Welfare Assistance",
-                "rules_count": len(s.eligibility_rules),
-                "docs_count": len(s.required_documents),
+                "benefit_title": first_benefits.get(s.id, "Government Welfare Assistance"),
+                "rules_count": rule_counts.get(s.id, 0),
+                "docs_count": doc_counts.get(s.id, 0),
             }
             for i, s in enumerate(schemes)
         }
@@ -72,50 +99,65 @@ class BitmaskRuleEngine:
         total = len(schemes)
         self.all_schemes_mask = (1 << total) - 1 if total > 0 else 0
 
+        # Build state masks
         for i, s in enumerate(schemes):
             bit = 1 << i
             st = (s.state or "all_india").lower().strip()
             self.state_masks[st] |= bit
 
-            for r in s.eligibility_rules:
-                val = str(r.rule_value).lower().strip().strip("'\"")
-                f_name = r.field_name.lower().strip()
+        # Fetch all eligibility rules in bulk
+        all_rules = (
+            db.query(
+                EligibilityRule.scheme_id,
+                EligibilityRule.field_name,
+                EligibilityRule.operator,
+                EligibilityRule.rule_value,
+            ).all()
+        )
 
-                if f_name == "caste_category":
-                    self.caste_masks[val] |= bit
-                elif f_name == "gender":
-                    self.gender_masks[val] |= bit
-                elif f_name == "occupation":
-                    self.occupation_masks[val] |= bit
-                elif f_name in ["age", "annual_income", "land_hectares"]:
-                    op = r.operator.lower().strip()
-                    if op == "between":
-                        clean_val = val.replace("to", "-").replace(",", "-")
-                        parts = clean_val.split("-")
-                        if len(parts) == 2:
-                            try:
-                                val_min = float(parts[0].strip())
-                                val_max = float(parts[1].strip())
-                                self.numeric_rules.append({
-                                    "idx": i,
-                                    "field": f_name,
-                                    "op": "between",
-                                    "val_min": val_min,
-                                    "val_max": val_max,
-                                })
-                            except ValueError:
-                                pass
-                    else:
+        for r in all_rules:
+            if r.scheme_id not in self.scheme_id_to_idx:
+                continue
+            i = self.scheme_id_to_idx[r.scheme_id]
+            bit = 1 << i
+            val = str(r.rule_value).lower().strip().strip("'\"")
+            f_name = r.field_name.lower().strip()
+
+            if f_name == "caste_category":
+                self.caste_masks[val] |= bit
+            elif f_name == "gender":
+                self.gender_masks[val] |= bit
+            elif f_name == "occupation":
+                self.occupation_masks[val] |= bit
+            elif f_name in ["age", "annual_income", "land_hectares"]:
+                op = r.operator.lower().strip()
+                if op == "between":
+                    clean_val = val.replace("to", "-").replace(",", "-")
+                    parts = clean_val.split("-")
+                    if len(parts) == 2:
                         try:
-                            num_val = float(val)
+                            val_min = float(parts[0].strip())
+                            val_max = float(parts[1].strip())
                             self.numeric_rules.append({
                                 "idx": i,
                                 "field": f_name,
-                                "op": op,
-                                "val": num_val,
+                                "op": "between",
+                                "val_min": val_min,
+                                "val_max": val_max,
                             })
                         except ValueError:
                             pass
+                else:
+                    try:
+                        num_val = float(val)
+                        self.numeric_rules.append({
+                            "idx": i,
+                            "field": f_name,
+                            "op": op,
+                            "val": num_val,
+                        })
+                    except ValueError:
+                        pass
 
         self.is_warmed = True
         logger.info(f"Compiled Eligibility Index warmed up successfully with {len(schemes)} schemes.")

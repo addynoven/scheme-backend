@@ -5,6 +5,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+pytestmark = pytest.mark.eval
+
 from app.core.security import hash_password
 from app.modules.auth.models import CitizenFact, Profile, User
 from app.modules.eligibility.bitmask_engine import bitmask_engine
@@ -321,7 +323,7 @@ def test_eval_service_unavailable_explicit_failure_state(
         "hello there",
     ]
 
-    with patch("app.modules.chat.service.call_llm_provider", return_value=None), patch("app.modules.chat.service.settings.DEV_MODE", False):
+    with patch("app.modules.chat.agent_orchestrator.call_llm_provider", return_value=None), patch("app.modules.chat.agent_orchestrator.settings.DEV_MODE", False):
         for q in test_queries:
             msg_res = client.post(
                 f"/chat/sessions/{session_id}/messages",
@@ -439,7 +441,7 @@ def test_eval_obc_scholarship_query_filters_out_unrelated_schemes(
         "usageMetadata": {"promptTokenCount": 150, "candidatesTokenCount": 50, "totalTokenCount": 200},
     }
 
-    with patch("app.modules.chat.service._call_gemini_api", side_effect=[mock_gemini_turn_1, mock_gemini_turn_2]):
+    with patch("app.modules.chat.agent_orchestrator._call_gemini_api", side_effect=[mock_gemini_turn_1, mock_gemini_turn_2]):
         msg_res = client.post(
             f"/chat/sessions/{session_id}/messages",
             json={"content": "Are there education scholarships for OBC students?"},
@@ -511,7 +513,7 @@ def test_eval_agy_cli_provider_switch(client: TestClient, eval_user_and_token: t
     }
 
     with patch("app.core.config.settings.LLM_PROVIDER", "agy"):
-        with patch("app.modules.chat.service._call_agy_cli", side_effect=[mock_agy_output_turn_1, mock_agy_output_turn_2]) as mock_agy:
+        with patch("app.modules.chat.agent_orchestrator._call_agy_cli", side_effect=[mock_agy_output_turn_1, mock_agy_output_turn_2]) as mock_agy:
             msg_res = client.post(
                 f"/chat/sessions/{session_id}/messages",
                 json={"content": "What scholarships can I get in MP?"},
@@ -550,17 +552,19 @@ def test_dev_mode_rate_limit_fail_loud(client: TestClient, eval_user_and_token):
         with patch("app.core.config.settings.GEMINI_API_KEY", "dummy_key"):
             with patch("app.core.config.settings.DEV_MODE", True):
                 with patch("urllib.request.urlopen", side_effect=mock_http_429):
-                    msg_res = client.post(
-                        f"/chat/sessions/{session_id}/messages",
-                        json={"content": "Hello bot"},
-                        headers=headers,
-                    )
-                    assert msg_res.status_code == 200
-                    data = msg_res.json()
-                    assert data["status"] == "rate_limit_exceeded"
-                    assert data["error_code"] == "AI_RATE_LIMIT_EXCEEDED"
-                    assert data["stack_trace"] is not None
-                    assert "Dev Mode: Upstream AI Rate Limit Exceeded" in data["content"]
-                    assert "LLM_PROVIDER=agy" in data["content"]
+                    with patch("app.modules.chat.groq_provider.call_groq_api", return_value=None):
+                        with patch("app.modules.chat.agent_orchestrator._call_agy_cli", return_value=None):
+                            msg_res = client.post(
+                                f"/chat/sessions/{session_id}/messages",
+                                json={"content": "Hello bot"},
+                                headers=headers,
+                            )
+                            assert msg_res.status_code == 200
+                            data = msg_res.json()
+                            assert data["status"] == "rate_limit_exceeded"
+                            assert data["error_code"] == "AI_RATE_LIMIT_EXCEEDED"
+                            assert data["stack_trace"] is not None
+                            assert "Dev Mode: Upstream AI Rate Limit Exceeded" in data["content"]
+                            assert "LLM_PROVIDER=agy" in data["content"]
 
 

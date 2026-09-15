@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Scheme App - Profile Menu</title>
+<!-- Tailwind CSS v3 CDN with forms and container-queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#16a34a',
+              600: '#15803d',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-ios-styling">
+    /* iOS frame simulation and scroll lock */
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .safe-area-top {
+      padding-top: env(safe-area-inset-top, 44px);
+    }
+    .safe-area-bottom {
+      padding-bottom: env(safe-area-inset-bottom, 34px);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-0 sm:p-4 text-slate-800 antialiased font-sans">
+<!-- BEGIN: MobileDeviceFrame -->
+<main class="w-full max-w-[390px] h-[844px] bg-slate-50 relative rounded-[44px] shadow-2xl overflow-hidden border-[8px] border-slate-900 flex flex-col justify-between select-none">
+<!-- BEGIN: StatusBar -->
+<header class="w-full pt-3 px-7 flex justify-between items-center z-30 select-none" data-purpose="ios-status-bar">
+<!-- Time Display -->
+<span class="text-sm font-semibold tracking-tight text-slate-900">9:41</span>
+<!-- iOS Hardware Icons -->
+<div class="flex items-center space-x-2 text-slate-900">
+<!-- Cellular Signal Icon -->
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M2 17h3v4H2v-4zm6-5h3v9H8v-9zm6-5h3v14h-3V7zm6-4h3v18h-3V3z"></path>
+</svg>
+<!-- Wifi Icon -->
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98A16.88 16.88 0 0 0 12 4zm0 3.32c3.7 0 7.07 1.41 9.61 3.73l-2.02 2.05A10.74 10.74 0 0 0 12 10.3c-2.83 0-5.4 1.1-7.59 2.89L2.39 11.05A13.88 13.88 0 0 1 12 7.32z"></path>
+</svg>
+<!-- Battery Icon -->
+<svg class="w-6 h-3 fill-current" viewbox="0 0 24 12">
+<rect fill="none" height="10" rx="3" stroke="currentColor" stroke-width="1.8" width="19" x="1" y="1"></rect>
+<rect fill="currentColor" height="7" rx="1.5" width="13" x="2.5" y="2.5"></rect>
+<path d="M21 4.5C21.6 4.5 22 5.17 22 6C22 6.83 21.6 7.5 21 7.5V4.5Z" fill="currentColor"></path>
+</svg>
+</div>
+</header>
+<!-- END: StatusBar -->
+<!-- BEGIN: TopBar -->
+<section class="px-5 pt-3 pb-3 flex items-center justify-between border-b border-slate-100 bg-white z-10" data-purpose="app-header">
+<!-- App Identity / Header Left -->
+<div class="flex items-center space-x-2.5">
+<!-- Leaf App Logo -->
+<div class="w-7 h-7 flex items-center justify-center text-emerald-600">
+<svg class="w-6 h-6 fill-current" viewbox="0 0 24 24">
+<path d="M17 2C10.5 2 5 7.5 5 14c0 1.25.21 2.45.58 3.58L2 21.17l3.59-3.58C6.55 18.79 7.75 19 9 19c6.5 0 12-5.5 12-12 0-2.76-1.02-5-4-5zm-3.5 12.5C11.5 14.5 9 12 9 10c0-1.5 1-2.5 2.5-2.5 1.5 0 2.5 1 2.5 2.5 0 2-2.5 4.5-2.5 4.5z"></path>
+</svg>
+</div>
+<h1 class="text-xl font-bold text-slate-800 tracking-tight">Advisor</h1>
+</div>
+<!-- Header Action Buttons -->
+<div class="flex items-center space-x-3.5">
+<!-- Notification Bell -->
+<button aria-label="Notifications" class="text-slate-600 p-1.5 rounded-full hover:bg-slate-100 transition-colors" type="button">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Profile Avatar Trigger (Active ringed state) -->
+<button aria-label="Open Profile Menu" class="relative rounded-full ring-2 ring-emerald-600 ring-offset-2 overflow-hidden w-9 h-9 flex items-center justify-center bg-emerald-50 focus:outline-none" type="button">
+<img alt="Rohit Kumar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHoju_dg9MZ8e4UVTmX3Qc0TzMTHsKbKGBD5kx7t2UIV-mXPLl2-im7jX6xQ1OXueuWm--TZdY8l1L9ZRRfFVt4JI49bF7e_lTD8uB9xroGNYC4nySL6gt7V4R_7_Kbi6z5lh0C5ZSx8KdxbHLkd4PK8Kb3TkSv6xyNvbXdTBWKyPBzqY12hPS9CDLkGQIrOWt3a2pA6IH2Vko9Mgnbssu-gjUBWpiu1lbj8HAnKser1xdHwJmCcRY"/>
+</button>
+</div>
+</section>
+<!-- END: TopBar -->
+<!-- BEGIN: DimmedAdvisorBackground -->
+<!-- Content beneath representing the advisor screen, semi-dimmed by overlay -->
+<div class="relative flex-1 bg-slate-50 overflow-hidden" data-purpose="background-advisor-content">
+<!-- Advisor dummy content to create realistic backdrop -->
+<div class="p-5 space-y-4 filter blur-[1px] opacity-40 select-none pointer-events-none">
+<div class="bg-emerald-800 text-white rounded-2xl p-5 shadow-sm space-y-3">
+<div class="h-4 w-28 bg-emerald-600 rounded"></div>
+<div class="h-6 w-48 bg-white/90 rounded"></div>
+<div class="h-3 w-36 bg-emerald-500 rounded"></div>
+</div>
+<div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+<div class="flex items-center space-x-3">
+<div class="w-10 h-10 rounded-full bg-slate-200"></div>
+<div class="space-y-1">
+<div class="h-4 w-32 bg-slate-300 rounded"></div>
+<div class="h-3 w-20 bg-slate-200 rounded"></div>
+</div>
+</div>
+<div class="h-3 w-full bg-slate-100 rounded"></div>
+</div>
+</div>
+<!-- BEGIN: BackdropScrim -->
+<!-- Soft translucent backdrop scrim -->
+<div class="absolute inset-0 bg-black/20 backdrop-blur-[1.5px] z-10" data-purpose="menu-backdrop"></div>
+<!-- END: BackdropScrim -->
+<!-- BEGIN: ProfileMenuDropdown -->
+<!-- Floating Profile Card aligned to top right under avatar -->
+<div class="absolute top-2 right-4 w-72 bg-white rounded-2xl shadow-2xl border border-slate-100/80 z-20 overflow-hidden transform transition-all animate-in fade-in slide-in-from-top-2 duration-150" data-purpose="profile-popover-card">
+<!-- User Info Header Section -->
+<div class="px-4 py-3.5 flex items-center space-x-3 bg-white border-b border-slate-100">
+<div class="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 bg-slate-100 border border-slate-200/80 shadow-inner">
+<img alt="Rohit Kumar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCshm5HwW4PcVTVRQjJ2C2HwBfW74-zVG0gBwLkcVAvwokGk-oa6uvtBT8H6j60U94UhSKNNGdmvlf3y9dybfDWpHSjBI_zS4NPAtMu3Wk7yCNwN0mth-2SMBK7mIRjcI5YmAVycMEmHaS-3oc68Qx21XlRmu755AP2KbajpofTow3MYJDrXm7h_171EhEX2Dm3nsVQDvAiHC0QRmA0YVWDS2Tcq2fVPxaW_sM1DB8ftZC9qOFDIMPe"/>
+</div>
+<div class="overflow-hidden">
+<h2 class="text-sm font-bold text-slate-900 truncate">Rohit Kumar</h2>
+<p class="text-xs text-slate-500 truncate font-normal">rohit@example.com</p>
+</div>
+</div>
+<!-- Menu Links List -->
+<nav aria-label="Profile navigation" class="py-1">
+<!-- View Profile Item -->
+<a class="flex items-center justify-between px-4 py-3 text-slate-700 hover:bg-slate-50 transition-colors group" href="#">
+<div class="flex items-center space-x-3">
+<!-- User Icon -->
+<svg class="w-5 h-5 text-slate-500 group-hover:text-slate-800 transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-sm font-medium text-slate-800">View Profile</span>
+</div>
+<!-- Chevron Right -->
+<svg class="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</a>
+<!-- Settings Item -->
+<a class="flex items-center justify-between px-4 py-3 text-slate-700 hover:bg-slate-50 transition-colors group" href="#">
+<div class="flex items-center space-x-3">
+<!-- Settings Gear Icon -->
+<svg class="w-5 h-5 text-slate-500 group-hover:text-slate-800 transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round"></path>
+<circle cx="12" cy="12" r="3" stroke-width="1.8"></circle>
+</svg>
+<span class="text-sm font-medium text-slate-800">Settings</span>
+</div>
+<!-- Chevron Right -->
+<svg class="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</a>
+<!-- Help & Support Item -->
+<a class="flex items-center justify-between px-4 py-3 text-slate-700 hover:bg-slate-50 transition-colors group" href="#">
+<div class="flex items-center space-x-3">
+<!-- Question Mark Circle Icon -->
+<svg class="w-5 h-5 text-slate-500 group-hover:text-slate-800 transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75m0 3.75h.008v.008H12v-.008z" stroke-linecap="round" stroke-linejoin="round"></path>
+<circle cx="12" cy="12" r="9" stroke-width="1.8"></circle>
+</svg>
+<span class="text-sm font-medium text-slate-800">Help &amp; Support</span>
+</div>
+<!-- Chevron Right -->
+<svg class="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</a>
+<!-- Subtle Separator -->
+<div class="my-1 border-t border-slate-100"></div>
+<!-- Logout Item (Red Accent) -->
+<a class="flex items-center px-4 py-3 text-red-500 hover:bg-red-50 transition-colors group" href="#">
+<div class="flex items-center space-x-3">
+<!-- Exit Door Logout Icon -->
+<svg class="w-5 h-5 text-red-500 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-sm font-medium text-red-500 group-hover:text-red-600">Logout</span>
+</div>
+</a>
+</nav>
+</div>
+<!-- END: ProfileMenuDropdown -->
+</div>
+<!-- END: DimmedAdvisorBackground -->
+<!-- BEGIN: BottomNavigation -->
+<nav class="bg-white border-t border-slate-100 px-6 py-2 pb-5 flex justify-around items-center z-10" data-purpose="mobile-bottom-navigation">
+<!-- Nav Item: Advisor (Active) -->
+<button class="flex flex-col items-center space-y-1 text-emerald-700" type="button">
+<div class="w-6 h-6 flex items-center justify-center">
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
+<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.5h-2v-2h2v2zm0-4h-2V7h2v5.5z"></path>
+</svg>
+</div>
+<span class="text-[10px] font-semibold tracking-tight">Advisor</span>
+</button>
+<!-- Nav Item: Schemes -->
+<button class="flex flex-col items-center space-y-1 text-slate-400 hover:text-slate-600 transition-colors" type="button">
+<div class="w-6 h-6 flex items-center justify-center">
+<svg class="w-5 h-5 stroke-current" fill="none" stroke-width="2" viewbox="0 0 24 24">
+<path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[10px] font-medium">Schemes</span>
+</button>
+<!-- Nav Item: Vault / Documents -->
+<button class="flex flex-col items-center space-y-1 text-slate-400 hover:text-slate-600 transition-colors" type="button">
+<div class="w-6 h-6 flex items-center justify-center">
+<svg class="w-5 h-5 stroke-current" fill="none" stroke-width="2" viewbox="0 0 24 24">
+<path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[10px] font-medium">Vault</span>
+</button>
+<!-- Nav Item: Search -->
+<button class="flex flex-col items-center space-y-1 text-slate-400 hover:text-slate-600 transition-colors" type="button">
+<div class="w-6 h-6 flex items-center justify-center">
+<svg class="w-5 h-5 stroke-current" fill="none" stroke-width="2" viewbox="0 0 24 24">
+<path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[10px] font-medium">Search</span>
+</button>
+</nav>
+<!-- END: BottomNavigation -->
+<!-- BEGIN: iOSHomeIndicator -->
+<footer class="w-full flex justify-center pb-2 bg-white" data-purpose="ios-indicator-bar">
+<div class="w-32 h-1 bg-slate-900 rounded-full"></div>
+</footer>
+<!-- END: iOSHomeIndicator -->
+</main>
+<!-- END: MobileDeviceFrame -->
+</body></html>

@@ -13,10 +13,6 @@ class BenefitCreate(BenefitBase):
     pass
 
 
-class BenefitUpdate(BaseModel):
-    title: str | None = None
-    description: str | None = None
-
 
 class BenefitResponse(BenefitBase):
     id: int
@@ -38,11 +34,6 @@ class EligibilityRuleBase(BaseModel):
 class EligibilityRuleCreate(EligibilityRuleBase):
     pass
 
-
-class EligibilityRuleUpdate(BaseModel):
-    field_name: str | None = None
-    operator: str | None = None
-    rule_value: str | None = None
 
 
 class EligibilityRuleResponse(EligibilityRuleBase):
@@ -66,12 +57,6 @@ class RequiredDocumentCreate(RequiredDocumentBase):
     pass
 
 
-class RequiredDocumentUpdate(BaseModel):
-    document_name: str | None = None
-    is_mandatory: bool | None = None
-    description: str | None = None
-
-
 class RequiredDocumentResponse(RequiredDocumentBase):
     id: int
     scheme_id: int
@@ -91,12 +76,6 @@ class OfficialSourceBase(BaseModel):
 
 class OfficialSourceCreate(OfficialSourceBase):
     pass
-
-
-class OfficialSourceUpdate(BaseModel):
-    title: str | None = None
-    url: str | None = None
-    source_type: str | None = None
 
 
 class OfficialSourceResponse(OfficialSourceBase):

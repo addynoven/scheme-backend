@@ -1,8 +1,6 @@
-import io
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.modules.auth.models import Profile, User
 from app.modules.chat.agent_orchestrator import _build_user_context
 from app.modules.chat.service import (
     create_chat_session,
@@ -11,7 +9,6 @@ from app.modules.chat.service import (
     list_chat_sessions,
     update_chat_session_title,
 )
-from app.modules.voice.service import voice_service
 
 
 def create_test_citizen(client: TestClient, email: str) -> dict[str, str]:
@@ -65,18 +62,3 @@ def test_modular_chat_facade_and_session_crud(client: TestClient, db_session: Se
     assert len(list_chat_sessions(db_session, user_id)) == 0
 
 
-def test_voice_chat_with_authenticated_context(client: TestClient, db_session: Session):
-    citizen = create_test_citizen(client, "voice.auth@example.com")
-    user_id = citizen["user_id"]
-
-    fake_audio = b"RIFF\x24\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00\x44\xac\x00\x00\x88\x58\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00"
-
-    res = voice_service.execute_voice_chat(
-        db=db_session,
-        user_id=user_id,
-        audio_bytes=fake_audio,
-        filename="test.wav",
-        mime_type="audio/wav",
-    )
-    assert res.session_id is not None
-    assert res.response_text is not None

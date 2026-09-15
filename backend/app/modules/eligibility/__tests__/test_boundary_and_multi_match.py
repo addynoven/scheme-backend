@@ -112,7 +112,7 @@ def test_multi_scheme_match_female_student(client: TestClient, db_session: Sessi
         headers=admin_headers,
     )
 
-    res_eligible = client.get(f"/eligibility/users/{user_id}/schemes")
+    res_eligible = client.get(f"/eligibility/users/{user_id}/schemes", headers=admin_headers)
     assert res_eligible.status_code == 200
     matched = res_eligible.json()
     matched_slugs = [s["slug"] for s in matched]

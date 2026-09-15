@@ -2,7 +2,7 @@ import re
 from typing import Any
 from fastapi import HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.core.uid_generator import generate_session_uid
 from app.modules.chat.models import ChatSession
@@ -18,10 +18,18 @@ def get_chat_session(
     session = None
 
     if val_str.isdigit():
-        session = db.scalar(select(ChatSession).where(ChatSession.id == int(val_str)))
+        session = db.scalar(
+            select(ChatSession)
+            .where(ChatSession.id == int(val_str))
+            .options(selectinload(ChatSession.messages))
+        )
 
     if not session:
-        session = db.scalar(select(ChatSession).where(ChatSession.session_uid == val_str))
+        session = db.scalar(
+            select(ChatSession)
+            .where(ChatSession.session_uid == val_str)
+            .options(selectinload(ChatSession.messages))
+        )
 
     if not session:
         raise HTTPException(
@@ -79,6 +87,7 @@ def list_chat_sessions(db: Session, user_id: int, limit: int = 50) -> list[ChatS
     query = (
         select(ChatSession)
         .where(ChatSession.user_id == user_id)
+        .options(selectinload(ChatSession.messages))
         .order_by(ChatSession.updated_at.desc())
         .limit(limit)
     )

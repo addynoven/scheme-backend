@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>What's Next? - Scheme App</title>
+<!-- Load Tailwind CSS v3 with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<style data-purpose="base-styling">
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+<style data-purpose="custom-decorations">
+    /* Subtle background glow for illustration banner */
+    .hero-gradient {
+      background: linear-gradient(180deg, #FDF7EA 0%, #FEFAF0 60%, #FFFFFF 100%);
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-0 sm:p-4">
+<!-- BEGIN: MobileDeviceFrame -->
+<div class="w-full max-w-[393px] h-[852px] bg-white rounded-none sm:rounded-[44px] shadow-2xl overflow-hidden flex flex-col relative border-0 sm:border-[8px] sm:border-gray-800 select-none">
+<!-- BEGIN: StatusBar -->
+<header class="w-full pt-3 px-7 flex justify-between items-center z-20 shrink-0">
+<!-- Time Display -->
+<span class="text-sm font-semibold tracking-tight text-gray-900">9:41</span>
+<!-- iOS Status Icons -->
+<div class="flex items-center space-x-2 text-gray-900">
+<!-- Cellular Signal Icon -->
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<rect height="5" rx="1" width="3" x="2" y="16"></rect>
+<rect height="9" rx="1" width="3" x="7" y="12"></rect>
+<rect height="13" rx="1" width="3" x="12" y="8"></rect>
+<rect height="17" rx="1" width="3" x="17" y="4"></rect>
+</svg>
+<!-- Wi-Fi Icon -->
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98C20.93 5.9 16.69 4 12 4zm0 3.5c3.78 0 7.22 1.47 9.8 3.88L12 18.25 2.2 11.38C4.78 8.97 8.22 7.5 12 7.5z"></path>
+</svg>
+<!-- Battery Icon -->
+<div class="w-6 h-3 border border-gray-900 rounded-sm p-0.5 flex items-center">
+<div class="h-full bg-gray-900 rounded-2xs w-full"></div>
+</div>
+</div>
+</header>
+<!-- END: StatusBar -->
+<!-- BEGIN: NavigationBar -->
+<nav class="px-5 py-3 flex items-center justify-between border-b border-gray-100 shrink-0" data-purpose="top-navigation">
+<button aria-label="Go Back" class="w-9 h-9 rounded-full flex items-center justify-center text-gray-700 hover:bg-gray-100 transition-colors">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M15.75 19.5L8.25 12l7.5-7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<h1 class="text-lg font-bold text-gray-900 tracking-tight">What's Next?</h1>
+<!-- Balanced invisible spacer for centering header title -->
+<div class="w-9 h-9"></div>
+</nav>
+<!-- END: NavigationBar -->
+<!-- BEGIN: MainContentArea -->
+<main class="flex-1 overflow-y-auto px-5 py-3 flex flex-col justify-between" data-purpose="next-steps-container">
+<!-- Top Section: Hero Card & Actions -->
+<div class="space-y-4">
+<!-- BEGIN: HeroCard -->
+<div class="rounded-2xl border border-amber-100 overflow-hidden hero-gradient shadow-xs" data-purpose="hero-illustration-card">
+<!-- Illustration Area -->
+<div class="h-44 w-full relative flex items-end justify-center overflow-hidden">
+<!-- Background Soft Sun/Aura -->
+<div class="absolute top-2 w-32 h-32 rounded-full bg-amber-200/50 blur-xl"></div>
+<!-- Civic Building Outline / Skyline (Minimal Vector) -->
+<svg class="absolute bottom-4 w-60 text-amber-300/40" fill="currentColor" viewbox="0 0 240 80">
+<rect height="50" rx="2" width="30" x="20" y="30"></rect>
+<rect height="65" rx="3" width="40" x="70" y="15"></rect>
+<path d="M90 5 L100 15 L80 15 Z"></path>
+<rect height="55" rx="2" width="35" x="130" y="25"></rect>
+<circle cx="147" cy="15" r="10"></circle>
+<rect height="45" rx="2" width="25" x="185" y="35"></rect>
+</svg>
+<!-- Vector Character: Indian Student with Notebooks -->
+<div class="relative z-10 flex flex-col items-center">
+<svg class="w-36 h-36" fill="none" viewbox="0 0 160 160">
+<!-- Hair (Back) -->
+<path d="M50 82C46 64 54 36 80 34C108 32 116 62 112 85C118 104 116 118 116 122C106 122 96 116 94 112C88 116 72 116 68 112C66 116 56 122 46 122C46 116 44 102 50 82Z" fill="#1C212D"></path>
+<!-- Shoulders & Green Kurta -->
+<path d="M42 160C40 142 52 126 68 122L80 134L92 122C108 126 120 142 118 160H42Z" fill="#157148"></path>
+<path d="M72 124L80 135L88 124C88 124 94 145 94 160H66C66 145 72 124 72 124Z" fill="#0D5132"></path>
+<!-- Neck -->
+<rect fill="#D39062" height="24" rx="6" width="12" x="74" y="102"></rect>
+<!-- Face -->
+<path d="M62 76C62 61 70 54 80 54C90 54 98 61 98 76C98 91 90 106 80 106C70 106 62 91 62 76Z" fill="#E5A677"></path>
+<!-- Bindi -->
+<circle cx="80" cy="71" fill="#991B1B" r="1.5"></circle>
+<!-- Smile and Eyes -->
+<path d="M75 92C78 95 82 95 85 92" stroke="#5E2C10" stroke-linecap="round" stroke-width="1.8"></path>
+<circle cx="72" cy="79" fill="#2D1A0E" r="2"></circle>
+<circle cx="88" cy="79" fill="#2D1A0E" r="2"></circle>
+<!-- Eyebrows -->
+<path d="M69 74C72 73 75 74 75 74" stroke="#2D1A0E" stroke-linecap="round" stroke-width="1.4"></path>
+<path d="M85 74C85 74 88 73 91 74" stroke="#2D1A0E" stroke-linecap="round" stroke-width="1.4"></path>
+<!-- Hair (Front Framing) -->
+<path d="M62 66C68 62 76 60 80 66C84 60 92 62 98 66C98 56 90 48 80 48C70 48 62 56 62 66Z" fill="#1C212D"></path>
+<path d="M60 74C60 80 62 88 64 92C62 86 62 78 63 74H60Z" fill="#1C212D"></path>
+<path d="M100 74C100 80 98 88 96 92C98 86 98 78 97 74H100Z" fill="#1C212D"></path>
+<!-- Books / Folders held up -->
+<rect fill="#F59E0B" height="28" rx="3" transform="rotate(-6 64 132)" width="34" x="64" y="132"></rect>
+<rect fill="#3B82F6" height="25" rx="3" transform="rotate(3 60 135)" width="34" x="60" y="135"></rect>
+<line stroke="#FFFFFF" stroke-linecap="round" stroke-width="1.5" x1="65" x2="89" y1="140" y2="142"></line>
+<!-- Student Hands Holding Folders -->
+<ellipse cx="62" cy="142" fill="#E5A677" rx="4" ry="5"></ellipse>
+<ellipse cx="96" cy="144" fill="#E5A677" rx="4" ry="5"></ellipse>
+</svg>
+</div>
+</div>
+<!-- Hero Text Banner -->
+<div class="px-5 py-3 text-center bg-emerald-50/70 border-t border-emerald-100/60">
+<h2 class="text-[15px] font-bold text-gray-900 leading-snug">
+              You're one step closer<br/>to a brighter future!
+            </h2>
+</div>
+</div>
+<!-- END: HeroCard -->
+<!-- BEGIN: ActionList -->
+<div class="space-y-2.5" data-purpose="next-step-actions-list">
+<!-- Action Item 1: Apply for schemes -->
+<button class="w-full flex items-center justify-between p-3.5 bg-white rounded-xl border border-gray-100 hover:border-emerald-300 hover:bg-emerald-50/20 transition-all text-left group shadow-xs">
+<div class="flex items-center space-x-3.5">
+<div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors">
+<!-- Apply / Scheme Document Icon -->
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-sm font-semibold text-gray-800 tracking-tight">Apply for eligible schemes</span>
+</div>
+<svg class="w-4 h-4 text-gray-400 group-hover:text-emerald-700 transition-colors" fill="none" stroke="currentColor" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Action Item 2: Missing documents -->
+<button class="w-full flex items-center justify-between p-3.5 bg-white rounded-xl border border-gray-100 hover:border-emerald-300 hover:bg-emerald-50/20 transition-all text-left group shadow-xs">
+<div class="flex items-center space-x-3.5">
+<div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors">
+<!-- Folder / Card Missing Doc Icon -->
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-sm font-semibold text-gray-800 tracking-tight">Complete missing documents</span>
+</div>
+<svg class="w-4 h-4 text-gray-400 group-hover:text-emerald-700 transition-colors" fill="none" stroke="currentColor" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Action Item 3: Chat with AI Advisor -->
+<button class="w-full flex items-center justify-between p-3.5 bg-white rounded-xl border border-gray-100 hover:border-emerald-300 hover:bg-emerald-50/20 transition-all text-left group shadow-xs">
+<div class="flex items-center space-x-3.5">
+<div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors">
+<!-- Bot / Advisor Chat Bubble Icon -->
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.75.75 0 01-.974-.94 4.053 4.053 0 00.465-1.782C3.125 16.702 2.25 14.475 2.25 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-sm font-semibold text-gray-800 tracking-tight">Chat with AI Advisor for help</span>
+</div>
+<svg class="w-4 h-4 text-gray-400 group-hover:text-emerald-700 transition-colors" fill="none" stroke="currentColor" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Action Item 4: Save your progress -->
+<button class="w-full flex items-center justify-between p-3.5 bg-white rounded-xl border border-gray-100 hover:border-emerald-300 hover:bg-emerald-50/20 transition-all text-left group shadow-xs">
+<div class="flex items-center space-x-3.5">
+<div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 transition-colors">
+<!-- Clock / Bookmark Save Icon -->
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-sm font-semibold text-gray-800 tracking-tight">Save your progress</span>
+</div>
+<svg class="w-4 h-4 text-gray-400 group-hover:text-emerald-700 transition-colors" fill="none" stroke="currentColor" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- END: ActionList -->
+</div>
+<!-- BEGIN: BottomAction -->
+<div class="pt-4 pb-1" data-purpose="primary-action-button-wrapper">
+<button class="w-full py-3.5 px-6 bg-[#0e6245] hover:bg-[#0b4d36] active:scale-[0.99] text-white font-semibold rounded-xl flex items-center justify-center space-x-2 shadow-md transition-all">
+<span>Go to My Dashboard</span>
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- END: BottomAction -->
+</main>
+<!-- END: MainContentArea -->
+<!-- BEGIN: HomeIndicator -->
+<div aria-hidden="true" class="w-full pb-2 pt-1 flex justify-center shrink-0">
+<div class="w-32 h-1 bg-gray-900/40 rounded-full"></div>
+</div>
+<!-- END: HomeIndicator -->
+</div>
+<!-- END: MobileDeviceFrame -->
+</body></html>

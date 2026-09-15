@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Scheme App - Continue Your Journey</title>
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Custom Tailwind Config -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+<!-- Typography & Global Layout Styles -->
+<style data-purpose="base-layout">
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      background-color: #f1f5f9;
+    }
+  </style>
+<style data-purpose="custom-shadows">
+    .card-shadow {
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+    }
+    .hero-sunburst {
+      background: radial-gradient(circle, rgba(254, 243, 199, 0.85) 0%, rgba(240, 253, 244, 0.4) 65%, transparent 100%);
+    }
+  </style>
+</head>
+<body class="flex justify-center items-center min-h-screen p-0 sm:p-4">
+<!-- BEGIN: MobileFrameContainer -->
+<!-- Container replicates native iOS viewport dimensions (iPhone 14/15 standard frame) -->
+<main class="w-full max-w-[400px] h-[860px] bg-white sm:rounded-[44px] shadow-2xl overflow-hidden flex flex-col relative border-0 sm:border-[8px] sm:border-slate-800" data-purpose="screen-root">
+<!-- BEGIN: iOSStatusBar -->
+<!-- Native iOS 9:41 dynamic island/notch status bar -->
+<header class="w-full pt-3 px-7 pb-1 flex justify-between items-center text-slate-800 z-30 select-none bg-white/70 backdrop-blur-md sticky top-0" data-purpose="status-bar">
+<span class="text-[15px] font-bold tracking-tight">9:41</span>
+<div class="flex items-center space-x-2 text-slate-900">
+<!-- Cellular Signal Icon -->
+<svg class="w-4 h-3.5 fill-current" viewbox="0 0 17 12">
+<rect height="3" rx="0.5" width="3" x="0" y="9"></rect>
+<rect height="6" rx="0.5" width="3" x="4.5" y="6"></rect>
+<rect height="9" rx="0.5" width="3" x="9" y="3"></rect>
+<rect height="12" rx="0.5" width="3" x="13.5" y="0"></rect>
+</svg>
+<!-- Wifi Icon -->
+<svg class="w-4 h-3.5 fill-current" viewbox="0 0 16 12">
+<path d="M8 2.8C5.2 2.8 2.7 3.9 0.8 5.7L0 4.8C2.1 2.8 4.9 1.5 8 1.5C11.1 1.5 13.9 2.8 16 4.8L15.2 5.7C13.3 3.9 10.8 2.8 8 2.8ZM8 6.5C6.3 6.5 4.8 7.2 3.6 8.3L2.8 7.4C4.2 6.1 6 5.2 8 5.2C10 5.2 11.8 6.1 13.2 7.4L12.4 8.3C11.2 7.2 9.7 6.5 8 6.5ZM8 10.2C7.3 10.2 6.7 10.5 6.2 10.9L8 13L9.8 10.9C9.3 10.5 8.7 10.2 8 10.2Z"></path>
+</svg>
+<!-- Battery Icon -->
+<svg class="w-6 h-3" fill="none" viewbox="0 0 27 12" xmlns="http://www.w3.org/2000/svg">
+<rect height="11" rx="3.5" stroke="currentColor" stroke-width="1" width="22" x="0.5" y="0.5"></rect>
+<rect fill="currentColor" height="8" rx="2" width="18" x="2" y="2"></rect>
+<path d="M24 4.5C24.8 4.8 25.5 5.3 25.5 6C25.5 6.7 24.8 7.2 24 7.5V4.5Z" fill="currentColor"></path>
+</svg>
+</div>
+</header>
+<!-- END: iOSStatusBar -->
+<!-- BEGIN: NavigationBar -->
+<!-- Top Bar with Back Arrow, Scheme Name, and Saved Bookmark -->
+<nav class="w-full px-5 py-2 flex items-center justify-between z-20 border-b border-slate-100 bg-white" data-purpose="top-navigation">
+<button aria-label="Go Back" class="w-9 h-9 flex items-center justify-start text-slate-800 active:scale-95 transition-transform" type="button">
+<svg class="w-6 h-6 stroke-[2.5]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15.75 19.5L8.25 12l7.5-7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<h1 class="text-[16px] font-bold text-slate-900 tracking-tight truncate max-w-[240px] text-center">
+        PM Kisan Samman Nidhi
+      </h1>
+<!-- Bookmark Button (Filled state indicating saved status) -->
+<button aria-label="Saved Scheme" class="w-9 h-9 flex items-center justify-end text-brand-700 active:scale-90 transition-transform" type="button">
+<svg class="w-6 h-6 fill-current stroke-current stroke-1" viewbox="0 0 24 24">
+<path d="M5 4.5C5 3.67 5.67 3 6.5 3h11c.83 0 1.5.67 1.5 1.5v16.2c0 .65-.73 1.04-1.27.67L12 17.4l-5.73 3.97c-.54.37-1.27-.02-1.27-.67V4.5z"></path>
+</svg>
+</button>
+</nav>
+<!-- END: NavigationBar -->
+<!-- BEGIN: ScrollableContent -->
+<div class="flex-1 overflow-y-auto overflow-x-hidden pb-8 space-y-4 select-none" data-purpose="main-flow-content">
+<!-- BEGIN: HeroIllustrationSection -->
+<!-- Smiling Farmer in lush agricultural field with sun and sprout accent -->
+<section class="relative w-full h-52 bg-gradient-to-b from-amber-50/60 via-emerald-50/70 to-white flex items-end justify-center overflow-hidden pt-4" data-purpose="hero-farmer-illustration">
+<!-- Sunburst Radiance Effect -->
+<div class="absolute w-56 h-56 rounded-full hero-sunburst top-3 -translate-y-6"></div>
+<!-- Decorative Floating Leaf Motif on Right -->
+<div class="absolute right-6 top-6 text-brand-600">
+<svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24">
+<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+<path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
+</svg>
+</div>
+<!-- Decorative Left Foliage / Wheat Motif -->
+<div class="absolute left-6 bottom-4 text-brand-700/40">
+<svg class="w-8 h-12" fill="currentColor" viewbox="0 0 32 48">
+<path d="M16 45V10M16 10C16 10 12 6 6 8C6 14 12 16 16 16M16 10C16 10 20 6 26 8C26 14 20 16 16 16M16 22C16 22 10 18 4 20C4 26 10 28 16 28M16 22C16 22 22 18 28 20C28 26 22 28 16 28M16 34C16 34 11 31 6 33C6 38 11 40 16 40M16 34C16 34 21 31 26 33C26 38 21 40 16 40" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"></path>
+</svg>
+</div>
+<!-- Farmer Character SVG Illustration -->
+<div class="relative z-10 flex flex-col items-center">
+<svg class="w-48 h-44 drop-shadow-sm" fill="none" viewbox="0 0 200 180" xmlns="http://www.w3.org/2000/svg">
+<!-- Lush Green Rolling Hill in Background -->
+<path d="M0 170 C50 145 150 145 200 170 L200 180 L0 180 Z" fill="#34d399" opacity="0.4"></path>
+<path d="M15 174 C75 155 130 155 185 174 L200 180 L0 180 Z" fill="#059669" opacity="0.3"></path>
+<!-- Body / Kurta -->
+<path d="M48 180 L52 138 C53 125 64 115 78 115 L122 115 C136 115 147 125 148 138 L152 180 Z" fill="#047857"></path>
+<!-- Kurta Collar & Scarf Details -->
+<path d="M86 115 L100 138 L114 115 Z" fill="#ecfdf5"></path>
+<path d="M96 138 L96 175" stroke="#065f46" stroke-linecap="round" stroke-width="2"></path>
+<circle cx="100" cy="148" fill="#065f46" r="1.5"></circle>
+<circle cx="100" cy="158" fill="#065f46" r="1.5"></circle>
+<circle cx="100" cy="168" fill="#065f46" r="1.5"></circle>
+<!-- Yellow Border on Kurta / Gamcha -->
+<path d="M62 124 C68 140 70 160 72 180" stroke="#f59e0b" stroke-linecap="round" stroke-width="3"></path>
+<!-- Neck -->
+<rect fill="#f6ad55" height="20" rx="4" width="24" x="88" y="98"></rect>
+<!-- Head & Ears -->
+<circle cx="75" cy="85" fill="#f6ad55" r="7.5"></circle>
+<circle cx="125" cy="85" fill="#f6ad55" r="7.5"></circle>
+<ellipse cx="100" cy="85" fill="#ed8936" rx="26" ry="29"></ellipse>
+<!-- Facial Features -->
+<!-- Eyebrows -->
+<path d="M85 73 C88 71 93 72 95 74" stroke="#4a5568" stroke-linecap="round" stroke-width="2"></path>
+<path d="M105 74 C107 72 112 71 115 73" stroke="#4a5568" stroke-linecap="round" stroke-width="2"></path>
+<!-- Eyes -->
+<ellipse cx="90" cy="79" fill="#2d3748" rx="2.5" ry="3"></ellipse>
+<ellipse cx="110" cy="79" fill="#2d3748" rx="2.5" ry="3"></ellipse>
+<circle cx="91" cy="78" fill="#ffffff" r="0.8"></circle>
+<circle cx="111" cy="78" fill="#ffffff" r="0.8"></circle>
+<!-- Nose -->
+<path d="M100 80 L98 87 L102 87" stroke="#c05621" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<!-- Moustache -->
+<path d="M84 94 C90 91 97 93 100 95 C103 93 110 91 116 94 C118 97 113 100 100 99 C87 100 82 97 84 94 Z" fill="#2d3748"></path>
+<!-- Smile -->
+<path d="M93 102 C96 105 104 105 107 102" stroke="#742a2a" stroke-linecap="round" stroke-width="2"></path>
+<!-- Pagri / Yellow Traditional Turban -->
+<path d="M72 70 C70 54 82 42 100 42 C118 42 130 54 128 70 C132 62 130 48 118 39 C106 32 94 32 82 39 C70 48 68 62 72 70 Z" fill="#d97706"></path>
+<path d="M68 67 C70 51 86 46 100 46 C114 46 130 51 132 67 C136 60 134 50 120 44 C106 38 94 38 80 44 C66 50 64 60 68 67 Z" fill="#f59e0b"></path>
+<path d="M72 65 C80 57 120 57 128 65 C132 73 125 80 125 80 C125 80 100 70 75 80 C75 80 68 73 72 65 Z" fill="#fbbf24"></path>
+<path d="M76 68 C88 61 112 61 124 68" fill="none" stroke="#d97706" stroke-linecap="round" stroke-width="2"></path>
+<path d="M80 57 C92 52 108 52 120 57" fill="none" stroke="#d97706" stroke-linecap="round" stroke-width="2"></path>
+<!-- Central Turban Fold Knot -->
+<ellipse cx="100" cy="48" fill="#f59e0b" rx="7" ry="10"></ellipse>
+<path d="M97 42 C101 44 102 52 99 56" fill="none" stroke="#b45309" stroke-linecap="round" stroke-width="1.5"></path>
+</svg>
+</div>
+</section>
+<!-- END: HeroIllustrationSection -->
+<!-- BEGIN: HeadlineSection -->
+<section class="px-6 text-center space-y-1.5" data-purpose="screen-headline">
+<h2 class="text-[21px] font-extrabold text-slate-900 tracking-tight leading-snug">
+          You're one step closer<br/>to new opportunities.
+        </h2>
+<p class="text-[13px] font-medium text-slate-500">
+          Choose how you would like to proceed with your benefit
+        </p>
+</section>
+<!-- END: HeadlineSection -->
+<!-- BEGIN: ActionCardsSection -->
+<!-- List of selectable next steps as specified in Journey Step 7 -->
+<section class="px-5 space-y-3 pt-1" data-purpose="next-action-cards">
+<!-- Option 1: Check My Eligibility (Primary Green Action Card) -->
+<a class="group relative flex items-center justify-between p-4 bg-brand-700 hover:bg-brand-800 active:scale-[0.98] transition-all duration-150 rounded-2xl text-white shadow-lg shadow-emerald-900/15 card-shadow" data-purpose="primary-action-eligibility" href="#check-eligibility">
+<div class="flex items-center space-x-3.5">
+<!-- Checked Badge Icon -->
+<div class="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0 backdrop-blur-sm">
+<svg class="w-5 h-5 text-emerald-200" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div>
+<div class="font-bold text-[15px] leading-tight flex items-center space-x-1.5">
+<span>Check My Eligibility</span>
+</div>
+<p class="text-[12px] font-medium text-emerald-100/90 mt-0.5">See if you qualify</p>
+</div>
+</div>
+<div class="w-8 h-8 rounded-full flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+<svg class="w-5 h-5 text-white stroke-[2.5]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</a>
+<!-- Option 2: Apply Online -->
+<a class="group flex items-center justify-between p-3.5 bg-white hover:bg-slate-50 active:scale-[0.98] transition-all duration-150 rounded-2xl border border-slate-200/90 card-shadow" data-purpose="secondary-action-apply" href="#apply-online">
+<div class="flex items-center space-x-3.5">
+<div class="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center flex-shrink-0 text-brand-700">
+<!-- External Globe / Paper Plane Icon -->
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div>
+<h3 class="font-bold text-[14.5px] text-slate-900 leading-tight">Apply Online</h3>
+<p class="text-[12px] text-slate-500 font-normal mt-0.5">Go to official portal</p>
+</div>
+</div>
+<div class="text-slate-400 group-hover:text-slate-600 group-hover:translate-x-0.5 transition-all pr-1">
+<svg class="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</a>
+<!-- Option 3: Ask in Chat -->
+<a class="group flex items-center justify-between p-3.5 bg-white hover:bg-slate-50 active:scale-[0.98] transition-all duration-150 rounded-2xl border border-slate-200/90 card-shadow" data-purpose="secondary-action-chat" href="#chat-guidance">
+<div class="flex items-center space-x-3.5">
+<div class="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0 text-blue-600">
+<!-- AI Chat / Advisor Icon -->
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.75.75 0 01-.81-.68 5.6 5.6 0 01.378-2.316C3.076 16.386 2 14.303 2 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div>
+<h3 class="font-bold text-[14.5px] text-slate-900 leading-tight">Ask in Chat</h3>
+<p class="text-[12px] text-slate-500 font-normal mt-0.5">Get AI guidance</p>
+</div>
+</div>
+<div class="text-slate-400 group-hover:text-slate-600 group-hover:translate-x-0.5 transition-all pr-1">
+<svg class="w-4 h-4 stroke-[2.5]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</a>
+<!-- Option 4: Save for later -->
+<div class="flex items-center justify-between p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/70" data-purpose="informational-saved-status">
+<div class="flex items-center space-x-3.5">
+<div class="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600">
+<!-- Bookmark Ribbon Icon -->
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
+<path d="M5 4.5C5 3.67 5.67 3 6.5 3h11c.83 0 1.5.67 1.5 1.5v16.2c0 .65-.73 1.04-1.27.67L12 17.4l-5.73 3.97c-.54.37-1.27-.02-1.27-.67V4.5z"></path>
+</svg>
+</div>
+<div>
+<h3 class="font-bold text-[14px] text-slate-900 leading-tight">Save for later</h3>
+<p class="text-[12px] text-emerald-700 font-medium mt-0.5 flex items-center space-x-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+<span>This scheme is saved in Your Schemes</span>
+</p>
+</div>
+</div>
+</div>
+</section>
+<!-- END: ActionCardsSection -->
+</div>
+<!-- END: ScrollableContent -->
+<!-- BEGIN: iOSHomeIndicator -->
+<div class="w-full pb-2 pt-1 flex justify-center bg-white" data-purpose="home-indicator">
+<div class="w-32 h-1 bg-slate-300 rounded-full"></div>
+</div>
+<!-- END: iOSHomeIndicator -->
+</main>
+<!-- END: MobileFrameContainer -->
+</body></html>

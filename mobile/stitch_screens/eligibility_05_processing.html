@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Checking Your Eligibility - Scheme App</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#15803d',
+              600: '#166534',
+              700: '#14532d',
+              emerald: '#059669',
+              dark: '#0e3928',
+            }
+          },
+          animation: {
+            'spin-slow': 'spin 3s linear infinite',
+            'pulse-subtle': 'pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Styles: Specific UI Tweaks -->
+<style data-purpose="custom-layout">
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    /* Smooth iOS appearance mimicking native container */
+    .ios-device-frame {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-0 sm:p-4 font-sans antialiased text-slate-800">
+<!-- BEGIN: MobileDeviceContainer -->
+<!-- Container replicating the mobile viewport -->
+<main class="w-full max-w-[390px] h-[844px] bg-white sm:rounded-[44px] overflow-hidden flex flex-col relative ios-device-frame" data-purpose="mobile-screen-container">
+<!-- BEGIN: iOSStatusBar -->
+<header class="w-full pt-3 px-7 pb-1 flex justify-between items-center text-black z-20 shrink-0 select-none">
+<!-- Time -->
+<span class="text-[14px] font-semibold tracking-tight">9:41</span>
+<!-- Right Status Icons (Signal, Wifi, Battery) -->
+<div class="flex items-center space-x-2">
+<!-- Signal Strength -->
+<svg class="w-4 h-3.5 fill-current" viewbox="0 0 17 12">
+<rect height="4" rx="0.6" width="2.5" x="0" y="8"></rect>
+<rect height="6.5" rx="0.6" width="2.5" x="4.5" y="5.5"></rect>
+<rect height="9" rx="0.6" width="2.5" x="9" y="3"></rect>
+<rect height="12" rx="0.6" width="2.5" x="13.5" y="0"></rect>
+</svg>
+<!-- Wifi -->
+<svg class="w-4 h-3 fill-current" viewbox="0 0 16 12">
+<path clip-rule="evenodd" d="M8 3.6c2.5 0 4.8 1 6.4 2.6l1.2-1.2C13.6 3 10.9 2 8 2 5.1 2 2.4 3 .4 5L1.6 6.2C3.2 4.6 5.5 3.6 8 3.6zm0 4.8c1.3 0 2.4.5 3.3 1.4l1.2-1.2C11.3 7.4 9.7 6.8 8 6.8s-3.3.6-4.5 1.8l1.2 1.2c.9-.9 2-1.4 3.3-1.4zm0 4.8c.8 0 1.5-.7 1.5-1.5S8.8 10.2 8 10.2s-1.5.7-1.5 1.5.7 1.5 1.5 1.5z" fill-rule="evenodd"></path>
+</svg>
+<!-- Battery -->
+<div class="flex items-center">
+<div class="w-5 h-[11px] border border-black/80 rounded-[3px] p-[1px] flex items-center">
+<div class="w-full h-full bg-black rounded-[1.5px]"></div>
+</div>
+<div class="w-[1.5px] h-[4px] bg-black/80 rounded-r-[1px] ml-[0.5px]"></div>
+</div>
+</div>
+</header>
+<!-- END: iOSStatusBar -->
+<!-- BEGIN: TopNavigationBar -->
+<nav class="relative px-5 pt-2 pb-3 flex items-center shrink-0 border-b border-transparent" data-purpose="screen-navigation">
+<!-- Back Button -->
+<button aria-label="Go back" class="p-2 -ml-2 text-slate-700 hover:text-slate-900 transition-colors focus:outline-none" type="button">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24">
+<path d="M15 19l-7-7 7-7"></path>
+</svg>
+</button>
+<!-- Screen Title -->
+<h1 class="flex-1 text-center pr-6 text-[17px] font-bold text-slate-800 tracking-tight">
+        Checking Your Eligibility
+      </h1>
+</nav>
+<!-- END: TopNavigationBar -->
+<!-- BEGIN: ContentArea -->
+<section class="flex-1 px-6 flex flex-col items-center justify-between pb-8 pt-4 overflow-y-auto">
+<div class="w-full flex flex-col items-center">
+<!-- Hero Illustration Badge -->
+<div class="relative my-7 flex items-center justify-center" data-purpose="processing-hero-graphic">
+<!-- Background Glow Backdrop -->
+<div class="w-48 h-48 rounded-full bg-emerald-50/90 flex items-center justify-center animate-pulse-subtle">
+<div class="w-36 h-36 rounded-full bg-emerald-100/70 flex items-center justify-center">
+<!-- Document & Magnifier Graphic -->
+<div class="relative flex items-center justify-center">
+<!-- Document Icon Frame -->
+<div class="w-20 h-24 bg-white border-2 border-emerald-600 rounded-xl shadow-sm flex flex-col py-3.5 px-3 space-y-2">
+<!-- Simulated text lines -->
+<div class="w-6 h-1.5 bg-emerald-200 rounded-full"></div>
+<div class="w-full h-1.5 bg-emerald-100 rounded-full"></div>
+<div class="w-4/5 h-1.5 bg-emerald-100 rounded-full"></div>
+<div class="w-full h-1.5 bg-emerald-100 rounded-full"></div>
+</div>
+<!-- Magnifying Glass Overlay -->
+<div class="absolute -right-3 -bottom-2 drop-shadow-md">
+<svg class="w-14 h-14 text-emerald-700 fill-none" viewbox="0 0 54 54">
+<!-- Glass Circle -->
+<circle class="stroke-emerald-700" cx="22" cy="22" fill="#f0fdf4" fill-opacity="0.95" r="14" stroke-width="3.5"></circle>
+<!-- Lens Inner Glow -->
+<circle class="stroke-emerald-400/40" cx="22" cy="22" r="9" stroke-dasharray="2 3" stroke-width="1.5"></circle>
+<!-- Handle -->
+<path class="stroke-emerald-700" d="M33 33L46 46" stroke-linecap="round" stroke-width="4.5"></path>
+</svg>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- BEGIN: VerificationStepsList -->
+<!-- Checklist showing stages of evaluation -->
+<div class="w-full max-w-[320px] space-y-4 pt-3" data-purpose="status-checklist">
+<!-- Step 1: Completed -->
+<div class="flex items-center space-x-3.5">
+<div class="w-6 h-6 rounded-full bg-emerald-700 flex items-center justify-center shrink-0 shadow-sm">
+<svg class="w-3.5 h-3.5 text-white stroke-white stroke-[2.5]" fill="none" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+<path d="M20 6L9 17l-5-5"></path>
+</svg>
+</div>
+<span class="text-[14.5px] font-medium text-slate-800 tracking-tight">
+              Analyzing your profile
+            </span>
+</div>
+<!-- Step 2: Completed -->
+<div class="flex items-center space-x-3.5">
+<div class="w-6 h-6 rounded-full bg-emerald-700 flex items-center justify-center shrink-0 shadow-sm">
+<svg class="w-3.5 h-3.5 text-white stroke-white stroke-[2.5]" fill="none" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+<path d="M20 6L9 17l-5-5"></path>
+</svg>
+</div>
+<span class="text-[14.5px] font-medium text-slate-800 tracking-tight">
+              Matching with 4,160+ schemes
+            </span>
+</div>
+<!-- Step 3: Completed -->
+<div class="flex items-center space-x-3.5">
+<div class="w-6 h-6 rounded-full bg-emerald-700 flex items-center justify-center shrink-0 shadow-sm">
+<svg class="w-3.5 h-3.5 text-white stroke-white stroke-[2.5]" fill="none" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+<path d="M20 6L9 17l-5-5"></path>
+</svg>
+</div>
+<span class="text-[14.5px] font-medium text-slate-800 tracking-tight">
+              Applying state &amp; category filters
+            </span>
+</div>
+<!-- Step 4: In Progress / Loading -->
+<div class="flex items-center space-x-3.5">
+<div class="w-6 h-6 flex items-center justify-center shrink-0">
+<!-- Dotted rotating progress spinner -->
+<svg class="w-5 h-5 text-slate-400 animate-spin" fill="none" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-dasharray="3 3.5" stroke-linecap="round" stroke-width="2.5"></circle>
+</svg>
+</div>
+<span class="text-[14.5px] font-normal text-slate-500 tracking-tight">
+              Almost there...
+            </span>
+</div>
+</div>
+<!-- END: VerificationStepsList -->
+</div>
+<!-- BEGIN: HelperTipBox -->
+<!-- Bottom information banner about processing time -->
+<div class="w-full max-w-[325px] bg-amber-50/80 border border-amber-200/70 rounded-2xl p-3.5 px-4 flex items-center space-x-3.5 shadow-sm mt-auto" data-purpose="info-tip-callout">
+<!-- Lightbulb Icon Container -->
+<div class="w-8 h-8 rounded-full bg-amber-100/90 flex items-center justify-center shrink-0 text-amber-500">
+<svg class="w-5 h-5 fill-amber-400 text-amber-500" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<!-- Callout Text -->
+<p class="text-[12.5px] leading-snug font-medium text-slate-600">
+          This usually takes less than 10 seconds.
+        </p>
+</div>
+<!-- END: HelperTipBox -->
+</section>
+<!-- END: ContentArea -->
+<!-- BEGIN: iOSHomeIndicator -->
+<div class="w-full pb-2 pt-1 flex justify-center items-center shrink-0 select-none">
+<div class="w-32 h-1 bg-slate-900/40 rounded-full"></div>
+</div>
+<!-- END: iOSHomeIndicator -->
+</main>
+<!-- END: MobileDeviceContainer -->
+</body></html>

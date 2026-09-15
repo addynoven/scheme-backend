@@ -121,7 +121,7 @@ def test_user_profile_eligibility_matching(client: TestClient, db_session: Sessi
     )
 
     # Match schemes for this user
-    res_match = client.get(f"/eligibility/users/{user_id}/schemes")
+    res_match = client.get(f"/eligibility/users/{user_id}/schemes", headers=admin_headers)
     assert res_match.status_code == 200
     matched = res_match.json()
     assert len(matched) == 1

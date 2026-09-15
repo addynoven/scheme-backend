@@ -13,12 +13,6 @@ import {
   ArrowLeft,
   X,
   Eye,
-  RefreshCw,
-  AlertTriangle,
-  CheckCircle2,
-  Layers,
-  Globe,
-  Check,
 } from 'lucide-react'
 import {
   adminLogin,
@@ -27,15 +21,7 @@ import {
   adminCreateScheme,
   adminUpdateScheme,
   adminDeleteScheme,
-  adminListIngestionSources,
-  adminRunIngestionSync,
-  adminListTriageItems,
-  adminApproveTriageItem,
-  adminRejectTriageItem,
   type Scheme,
-  type IngestionSource,
-  type IngestionTriageItem,
-  type IngestionSyncRunResult,
 } from '@/lib/api'
 import {
   saveAdminToken,
@@ -100,9 +86,6 @@ export function AdminScreen() {
   const [loginLoading, setLoginLoading] = useState(false)
   const [loginError, setLoginError] = useState<string | null>(null)
 
-  // Navigation tab
-  const [mainTab, setMainTab] = useState<'schemes' | 'ingestion' | 'triage'>('schemes')
-
   // Schemes data
   const [schemes, setSchemes] = useState<Scheme[]>([])
   const [loading, setLoading] = useState(false)
@@ -110,15 +93,6 @@ export function AdminScreen() {
   const [stateFilter, setStateFilter] = useState('All')
   const [categoryFilter, setCategoryFilter] = useState('All')
   const [statusFilter, setStatusFilter] = useState('All')
-
-  // Ingestion & Triage data
-  const [sources, setSources] = useState<IngestionSource[]>([])
-  const [triageItems, setTriageItems] = useState<IngestionTriageItem[]>([])
-  const [triageFilter, setTriageFilter] = useState<'pending_review' | 'approved' | 'rejected' | 'all'>('pending_review')
-  const [syncRunning, setSyncRunning] = useState(false)
-  const [syncResults, setSyncResults] = useState<IngestionSyncRunResult[] | null>(null)
-  const [syncError, setSyncError] = useState<string | null>(null)
-  const [triageActionLoading, setTriageActionLoading] = useState<number | null>(null)
 
   // Modal editor state
   const [isEditorOpen, setIsEditorOpen] = useState(false)
@@ -155,7 +129,6 @@ export function AdminScreen() {
             setIsAdmin(true)
             setAdminEmail(res.email)
             loadSchemes()
-            loadIngestionData()
           } else {
             handleLogout()
           }
@@ -191,30 +164,11 @@ export function AdminScreen() {
       })
   }
 
-  async function loadIngestionData() {
-    try {
-      const [srcs, trgs] = await Promise.all([
-        adminListIngestionSources(),
-        adminListTriageItems(triageFilter === 'all' ? undefined : triageFilter),
-      ])
-      setSources(srcs)
-      setTriageItems(trgs)
-    } catch (e) {
-      console.error(e)
-    }
-  }
-
   useEffect(() => {
     if (isAdmin) {
       loadSchemes()
     }
   }, [search, stateFilter, categoryFilter, statusFilter, isAdmin])
-
-  useEffect(() => {
-    if (isAdmin) {
-      loadIngestionData()
-    }
-  }, [triageFilter, isAdmin])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -232,7 +186,6 @@ export function AdminScreen() {
       setIsAdmin(true)
       setAdminEmail(user.email)
       loadSchemes()
-      loadIngestionData()
     } catch (err: any) {
       setLoginError(err.message || 'Login failed')
     } finally {
@@ -245,49 +198,6 @@ export function AdminScreen() {
     setIsAdmin(false)
     setAdminEmail(null)
     setSchemes([])
-    setSources([])
-    setTriageItems([])
-  }
-
-  async function handleRunSync(sourceKey?: string) {
-    setSyncRunning(true)
-    setSyncError(null)
-    setSyncResults(null)
-    try {
-      const results = await adminRunIngestionSync(sourceKey)
-      setSyncResults(results)
-      await loadIngestionData()
-      loadSchemes()
-    } catch (err: any) {
-      setSyncError(err.message || 'Sync failed')
-    } finally {
-      setSyncRunning(false)
-    }
-  }
-
-  async function handleApproveTriage(id: number) {
-    setTriageActionLoading(id)
-    try {
-      await adminApproveTriageItem(id)
-      await loadIngestionData()
-      loadSchemes()
-    } catch (err: any) {
-      alert(err.message || 'Failed to approve triage item')
-    } finally {
-      setTriageActionLoading(null)
-    }
-  }
-
-  async function handleRejectTriage(id: number) {
-    setTriageActionLoading(id)
-    try {
-      await adminRejectTriageItem(id)
-      await loadIngestionData()
-    } catch (err: any) {
-      alert(err.message || 'Failed to reject triage item')
-    } finally {
-      setTriageActionLoading(null)
-    }
   }
 
   // Toggle status between active and draft
@@ -552,22 +462,22 @@ export function AdminScreen() {
   // VIEW B: ADMIN SCHEME MANAGEMENT DASHBOARD
   // ==========================================================================
   const activeCount = schemes.filter((s) => s.status === 'active').length
-  const pendingTriageCount = triageItems.filter((t) => t.status === 'pending_review').length
+  const draftCount = schemes.length - activeCount
 
   return (
     <div className="flex flex-col gap-6 pb-16">
       {/* Top Admin Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl border border-zinc-800/90 bg-gradient-to-r from-zinc-900/90 via-zinc-900/60 to-zinc-950/90 shadow-xl">
         <div className="flex flex-col gap-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-950/80 border border-indigo-800/60 text-indigo-300 w-fit">
-            <ShieldAlert className="h-3.5 w-3.5 text-indigo-400" />
-            <span>Welfare Schemes Management & Gov Sync Control Center · V1.5</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-950/80 border border-blue-800/60 text-blue-300 w-fit">
+            <ShieldAlert className="h-3.5 w-3.5 text-blue-400" />
+            <span>Welfare Schemes Management & Operations Control Center</span>
           </div>
           <h1 className="text-2xl font-bold text-zinc-100 tracking-tight">
             Government Operations Center
           </h1>
           <p className="text-xs text-zinc-400">
-            Manage welfare catalog, trigger zero-bandwidth ingestion pipelines, and triage breaking government feed diffs.
+            Manage welfare catalog, configure visual eligibility rules, benefits, and required documents.
           </p>
         </div>
 
@@ -588,9 +498,9 @@ export function AdminScreen() {
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex flex-col gap-1">
-          <span className="text-xs text-zinc-500">Live Schemes</span>
+          <span className="text-xs text-zinc-500">Total Schemes</span>
           <span className="text-2xl font-extrabold text-zinc-100">{schemes.length}</span>
         </div>
         <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex flex-col gap-1">
@@ -598,75 +508,13 @@ export function AdminScreen() {
           <span className="text-2xl font-extrabold text-emerald-400">{activeCount}</span>
         </div>
         <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex flex-col gap-1">
-          <span className="text-xs text-zinc-500">Ingestion Feeds</span>
-          <span className="text-2xl font-extrabold text-indigo-400">{sources.length} Active</span>
-        </div>
-        <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800 flex flex-col gap-1">
-          <span className="text-xs text-zinc-500">Breaking Triage Queue</span>
-          <span className={`text-2xl font-extrabold ${pendingTriageCount > 0 ? 'text-amber-400' : 'text-zinc-400'}`}>
-            {pendingTriageCount} Pending
-          </span>
+          <span className="text-xs text-zinc-500">Draft Schemes</span>
+          <span className="text-2xl font-extrabold text-amber-400">{draftCount}</span>
         </div>
       </div>
 
-      {/* Main Admin Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-zinc-800 pb-2">
-        <button
-          onClick={() => setMainTab('schemes')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-            mainTab === 'schemes'
-              ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25'
-              : 'bg-zinc-900/80 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
-          }`}
-        >
-          <Layers className="h-4 w-4" />
-          <span>Welfare Catalog ({schemes.length})</span>
-        </button>
-
-        <button
-          onClick={() => {
-            setMainTab('ingestion')
-            loadIngestionData()
-          }}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-            mainTab === 'ingestion'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25'
-              : 'bg-zinc-900/80 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
-          }`}
-        >
-          <RefreshCw className="h-4 w-4" />
-          <span>Gov Ingestion Pipeline</span>
-          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-zinc-800 text-zinc-300">
-            {sources.length} Feeds
-          </span>
-        </button>
-
-        <button
-          onClick={() => {
-            setMainTab('triage')
-            loadIngestionData()
-          }}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-            mainTab === 'triage'
-              ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/25'
-              : 'bg-zinc-900/80 text-zinc-400 hover:text-zinc-200 border border-zinc-800'
-          }`}
-        >
-          <AlertTriangle className="h-4 w-4" />
-          <span>Breaking Changes Triage</span>
-          {pendingTriageCount > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-400 text-zinc-950 font-black animate-pulse">
-              {pendingTriageCount}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {/* =====================================================================
-          TAB 1: SCHEMES CATALOG & VISUAL EDITOR
-          ===================================================================== */}
-      {mainTab === 'schemes' && (
-        <div className="flex flex-col gap-6">
+      {/* SCHEMES CATALOG & VISUAL EDITOR */}
+      <div className="flex flex-col gap-6">
           {/* Action Bar & Filters */}
           <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
             {/* Search */}
@@ -837,278 +685,8 @@ export function AdminScreen() {
             )}
           </div>
         </div>
-      )}
 
-      {/* =====================================================================
-          TAB 2: GOV INGESTION PIPELINE (V1.5)
-          ===================================================================== */}
-      {mainTab === 'ingestion' && (
-        <div className="flex flex-col gap-6">
-          {/* Header Action Card */}
-          <div className="p-6 rounded-3xl border border-indigo-900/60 bg-gradient-to-r from-indigo-950/40 via-zinc-900/80 to-purple-950/40 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <Globe className="h-5 w-5 text-indigo-400" />
-                <h2 className="text-lg font-bold text-zinc-100">
-                  Government Feeds & Sync Engine
-                </h2>
-              </div>
-              <p className="text-xs text-zinc-400 max-w-2xl">
-                Executes the 4-Gate ingestion pipeline (RFC 7232 Zero-Bandwidth Check, MinIO Raw Archival, Circuit Breaker, Semantic SHA-256 Hashing).
-              </p>
-            </div>
 
-            <button
-              onClick={() => handleRunSync()}
-              disabled={syncRunning}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/25 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2 shrink-0 cursor-pointer"
-            >
-              <RefreshCw className={`h-4 w-4 ${syncRunning ? 'animate-spin' : ''}`} />
-              <span>{syncRunning ? 'Running 4-Gate Ingestion...' : 'Run Full Ingestion Sync Now'}</span>
-            </button>
-          </div>
-
-          {/* Sync Results Banner */}
-          {syncResults && (
-            <div className="p-5 rounded-2xl bg-zinc-950/80 border border-zinc-800 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span>Sync Completed ({syncResults.length} Feeds Processed)</span>
-                </span>
-                <button
-                  onClick={() => setSyncResults(null)}
-                  className="text-xs text-zinc-500 hover:text-zinc-300"
-                >
-                  Dismiss
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {syncResults.map((r, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs flex flex-col gap-1"
-                  >
-                    <div className="flex items-center justify-between font-mono text-[11px]">
-                      <span className="font-bold text-zinc-200">{r.source_key}</span>
-                      <span className="text-zinc-400">{r.duration_ms.toFixed(1)}ms</span>
-                    </div>
-                    <span className="text-zinc-300 text-[11px]">{r.message}</span>
-                    <div className="flex items-center gap-2 text-[10px] text-zinc-500 mt-1 font-mono">
-                      <span>Status: {r.status}</span>
-                      <span>•</span>
-                      <span>Downloaded: {r.bytes_downloaded} bytes</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {syncError && (
-            <div className="p-4 rounded-2xl bg-rose-950/60 border border-rose-800 text-rose-300 text-xs">
-              {syncError}
-            </div>
-          )}
-
-          {/* Registered Feeds Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {sources.map((src) => (
-              <div
-                key={src.id}
-                className="p-5 rounded-3xl border border-zinc-800/90 bg-zinc-900/60 shadow-lg flex flex-col justify-between gap-4"
-              >
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono text-zinc-400 font-semibold">{src.source_key}</span>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        src.status === 'healthy' || src.status === 'active'
-                          ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800/60'
-                          : 'bg-rose-950/80 text-rose-400 border border-rose-800/60'
-                      }`}
-                    >
-                      {src.status}
-                    </span>
-                  </div>
-
-                  <h3 className="text-sm font-bold text-zinc-100 leading-snug">{src.name}</h3>
-                  <p className="text-[11px] font-mono text-zinc-500 break-all">{src.endpoint_url}</p>
-                </div>
-
-                <div className="pt-3 border-t border-zinc-800/60 flex flex-col gap-2 text-[11px]">
-                  <div className="flex items-center justify-between text-zinc-400">
-                    <span>Last Checked:</span>
-                    <span className="font-mono text-zinc-300">
-                      {src.last_checked_at ? new Date(src.last_checked_at).toLocaleTimeString() : 'Never'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-zinc-400">
-                    <span>Semantic Hash:</span>
-                    <span className="font-mono text-zinc-500 truncate max-w-[120px]">
-                      {src.content_hash ? src.content_hash.slice(0, 12) + '...' : 'Not hashed'}
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={() => handleRunSync(src.source_key)}
-                    disabled={syncRunning}
-                    className="mt-2 w-full py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  >
-                    <RefreshCw className="h-3 w-3" />
-                    <span>Sync This Feed</span>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* =====================================================================
-          TAB 3: BREAKING CHANGES TRIAGE QUEUE (V1.5)
-          ===================================================================== */}
-      {mainTab === 'triage' && (
-        <div className="flex flex-col gap-6">
-          {/* Triage Header & Filter Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl border border-zinc-800/90 bg-zinc-900/60">
-            <div className="flex flex-col gap-0.5">
-              <h2 className="text-base font-bold text-zinc-100 flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-amber-400" />
-                <span>Government Breaking Changes Triage Queue</span>
-              </h2>
-              <p className="text-xs text-zinc-400">
-                Rule tightenings, benefit reductions, or mandatory document additions are quarantined here for 1-click confirmation before touching live schemes.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <select
-                value={triageFilter}
-                onChange={(e) => setTriageFilter(e.target.value as any)}
-                className="px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 focus:outline-none focus:ring-2 focus:ring-amber-500/50 cursor-pointer"
-              >
-                <option value="pending_review">Pending Review</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-                <option value="all">All Items</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Triage Items List */}
-          {triageItems.length === 0 ? (
-            <div className="p-12 text-center rounded-3xl border border-zinc-800 bg-zinc-900/40 flex flex-col items-center gap-2">
-              <CheckCircle2 className="h-8 w-8 text-emerald-400" />
-              <span className="text-sm font-bold text-zinc-200">Triage Queue is Clean!</span>
-              <span className="text-xs text-zinc-500">Zero unreviewed breaking government changes pending.</span>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {triageItems.map((item) => {
-                const isPending = item.status === 'pending_review'
-                const before = item.diff_payload?.before_state || {}
-                const after = item.diff_payload?.after_state || {}
-
-                return (
-                  <div
-                    key={item.id}
-                    className="p-6 rounded-3xl border border-zinc-800/90 bg-zinc-900/80 shadow-xl flex flex-col gap-5"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-800/80">
-                      <div className="flex items-center gap-2.5">
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-950/80 text-rose-300 border border-rose-800/60">
-                          {item.change_type.replace('_', ' ')}
-                        </span>
-                        <h3 className="text-base font-bold text-zinc-100">{item.scheme_name}</h3>
-                        <span className="text-xs font-mono text-zinc-500">({item.scheme_slug})</span>
-                      </div>
-
-                      <span
-                        className={`text-xs px-2.5 py-0.5 rounded-full font-bold font-mono ${
-                          item.status === 'pending_review'
-                            ? 'bg-amber-950/80 text-amber-300 border border-amber-800/60'
-                            : item.status === 'approved'
-                            ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/60'
-                            : 'bg-zinc-800 text-zinc-400'
-                        }`}
-                      >
-                        {item.status}
-                      </span>
-                    </div>
-
-                    {/* Diff Summary */}
-                    <div className="p-3.5 rounded-2xl bg-zinc-950/80 border border-zinc-800/80 text-xs text-zinc-300 leading-relaxed">
-                      <span className="font-semibold text-zinc-200">Diff Detected: </span>
-                      {item.diff_summary}
-                    </div>
-
-                    {/* Visual Before vs After Diff Boxes */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Before (Current Rule) */}
-                      <div className="p-4 rounded-2xl bg-rose-950/20 border border-rose-900/40 flex flex-col gap-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400">
-                          Current Rule in Live Catalog
-                        </span>
-                        <div className="font-mono text-xs text-zinc-300 bg-zinc-950/80 p-3 rounded-xl border border-zinc-800">
-                          {before.rule ? (
-                            <span>{before.rule.field_name} {before.rule.operator} {before.rule.rule_value || before.rule.value_criteria}</span>
-                          ) : before.benefit ? (
-                            <span>Benefit: {before.benefit.title} ({before.benefit.description})</span>
-                          ) : (
-                            <span className="text-zinc-500">None / Discontinued</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* After (Proposed by Gov API) */}
-                      <div className="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-900/40 flex flex-col gap-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                          Proposed Rule from Government Feed
-                        </span>
-                        <div className="font-mono text-xs text-emerald-200 bg-zinc-950/80 p-3 rounded-xl border border-emerald-800/40 font-bold">
-                          {after.rule ? (
-                            <span>{after.rule.field_name} {after.rule.operator} {after.rule.rule_value || after.rule.value_criteria}</span>
-                          ) : after.benefit ? (
-                            <span>Benefit: {after.benefit.title} ({after.benefit.description})</span>
-                          ) : after.document ? (
-                            <span>Document: {after.document.document_name} ({after.document.is_mandatory ? 'Mandatory' : 'Optional'})</span>
-                          ) : (
-                            <span>{JSON.stringify(after)}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Action Buttons (if pending) */}
-                    {isPending && (
-                      <div className="pt-2 flex items-center justify-end gap-3">
-                        <button
-                          onClick={() => handleRejectTriage(item.id)}
-                          disabled={triageActionLoading === item.id}
-                          className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-rose-950 text-zinc-300 hover:text-rose-300 border border-zinc-700 hover:border-rose-800 text-xs font-semibold transition-all cursor-pointer disabled:opacity-50"
-                        >
-                          ✕ Reject & Keep Current Rule
-                        </button>
-
-                        <button
-                          onClick={() => handleApproveTriage(item.id)}
-                          disabled={triageActionLoading === item.id}
-                          className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/25 active:scale-95 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
-                        >
-                          <Check className="h-3.5 w-3.5" />
-                          <span>Approve & Apply to Live Scheme</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* =====================================================================
           SCHEME VISUAL EDITOR MODAL / DRAWER

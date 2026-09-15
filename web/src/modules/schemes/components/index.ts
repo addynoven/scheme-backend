@@ -1,5 +1,0 @@
-export * from './SchemeHeader'
-export * from './SchemeBenefitsList'
-export * from './SchemeEligibilityRules'
-export * from './SchemeDocumentsChecklist'
-export * from './SchemeOfficialSources'

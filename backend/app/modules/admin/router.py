@@ -7,18 +7,11 @@ from app.core.exceptions import EntityNotFoundError, SchemeNotFoundError, UserNo
 from app.database import get_db
 from app.modules.schemes.models import Benefit
 from app.modules.schemes.models import EligibilityRule
-from app.modules.schemes.models import OfficialSource
 from app.modules.schemes.models import RequiredDocument
 from app.modules.auth.models import User
 from app.modules.schemes.schemas import BenefitCreate, BenefitResponse
 from app.modules.schemes.schemas import EligibilityRuleCreate, EligibilityRuleResponse
-from app.modules.ingestion.schemas import (
-    IngestionSourceCreate,
-    IngestionSourceResponse,
-    IngestionSyncRunResult,
-    IngestionTriageItemResponse,
-)
-from app.modules.schemes.schemas import OfficialSourceCreate, OfficialSourceResponse
+
 from app.core.pagination import PaginatedResponse
 from app.modules.schemes.schemas import RequiredDocumentCreate, RequiredDocumentResponse
 from app.modules.schemes.schemas import (
@@ -34,7 +27,7 @@ from app.modules.schemes.service import (
     list_schemes,
     update_scheme,
 )
-from app.modules.auth.service import get_user_by_id, list_users, update_user
+from app.modules.auth.service import get_user_by_id, list_users
 
 router = APIRouter(
     prefix="/admin",
@@ -343,99 +336,4 @@ def admin_update_user_role(
 
     return user
 
-
-# --- Automated Government Ingestion & Sync Pipeline (V1.5) ---
-
-
-@router.get(
-    "/ingestion/sources",
-    response_model=list[IngestionSourceResponse],
-    summary="[Admin] List all registered government ingestion feeds",
-    description="Returns list of registered open data APIs and state feeds with their sync statuses, ETags, and timestamps.",
-)
-def admin_list_ingestion_sources(
-    db: Session = Depends(get_db),
-):
-    from app.modules.ingestion.service import get_or_create_default_sources
-    return get_or_create_default_sources(db=db)
-
-
-@router.post(
-    "/ingestion/sources",
-    response_model=IngestionSourceResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="[Admin] Register new government data feed",
-)
-def admin_create_ingestion_source(
-    payload: IngestionSourceCreate,
-    db: Session = Depends(get_db),
-):
-    from app.modules.ingestion.models import IngestionSource
-    source = IngestionSource(**payload.model_dump())
-    db.add(source)
-    try:
-        db.commit()
-        db.refresh(source)
-    except Exception:
-        db.rollback()
-        raise
-    return source
-
-
-@router.post(
-    "/ingestion/run",
-    response_model=list[IngestionSyncRunResult],
-    summary="[Admin] Trigger instant government ingestion pipeline run",
-    description="Executes the 4-Gate ingestion pipeline (RFC 7232 HTTP 304, MinIO Raw Archival, Circuit Breaker, Semantic Hash Diffing). Auto-applies non-breaking updates and routes breaking changes to the triage queue.",
-)
-def admin_run_ingestion(
-    source_key: str | None = Query(None, description="Optional single source key to sync, or omit to sync all feeds"),
-    db: Session = Depends(get_db),
-):
-    from app.modules.ingestion.service import run_ingestion_pipeline
-    return run_ingestion_pipeline(db=db, source_key=source_key)
-
-
-@router.get(
-    "/ingestion/triage",
-    response_model=list[IngestionTriageItemResponse],
-    summary="[Admin] List pending breaking-change triage items",
-    description="Returns government feed diffs that require human admin approval (e.g. tightened eligibility rules, reduced cash benefits, added mandatory documents).",
-)
-def admin_list_triage_items(
-    status_filter: str | None = Query("pending_review", description="Status filter: pending_review, approved, rejected, or omit for all"),
-    db: Session = Depends(get_db),
-):
-    from app.modules.ingestion.triage_service import list_triage_items
-    return list_triage_items(db=db, status_filter=status_filter)
-
-
-@router.post(
-    "/ingestion/triage/{triage_id}/approve",
-    response_model=IngestionTriageItemResponse,
-    summary="[Admin] 1-Click Approve and apply breaking government change",
-    description="Applies the staged government rule change directly into the live PostgreSQL database.",
-)
-def admin_approve_triage_item(
-    triage_id: int,
-    current_admin: User = Depends(get_current_admin_user),
-    db: Session = Depends(get_db),
-):
-    from app.modules.ingestion.triage_service import approve_triage_item
-    return approve_triage_item(db=db, triage_id=triage_id, reviewed_by=current_admin.email)
-
-
-@router.post(
-    "/ingestion/triage/{triage_id}/reject",
-    response_model=IngestionTriageItemResponse,
-    summary="[Admin] 1-Click Reject breaking government change",
-    description="Discards the proposed government change, keeping current scheme rules intact.",
-)
-def admin_reject_triage_item(
-    triage_id: int,
-    current_admin: User = Depends(get_current_admin_user),
-    db: Session = Depends(get_db),
-):
-    from app.modules.ingestion.triage_service import reject_triage_item
-    return reject_triage_item(db=db, triage_id=triage_id, reviewed_by=current_admin.email)
 

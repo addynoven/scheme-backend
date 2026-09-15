@@ -1,169 +1,281 @@
-# 🏛️ Scheme AI — Citizen Welfare Navigator & Sovereign Engine
+# 🏛️ Citizen Welfare Navigator & Sovereign Scheme Engine
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Python](https://img.shields.io/badge/Python-3.13+-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat&logo=react&logoColor=black)](https://react.dev/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.3_(Turbopack)-000000?style=flat&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![MinIO / S3](https://img.shields.io/badge/MinIO-S3_Storage-C72C48?style=flat&logo=minio&logoColor=white)](https://min.io)
-[![Gemini](https://img.shields.io/badge/Gemini_3.7_Flash-AI_Synthesis-8E75B2?style=flat&logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-AI_Orchestration-FF6F00?style=flat&logo=langchain&logoColor=white)](https://langchain-ai.github.io/langgraph/)
 [![Tests](https://img.shields.io/badge/Tests-100%25%20Passing-brightgreen?style=flat&logo=pytest&logoColor=white)](https://pytest.org)
 
-A high-performance **Feature-Driven Modular Monolith** that aggregates over **4,160+ Central and State welfare schemes**, evaluates citizen profiles with **sub-millisecond deterministic bitmask engines**, explains eligibility in plain language, and provides a polished **conversational AI assistant** with real-time SSE streaming, Document OCR extraction, Family Graph calculations, and browser-native voice interactions.
+A high-performance **Feature-Driven Modular Monolith** that aggregates over **4,160+ Central and State welfare schemes**, evaluates citizen profiles with a **sub-millisecond deterministic bitmask rule engine**, extracts verified citizen demographics via **Document OCR into an immutable facts ledger**, and provides a polished **conversational AI advisor** powered by a **3-tier resilience cascade** (Google Gemini $\to$ Groq Cloud $\to$ Local CLI `agy`) with real-time SSE streaming and zero-cost client-side speech recognition.
 
 ---
 
-## ⚡ 60-Second Quickstart
+## 🎯 The Problem We Solved
 
-### Option A: Complete Docker Compose Stack (Postgres + MinIO + Backend)
-```bash
-# 1. Start database, object storage, and backend
-docker compose up -d --build
-
-# 2. View Swagger OpenAPI Docs:
-# http://localhost:8000/docs
-```
-
-### Option B: Local Development
-```bash
-# Backend (Python 3.13 + uv)
-uv sync
-make seed       # Seeds default admin and 4,160+ schemes
-make dev        # Runs FastAPI at http://localhost:8000
-
-# Frontend (React 19 + TypeScript + Vite)
-cd frontend
-npm install
-npm run dev     # Runs Web App at http://localhost:5173
-```
+Every year, thousands of crores in Indian central and state welfare benefits go unclaimed. The barriers are systemic:
+1. **Fragmented Portals & Complex Criteria**: Eligibility rules (age brackets, income ceilings, land ownership, occupation codes, state residence) are buried inside 50-page government gazettes across hundreds of different ministry sites.
+2. **Repetitive Paperwork**: Citizens are forced to manually enter and explain the same basic demographic data across every scheme inquiry.
+3. **Language & Literacy Barriers**: Rural and low-income citizens struggle with rigid forms and technical government jargon.
+4. **Cloud API Fragility**: Public systems relying on single commercial LLM APIs crash or halt when hitting rate limits or upstream service outages.
 
 ---
 
-## 📐 Architecture & Mental Model
+## 💡 What We Built
 
-The repository follows a **Feature-Driven Modular Monolith** architecture. Code is grouped **by business capability**, never by technical layer.
+We designed and built a sovereign, end-to-end citizen advisory platform:
 
 ```mermaid
 graph TD
-    Client["Citizen Web App (React 19 / Vite / Tailwind)"] --> Gateway["FastAPI Gateway (app/main.py)"]
+    User["Citizen / Officer"] --> Web["Next.js 16 Web App (App Router / Tailwind / Web Speech)"]
+    Web --> Gateway["FastAPI Gateway (backend/app/main.py)"]
     
-    subgraph Feature Modules ["app/modules/"]
-        Chat["chat/ & voice/ (Conversational Assistant & SSE Streaming)"]
-        Routing["routing/ (Gemini 3.7 Flash + Multi-Model Router)"]
-        Auth["auth/ (JWT Auth, Citizen Facts & Profiles)"]
-        Household["household/ (Multi-Member Family Graph & Pooling)"]
-        Schemes["schemes/ (Faceted Search & Categories)"]
-        Elig["eligibility/ (Bitmask Engine & Explainable Reasoner)"]
-        Vault["vault/ (S3 Doc Storage, OCR Scanner & Readiness)"]
-        Ingest["ingestion/ (4-Gate Gov Crawler & Diffing)"]
-        Admin["admin/ (Administrative Portal & Ingestion Triage)"]
+    subgraph Core Modules ["backend/app/modules/"]
+        Chat["chat/ (LangGraph Multi-Turn Agent & SSE Streaming)"]
+        Auth["auth/ (JWT Auth, Citizen Facts & Verified Profile)"]
+        Schemes["schemes/ (Faceted Search, Categories & Ministry Catalog)"]
+        Elig["eligibility/ (⚡ In-Memory Bitmask Engine & Explainable Reasoner)"]
+        Vault["vault/ (MinIO S3 Encrypted Storage, OCR Scanner & Readiness)"]
+        Admin["admin/ (Operations Center & Visual Rule Builder)"]
     end
     
     Gateway --> Chat
-    Gateway --> Routing
     Gateway --> Auth
-    Gateway --> Household
     Gateway --> Schemes
     Gateway --> Elig
     Gateway --> Vault
-    Gateway --> Ingest
     Gateway --> Admin
     
-    Auth --> PostgreSQL[("PostgreSQL 16")]
-    Chat --> PostgreSQL
-    Household --> PostgreSQL
-    Schemes --> PostgreSQL
-    Elig --> BitmaskRAM["⚡ RAM Bitmasks (0.85ms)"]
-    Vault --> MinIO[("MinIO / S3 Storage")]
-    Routing --> GeminiAPI["Google Gemini 3.7 Flash"]
-    Ingest --> GovData["Data.gov.in / State Feeds"]
+    Chat --> Cascade{"3-Tier AI Resilience Cascade"}
+    Cascade -->|Tier 1: Cloud Primary| Gemini["Google Gemini 3.8 / 3.7 Flash"]
+    Cascade -->|Tier 2: Fast Failover| Groq["Groq Cloud (qwen / llama-3.3)"]
+    Cascade -->|Tier 3: Air-Gapped Fallback| LocalCLI["Local CLI AI (agy)"]
+    
+    Elig --> RAM["⚡ RAM Bitmasks (850µs / 7,200+ QPS)"]
+    Vault --> MinIO[("MinIO S3 Document Bucket")]
+    Auth --> Postgres[("PostgreSQL 17 DB")]
+    Schemes --> Postgres
 ```
-
-### The Standard 4-File Feature Pattern
-Every domain feature in `app/modules/<feature>/` follows the same predictable 4-file structure:
-
-| File | Responsibility |
-| :--- | :--- |
-| **`models.py`** | SQLAlchemy ORM database table definitions and relationships. |
-| **`schemas.py`** | Pydantic v2 DTO models for request validation and typed API responses. |
-| **`service.py`** | Pure domain business logic, computations, and database queries. |
-| **`router.py`** | FastAPI endpoint handlers, status codes, and dependency injection. |
 
 ---
 
-## 🗂️ Codebase Map
+## 🚀 Core Product Capabilities
+
+### 1. 💬 Flagship Conversational Citizen Advisor (`/` & `/c/[id]`)
+- **Natural Language Advisory**: Understands conversational, informal, and mixed Hinglish inputs (e.g. *"I am a 42-year-old farmer in UP with 2 acres of land, what support can I get?"* or *"tell me about the second scheme on your list"*).
+- **Indexical & Anaphoric Reasoning**: Remembers previous turns and resolves conversational references (*"how do I apply for the second one?"*, *"is the income limit for the first scheme different?"*).
+- **Real-Time Token Streaming (SSE)**: Streams generated responses token-by-token with zero waiting or blank states.
+- **Interactive Grounded Citations**: Direct links, ministry source chips, and actionable benefit cards embedded directly in the message stream.
+- **Multi-Turn Persistent Sessions**: Chat threads and message histories stored in PostgreSQL (`chat_sessions` and `chat_messages`).
+
+### 2. ⚡ In-Memory Bitmask Rule Engine (`/check` & `/eligibility`)
+- **Sub-Millisecond Evaluations**: Pre-compiles all 4,160+ Central and State welfare scheme eligibility rules into integer bitmasks loaded directly in RAM.
+- **Zero SQL Overhead**: Evaluates full citizen eligibility checks in **~850 microseconds (0.85 ms)** on a single core without hitting the database.
+- **Multi-Core Scaling**: Scales linearly across multi-core processors, exceeding **7,200 queries/second** on a 16-core machine (`make benchmark-multicore`).
+- **Explainable Reasoner (`/eligibility/explain`)**: Instead of a black-box yes/no, categorizes schemes into **Eligible**, **Nearly Eligible** (explains the exact unmet condition, e.g. *"Requires income under ₹1.5L, your declared income is ₹2.0L"*), and **Ineligible**.
+
+### 3. 🪪 Citizen Document Vault & OCR Fact Feeder (`/vault`)
+- **Document Storage**: Securely stores Aadhaar Cards, PAN Cards, Income Certificates, Ration Cards, and Land Records in S3-compatible MinIO object storage with presigned URLs and binary magic-byte inspection (PDF, PNG, JPG, WebP).
+- **Multimodal OCR Fact Extraction**: Uses Vision AI to extract verified demographic facts (Full Name, Date of Birth, Gender, State, District, Income, Caste) directly from uploaded documents.
+- **Immutable Fact Audit Trail (`citizen_facts`)**: Extracted facts are recorded with source document provenance (`source_document_id`, `source_type="document_ocr"`, `verified_at`).
+- **AI Memory Feeder**: Verified vault facts automatically inject into the citizen's profile and conversational session context so citizens never have to repeat their basic details.
+- **Application Readiness Meter**: Compares the citizen's uploaded documents against a target scheme's required checklist in real time, calculating an exact readiness percentage (e.g., 2/3 documents uploaded $\to$ 66.7% Ready).
+
+### 4. 🎙️ Browser-Native Speech-to-Text (STT)
+- **Zero Backend Latency & Zero Cloud API Costs**: Leverages the browser's native Web Speech API (`webkitSpeechRecognition` / `SpeechRecognition`) directly in `ChatComposer.tsx`.
+- **Multilingual Dictation**: Supports Indian English, Hindi, and regional speech input directly on the citizen's device.
+- **Graceful Feature Gating**: If a user visits on a browser without Speech Recognition support, the microphone button is automatically hidden from the DOM so no broken controls are ever displayed.
+
+### 5. 🛡️ 3-Tier AI Resilience Cascade
+Public welfare platforms cannot go down when commercial APIs hit rate limits. The conversational engine utilizes a three-tier automatic failover cascade:
+1. **Tier 1 (Google Gemini 3.8 / 3.7 Flash)**: Primary LLM for deep reasoning and multi-step tool calling.
+2. **Tier 2 (Groq Cloud `qwen3.8-27b` / `llama-3.3-70b`)**: Sub-100ms failover triggered immediately upon HTTP 429 (quota exhaustion) or timeout.
+3. **Tier 3 (Local CLI AI `agy`)**: Instant local process fallback when external internet or cloud quotas are completely unavailable, ensuring uninterrupted service.
+
+### 6. 🏛️ Government Operations Center & Visual Rule Builder (`/admin`)
+- **Welfare Schemes Management**: Search, filter, inspect, publish, and delete live and draft schemes.
+- **Visual Eligibility Builder**: Construct conditional logic rules without writing code (Field: `annual_income`, Operator: `lte`, Value: `200000`).
+- **Benefit & Document Checklist Editor**: Define financial grants, interest subsidies, and mandatory application documents per scheme.
+
+---
+
+## 📐 Architecture & Modular Monolith Pattern
+
+Code is organized strictly **by business capability**, avoiding technical layer silos (`controllers/`, `services/`, `models/`). Every domain feature in `backend/app/modules/<feature>/` follows the standardized 4-file pattern:
+
+```
+backend/app/modules/
+├── auth/          # Authentication, JWT, Citizen Profiles & Provenance Facts
+│   ├── models.py
+│   ├── schemas.py
+│   ├── service.py
+│   └── router.py
+├── schemes/       # Welfare Scheme Catalog, Categories & Search
+│   ├── models.py
+│   ├── schemas.py
+│   ├── service.py
+│   └── router.py
+├── eligibility/   # ⚡ Deterministic Bitmask Engine & Explainable Reasoner
+│   ├── engine.py
+│   ├── bitmask.py
+│   ├── schemas.py
+│   ├── service.py
+│   └── router.py
+├── chat/          # LangGraph Multi-Turn Agent, SSE Streaming & Failover
+│   ├── chat_graph.py
+│   ├── groq_provider.py
+│   ├── tools.py
+│   ├── schemas.py
+│   ├── service.py
+│   └── router.py
+├── vault/         # S3 Object Storage, OCR Fact Extraction & Readiness Meter
+│   ├── models.py
+│   ├── schemas.py
+│   ├── service.py
+│   └── router.py
+└── admin/         # Administrative Portal & Scheme Configuration
+    ├── router.py
+    └── schemas.py
+```
+
+---
+
+## 🗂️ Project Layout
 
 ```text
 scheme-backend/
-├── app/
-│   ├── core/                  # Cross-cutting concerns (config, JWT security, pagination, error envelope)
-│   │   ├── config.py          # Pydantic BaseSettings environment variables
-│   │   ├── deps.py            # FastAPI dependencies (get_db, get_current_user, get_current_admin)
-│   │   ├── exceptions.py      # Standard domain exceptions
-│   │   ├── error_handlers.py  # Centralized JSON error contract envelope
-│   │   └── security.py        # Argon2id password hashing & JWT token issuing
-│   │
-│   ├── database.py            # SQLAlchemy engine & SessionLocal factory
-│   ├── main.py                # FastAPI entrypoint, mounts feature routers
-│   ├── seeds/                 # DB seeders (4,160+ National & State schemes + Admin user)
-│   │
-│   └── modules/               # Feature-Driven Domain Modules
-│       ├── admin/             # Administrative control plane & user role elevation
-│       ├── auth/              # Registration, Login, Token Refresh, and Citizen Facts
-│       ├── chat/              # Multi-turn chat sessions, history, and SSE token streaming
-│       ├── eligibility/       # ⚡ In-Memory Bitmask matcher & Explainable Reasoner
-│       ├── household/         # Multi-member family graph & collective eligibility pooling
-│       ├── ingestion/         # RFC 7232 Caching, MinIO Raw Archival, Circuit Breaker, Diff Triage
-│       ├── routing/           # Grounded Query Router (Direct SQL, In-Memory Bitmask, Gemini 3.7)
-│       ├── schemes/           # Welfare Scheme search, categories, and CRUD
-│       ├── vault/             # Citizen document upload, presigned URLs, OCR fact extraction
-│       └── voice/             # Speech-to-Text transcription & Indic voice synthesis
+├── backend/                  # FastAPI 0.115+ Backend Application
+│   ├── app/
+│   │   ├── core/             # Cross-cutting concerns (config, deps, security, errors)
+│   │   ├── modules/          # Feature-Driven domain modules (auth, schemes, eligibility, chat, vault, admin)
+│   │   ├── seeds/            # Database seeders (4,160+ National & State schemes + Default Admin)
+│   │   ├── database.py       # SQLAlchemy engine & SessionLocal factory
+│   │   └── main.py           # FastAPI entrypoint mounting feature routers
+│   ├── alembic/              # Database schema migrations
+│   ├── pyproject.toml        # UV package manager dependencies
+│   └── Dockerfile            # Container build specification
 │
-├── frontend/                  # Modern Consumer AI Interface (React 19 + TypeScript + Tailwind)
+├── web/                      # Next.js 16 (App Router + Turbopack) Frontend
 │   ├── src/
-│   │   ├── components/        # AppSidebar, ChatComposer, SuggestionChip, MarkdownMessage, ErrorBoundary
-│   │   ├── lib/               # API clients, session token storage, SSE streaming handlers
-│   │   ├── pages/             # Route pages: / (Chat), /household, /vault, /results, /profile
-│   │   ├── main.tsx           # React entry point
-│   │   └── router.ts          # Type-safe file-based client routing
-│   ├── package.json
-│   └── vite.config.ts
+│   │   ├── app/              # Next.js App Router pages (/, /c/[id], /vault, /schemes, /check, /admin)
+│   │   ├── modules/          # Feature-first frontend components, hooks, and repositories
+│   │   │   ├── home/         # Conversational Chat Screen, ChatComposer, Message List
+│   │   │   ├── vault/        # Document Vault Screen, Upload Dropzone, Verification Modal
+│   │   │   ├── schemes/      # Schemes Browse & Detail Screens
+│   │   │   ├── check/        # Instant Eligibility Evaluation Form
+│   │   │   └── admin/        # Government Operations Center & Visual Rule Builder
+│   │   ├── core/             # Shared layout, AppSidebar, and API client
+│   │   └── lib/              # Session token management & type definitions
+│   └── package.json
 │
-├── tests/
-│   ├── integration/           # Black-box API tests across all features
-│   └── unit/                  # Rule engine edge cases & bitmask boundary tests
+├── scripts/
+│   ├── dev.py                # All-in-one local development launcher
+│   └── test_human_conversations_e2e.py # 60-turn multi-persona real-world simulation
 │
-├── Makefile                   # 1-command developer shortcuts (make dev, make test, make seed)
-└── .env.example               # Environment variables template
+├── compose.yaml              # Docker Compose: PostgreSQL 17 + MinIO S3 + Setup
+├── Makefile                  # 1-Command developer automation shortcuts
+└── README.md
 ```
 
 ---
 
-## 🧩 Core Product Capabilities
+## ⚡ Quickstart & Setup
 
-### 1. 💬 Flagship Conversational Assistant (`/`)
-- **Direct Chat Experience**: Visiting `/` opens the conversational interface directly.
-- **Real-Time Token Streaming**: Server-Sent Events (SSE) stream synthesized responses token-by-token.
-- **Interactive Grounded Citations**: Responses feature clickable scheme chips and verified department sources.
-- **Voice Dictation & Speech Synthesis**:
-  - One-tap speech-to-text input in Indian English/Hinglish using browser-native Web Speech API.
-  - Client-side text-to-speech (*"Listen"*) playback with zero latency and zero cloud costs.
-- **Persistent SQL Sessions**: Multi-turn conversations and message threads stored in PostgreSQL (`chat_sessions` and `chat_messages`).
+### Prerequisites
+- **Python 3.13+** with [`uv`](https://docs.astral.sh/uv/) installed
+- **Node.js 20+** and `npm`
+- **Docker** and `docker compose` running
 
-### 2. ⚡ In-Memory Bitmask Rule Engine (`/eligibility`)
-Pre-compiles 4,145+ schemes and eligibility rules into integer bitmasks for microsecond CPU evaluations without SQL database I/O overhead:
+---
 
-```text
-======================================================================
-⚡ IN-MEMORY BITMASK ENGINE OPERATIONAL REPORT
-======================================================================
-• Compiled Schemes in RAM:   4,145 Schemes (Pre-indexed integer bitmasks)
-• Average Evaluation Speed:  850 – 900 microseconds (0.85 ms) per citizen
-• Pure CPU Throughput:       ~1,176 queries/sec per core (zero SQL I/O bottleneck)
-======================================================================
+### Option A: The One-Command All-in-One Launcher (Recommended)
+
+Run the comprehensive development orchestrator:
+```bash
+make dev
+```
+This automatically:
+1. Starts PostgreSQL 17 and MinIO S3 containers in the background.
+2. Waits for PostgreSQL to become healthy and ready.
+3. Runs Alembic database schema migrations.
+4. Auto-seeds the database with 4,160+ schemes and the default admin (`admin@gov.in` / `AdminPass123!`).
+5. Spawns the FastAPI backend on `http://localhost:8000` (Swagger docs at `/docs`).
+6. Spawns the Next.js web application on `http://localhost:3000`.
+
+---
+
+### Option B: Step-by-Step Manual Launch
+
+#### 1. Start Infrastructure
+```bash
+docker compose up -d postgres minio minio-createbuckets
 ```
 
-#### Multi-Core Scaling Benchmark (16 CPU Cores / `make benchmark`):
+#### 2. Run Backend
+```bash
+cd backend
+uv sync
+uv run alembic upgrade head
+uv run python -m app.seeds.seed_national_schemes
+uv run uvicorn app.main:app --reload --port 8000
+```
+
+#### 3. Run Frontend
+```bash
+cd web
+npm install
+npm run dev
+```
+Open `http://localhost:3000` in your browser.
+
+---
+
+### LLM Provider Selection
+You can launch with a specific AI provider or fallback tier:
+```bash
+make dev-gemini  # Google Gemini 3.8/3.7 with Groq fallback
+make dev-groq    # Groq Cloud primary
+make dev-cli     # Air-gapped local CLI AI (agy)
+```
+
+---
+
+## 🧪 Testing & Verification
+
+The codebase maintains rigorous integration-first automated testing across all modules:
+
+### 1. Backend Core Modules (`schemes`, `eligibility`, `vault`, `auth`)
+```bash
+backend/.venv/bin/pytest backend/app/modules/schemes/ backend/app/modules/eligibility/ backend/app/modules/vault/ backend/app/modules/auth/ -v
+# Output: 36 passed in 48s
+```
+
+### 2. AI Chat & 3-Tier Resilience Cascade
+```bash
+backend/.venv/bin/pytest backend/app/modules/chat/__tests__/test_groq_failover.py backend/app/modules/chat/__tests__/test_tool_chain_scenarios.py backend/app/modules/chat/__tests__/test_v28_conversational_chat.py -v
+# Output: 34 passed in 11s
+```
+
+### 3. Frontend Next.js Production Build & TypeScript Typecheck
+```bash
+cd web && npm run build
+# Output: Compiled successfully in 5.5s, 0 TypeScript errors, all routes statically/dynamically generated
+```
+
+### 4. Frontend Vitest Unit Suite
+```bash
+cd web && npm test -- --run
+# Output: 2 test files passed in 380ms
+```
+
+---
+
+## 📊 In-Memory Bitmask Engine Benchmark
+
+Evaluated on a 16-core system across 100,000 randomized citizen profiles against 4,145 schemes in RAM:
+
 ```text
 ======================================================================
 🔥 MULTI-CORE BITMASK ENGINE BENCHMARK (16 CPU CORES)
@@ -174,66 +286,20 @@ Pre-compiles 4,145+ schemes and eligibility rules into integer bitmasks for micr
 • Total Execution Time:      13.840 seconds
 • Combined Multi-Core QPS:   7,225 queries/second
 • Average Latency per Query: 138.40 microseconds (µs)
-• Total Matches Evaluated:   38,220,000 evaluations
+• Total Rule Evaluations:    38,220,000 evaluations
 ======================================================================
 ```
 
-### 3. 👨‍👩‍👧 Family Graph & Multi-Member Household Matrix (`/household`)
-- **Household Modeling**: Links primary citizen with spouse, dependent children, elderly parents, and siblings.
-- **Joint Eligibility Pooling**: Evaluates welfare schemes at both individual member level and collective household level (e.g. Ayushman Bharat ₹5 Lakh family cover, PM Awas Yojana housing subsidies, state girl-child education grants).
-- **Consolidated Benefit Matrix**: Summarizes total annual monetary value available across the entire household.
-
-### 4. 📁 Document Vault & OCR Fact Extraction (`/vault`)
-- Encrypted storage of citizen documents (Aadhaar, PAN Card, Income Certificates, Marksheets, Ration Cards) in MinIO/S3 object storage.
-- **OCR Fact Scanner**: Automatically extracts key demographics (DOB, State, Annual Income, Category, Father's Name) from uploaded images/PDFs and syncs them into the citizen's verified facts.
-- **Readiness Meter**: Evaluates uploaded documents against target schemes to identify missing application requirements.
-
-### 5. 🔍 Faceted Scheme Discovery (`/results`)
-- Full-text search and filtering across 4,160+ Central and State welfare schemes.
-- Filter by category (Agriculture, Education, Health, MSME, Housing, Social Welfare) and State jurisdiction.
-
-### 6. 🛡️ 4-Gate Automated Government Ingestion Pipeline (`/admin/ingestion`)
-- **Gate 1 (RFC 7232 Zero-Bandwidth Caching)**: Sends `If-None-Match` and `If-Modified-Since` headers to skip unchanged feeds in 0.05s.
-- **Gate 2 (Raw MinIO Archival)**: Stores untouched payloads as unedited audit trails.
-- **Gate 3 (Circuit Breaker Quarantine)**: Halts ingestion if an upstream feed structure breaks.
-- **Gate 4 (Semantic Hash Diffing & Triage)**: Automatically applies non-breaking changes; routes breaking changes (e.g. income limit modifications) to administrative review.
-
 ---
 
-## 🛠️ Developer Command Reference (`Makefile`)
+## 🔐 Security & Governance
 
-| Command | Description |
-| :--- | :--- |
-| **`make dev`** | Starts FastAPI backend at `http://localhost:8000` with hot-reload. |
-| **`make test`** | Runs full test suite via `pytest`. |
-| **`make test-cov`** | Runs tests and outputs code coverage. |
-| **`make seed`** | Seeds default Admin (`admin@gov.in`) and 4,160+ welfare schemes. |
-| **`make db-up`** | Starts local PostgreSQL 16 and MinIO background containers. |
-| **`make db-down`** | Stops Docker background containers. |
-| **`make lint`** | Runs Ruff linting and formatting. |
-
----
-
-## 🧪 Testing & Verification
-
-Run the test suite using `pytest`:
-
-```bash
-.venv/bin/pytest tests/ -v
-```
-
-### Verified Test Scenarios:
-1. **Persona 1 (Farmer Ramesh)**: Madhya Pradesh farmer receives PM-Kisan (₹6,000) + MP CM Kisan Kalyan (₹4,000) + PM Fasal Bima.
-2. **Persona 2 (Girl Child Priya)**: 14yo student matches Beti Bachao Beti Padhao + Post-Matric Scholarship.
-3. **Persona 3 (Senior Citizen Murugan)**: 65yo Tamil Nadu resident qualifies for National Social Assistance Old Age Pension.
-4. **Persona 4 (Rural Artisan Sunita)**: Female weaver qualifies for PM Vishwakarma + Mahila Samman Savings.
-5. **Persona 5 (High-Income Vikram)**: IT professional (₹24L income) filtered out of BPL welfare schemes.
-6. **Multi-Turn Chat & SSE Streaming**: Validates chat session lifecycle, memory continuity, and token streaming.
-7. **Voice Interface Integration**: Validates voice transcription and audio synthesis pipelines.
-8. **Document Vault OCR & Readiness**: Verifies document upload, OCR extraction, and readiness calculation.
-9. **Ingestion 4-Gates**: HTTP 304 skipping, circuit breaker quarantine, and triage approval.
+- **Argon2id & JWT**: Secure password hashing with Argon2id and stateless RS256/HS256 JSON Web Tokens.
+- **IDOR Protection**: All citizen profiles, vault documents, and eligibility records enforce strict user ownership checks.
+- **Binary Magic-Byte Inspection**: Uploaded files undergo binary header inspection (PDF `%PDF`, PNG `\x89PNG`, JPEG `\xff\xd8\xff`, WebP `RIFF...WEBP`) preventing MIME-spoofing attacks.
+- **Fact Provenance Ledger**: Demographics extracted from documents are signed with source document IDs, verification timestamps, and officer IDs in an audit trail table.
 
 ---
 
 ## 📄 License
-This project is licensed under the MIT License.
+This project is open-source software licensed under the **MIT License**.

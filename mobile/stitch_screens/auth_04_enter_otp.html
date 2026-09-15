@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Enter OTP - Scheme App</title>
+<!-- Tailwind CSS v3 with forms & container queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              green: '#0e7049',
+              lightGreen: '#e6f4ed',
+              dark: '#1f2937',
+              gray: '#6b7280',
+              border: '#e5e7eb',
+              keypadBg: '#d1d5db',
+              keypadBtn: '#ffffff'
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-ios-layout">
+    /* Prevent text selection and disable callout for iOS feel */
+    body {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+      background-color: #f3f4f6;
+    }
+    .keypad-shadow {
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+    }
+    .otp-box-active {
+      border-color: #0e7049;
+      background-color: #f9fbf9;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-0 md:p-6 bg-slate-100 font-sans antialiased text-gray-900">
+<!-- BEGIN: MobileFrameContainer -->
+<!-- Container scaled to standard iOS aspect ratio viewport -->
+<main class="w-full max-w-[390px] h-[844px] bg-white flex flex-col justify-between overflow-hidden shadow-2xl relative sm:rounded-[44px] sm:border-[8px] sm:border-slate-800" data-purpose="mobile-viewport">
+<!-- BEGIN: iOSStatusBar -->
+<!-- Native iOS style status bar with time, cellular, wifi, battery -->
+<header class="w-full pt-3 px-6 flex justify-between items-center z-20 bg-white" data-purpose="status-bar">
+<span class="text-sm font-semibold tracking-tight text-gray-900">9:41</span>
+<!-- Right Status Icons -->
+<div class="flex items-center space-x-1.5 text-gray-900">
+<!-- Cellular Bars -->
+<svg class="w-4 h-3 fill-current" viewbox="0 0 17 12">
+<rect height="3" rx="0.5" width="3" x="0" y="9"></rect>
+<rect height="6" rx="0.5" width="3" x="4.5" y="6"></rect>
+<rect height="9" rx="0.5" width="3" x="9" y="3"></rect>
+<rect height="12" rx="0.5" width="3" x="13.5" y="0"></rect>
+</svg>
+<!-- Wifi Icon -->
+<svg class="w-3.5 h-3 fill-current" viewbox="0 0 16 12">
+<path d="M8 12a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-4.95-3.05a7 7 0 0 1 9.9 0l-1.06 1.06a5.5 5.5 0 0 0-7.78 0L3.05 8.95zm-2.83-2.83a11 11 0 0 1 15.56 0l-1.06 1.06a9.5 9.5 0 0 0-13.44 0L.22 6.12z"></path>
+</svg>
+<!-- Battery Icon -->
+<div class="w-5 h-2.5 border border-current rounded-sm p-0.5 flex items-center">
+<div class="w-full h-full bg-current rounded-2xs"></div>
+</div>
+</div>
+</header>
+<!-- END: iOSStatusBar -->
+<!-- BEGIN: TopNavigationBar -->
+<section class="px-4 pt-1 flex items-center" data-purpose="navigation-header">
+<!-- Back Arrow Button -->
+<button aria-label="Go back" class="p-2 -ml-2 text-gray-700 hover:text-gray-900 transition-colors" type="button">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+</svg>
+</button>
+</section>
+<!-- END: TopNavigationBar -->
+<!-- BEGIN: MainContentArea -->
+<section class="flex-1 px-6 flex flex-col justify-start" data-purpose="otp-content">
+<!-- Login / Sign Up Tab Toggle -->
+<div class="flex border-b border-gray-200 mt-2 mb-8" data-purpose="tab-switcher">
+<button class="flex-1 pb-2.5 text-center text-sm font-semibold text-brand-green border-b-2 border-brand-green" type="button">
+          Login
+        </button>
+<button class="flex-1 pb-2.5 text-center text-sm font-semibold text-gray-400 hover:text-gray-600 transition-colors" type="button">
+          Sign Up
+        </button>
+</div>
+<!-- OTP Header Info -->
+<div class="text-center px-2 mb-6" data-purpose="otp-header">
+<h1 class="text-lg font-bold text-gray-900 tracking-tight">Enter the 6-digit code</h1>
+<p class="text-xs text-gray-500 mt-1.5 leading-relaxed">
+          We sent it to <strong class="text-gray-800 font-semibold">+91 9876543210</strong><br/>via WhatsApp
+        </p>
+</div>
+<!-- OTP Input Boxes (6-digit) -->
+<div class="flex justify-center items-center gap-2 mb-6" data-purpose="otp-boxes">
+<div class="w-11 h-12 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-base font-semibold text-gray-900 shadow-sm otp-box-active">
+          1
+        </div>
+<div class="w-11 h-12 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-base font-semibold text-gray-900 shadow-sm otp-box-active">
+          2
+        </div>
+<div class="w-11 h-12 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-base font-semibold text-gray-900 shadow-sm otp-box-active">
+          3
+        </div>
+<div class="w-11 h-12 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-base font-semibold text-gray-900 shadow-sm otp-box-active">
+          4
+        </div>
+<div class="w-11 h-12 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-base font-semibold text-gray-900 shadow-sm otp-box-active">
+          5
+        </div>
+<div class="w-11 h-12 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-base font-semibold text-gray-900 shadow-sm otp-box-active">
+          6
+        </div>
+</div>
+<!-- Resend Timer and SMS Alternative Link -->
+<div class="text-center space-y-2 mt-2" data-purpose="resend-actions">
+<p class="text-xs text-gray-500">
+          Didn't receive the code?
+        </p>
+<p class="text-xs text-gray-500 font-medium">
+          Resend in <span class="text-gray-700 font-semibold tracking-wide">00:28</span>
+</p>
+<div class="pt-2">
+<a class="inline-block text-xs font-semibold text-brand-green hover:underline" href="#">
+            Try via SMS instead
+          </a>
+</div>
+</div>
+</section>
+<!-- END: MainContentArea -->
+<!-- BEGIN: iOSNumericKeypad -->
+<!-- Native-styled on-screen numeric dialer -->
+<footer class="w-full bg-slate-200/95 pt-2 pb-6 px-1.5 border-t border-gray-300/80" data-purpose="numeric-keypad">
+<div class="grid grid-cols-3 gap-1.5 px-1 max-w-[370px] mx-auto text-center">
+<!-- Key 1 -->
+<button class="h-11 bg-white rounded-md keypad-shadow active:bg-gray-100 flex flex-col items-center justify-center leading-none" type="button">
+<span class="text-xl font-normal text-gray-900">1</span>
+<span class="text-[9px] text-gray-400 font-bold uppercase tracking-wider"> </span>
+</button>
+<!-- Key 2 -->
+<button class="h-11 bg-white rounded-md keypad-shadow active:bg-gray-100 flex flex-col items-center justify-center leading-none" type="button">
+<span class="text-xl font-normal text-gray-900">2</span>
+<span class="text-[9px] text-gray-500 font-bold tracking-wider">ABC</span>
+</button>
+<!-- Key 3 -->
+<button class="h-11 bg-white rounded-md keypad-shadow active:bg-gray-100 flex flex-col items-center justify-center leading-none" type="button">
+<span class="text-xl font-normal text-gray-900">3</span>
+<span class="text-[9px] text-gray-500 font-bold tracking-wider">DEF</span>
+</button>
+<!-- Key 4 -->
+<button class="h-11 bg-white rounded-md keypad-shadow active:bg-gray-100 flex flex-col items-center justify-center leading-none" type="button">
+<span class="text-xl font-normal text-gray-900">4</span>
+<span class="text-[9px] text-gray-500 font-bold tracking-wider">GHI</span>
+</button>
+<!-- Key 5 -->
+<button class="h-11 bg-white rounded-md keypad-shadow active:bg-gray-100 flex flex-col items-center justify-center leading-none" type="button">
+<span class="text-xl font-normal text-gray-900">5</span>
+<span class="text-[9px] text-gray-500 font-bold tracking-wider">JKL</span>
+</button>
+<!-- Key 6 -->
+<button class="h-11 bg-white rounded-md keypad-shadow active:bg-gray-100 flex flex-col items-center justify-center leading-none" type="button">
+<span class="text-xl font-normal text-gray-900">6</span>
+<span class="text-[9px] text-gray-500 font-bold tracking-wider">MNO</span>
+</button>
+<!-- Key 7 -->
+<button class="h-11 bg-white rounded-md keypad-shadow active:bg-gray-100 flex flex-col items-center justify-center leading-none" type="button">
+<span class="text-xl font-normal text-gray-900">7</span>
+<span class="text-[9px] text-gray-500 font-bold tracking-wider">PQRS</span>
+</button>
+<!-- Key 8 -->
+<button class="h-11 bg-white rounded-md keypad-shadow active:bg-gray-100 flex flex-col items-center justify-center leading-none" type="button">
+<span class="text-xl font-normal text-gray-900">8</span>
+<span class="text-[9px] text-gray-500 font-bold tracking-wider">TUV</span>
+</button>
+<!-- Key 9 -->
+<button class="h-11 bg-white rounded-md keypad-shadow active:bg-gray-100 flex flex-col items-center justify-center leading-none" type="button">
+<span class="text-xl font-normal text-gray-900">9</span>
+<span class="text-[9px] text-gray-500 font-bold tracking-wider">WXYZ</span>
+</button>
+<!-- Key Blank/Empty Placeholder for standard iOS layout -->
+<div class="h-11 flex items-center justify-center"></div>
+<!-- Key 0 -->
+<button class="h-11 bg-white rounded-md keypad-shadow active:bg-gray-100 flex flex-col items-center justify-center leading-none" type="button">
+<span class="text-xl font-normal text-gray-900">0</span>
+<span class="text-[9px] text-gray-400 font-bold uppercase tracking-wider"> </span>
+</button>
+<!-- Key Backspace / Delete -->
+<button aria-label="Backspace" class="h-11 flex items-center justify-center active:opacity-70 text-gray-800" type="button">
+<svg class="w-6 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414-6.414A2 2 0 0110.828 5H20a2 2 0 012 2v10a2 2 0 01-2 2h-9.172a2 2 0 01-1.414-.586L3 12z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- iOS Home Indicator -->
+<div class="w-32 h-1 bg-gray-900 rounded-full mx-auto mt-3" data-purpose="home-indicator"></div>
+</footer>
+<!-- END: iOSNumericKeypad -->
+</main>
+<!-- END: MobileFrameContainer -->
+</body></html>

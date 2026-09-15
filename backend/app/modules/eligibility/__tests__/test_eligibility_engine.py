@@ -2,10 +2,7 @@ from datetime import date
 
 from app.modules.eligibility.service import (
     calculate_age,
-    check_scheme_eligibility,
     evaluate_rule,
-    explain_rule_verdict,
-    explain_scheme_eligibility,
 )
 from app.modules.schemes.models import EligibilityRule
 

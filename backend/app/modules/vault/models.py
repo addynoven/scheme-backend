@@ -8,7 +8,6 @@ from app.database import Base
 
 if TYPE_CHECKING:
     from app.modules.auth.models import User
-    from app.modules.household.models import HouseholdMember
 
 
 class UserDocument(Base):
@@ -22,12 +21,8 @@ class UserDocument(Base):
         index=True,
     )
 
-    # Optional linkage to specific household family member
-    household_member_id: Mapped[int | None] = mapped_column(
-        ForeignKey("household_members.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True,
-    )
+    # Optional linkage to family member ID
+    household_member_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     citizen_uid: Mapped[str | None] = mapped_column(String(50), index=True, nullable=True)
 
     document_type: Mapped[str] = mapped_column(
@@ -79,9 +74,4 @@ class UserDocument(Base):
         nullable=True,
     )
 
-    # Relationships
     user: Mapped["User"] = relationship("User", back_populates="documents")
-    household_member: Mapped["HouseholdMember | None"] = relationship(
-        "HouseholdMember",
-        back_populates="documents",
-    )

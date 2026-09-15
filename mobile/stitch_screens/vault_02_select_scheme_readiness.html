@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Document Vault - Scheme Readiness</title>
+<!-- Tailwind CSS v3 CDN with forms and container-queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            vault: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Styles for Circular Progress & Mobile Optimization -->
+<style data-purpose="custom-layout">
+    /* Prevent bouncing on iOS mobile */
+    body {
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* Circular progress indicator custom stroke animation/positioning */
+    .progress-ring-circle {
+      transition: stroke-dashoffset 0.35s;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+    /* Custom scrollbar hiding */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 flex justify-center items-start min-h-screen text-slate-800 antialiased font-sans">
+<!-- Mobile Shell Device Wrapper (iPhone dimensions) -->
+<div class="w-full max-w-[420px] bg-white min-h-screen flex flex-col shadow-2xl relative border-x border-slate-200 overflow-x-hidden pb-20">
+<!-- BEGIN: iOS Status Bar -->
+<header class="w-full pt-3 px-6 flex justify-between items-center text-slate-800 text-xs font-semibold select-none">
+<span>9:41</span>
+<!-- iOS Right Icons (Cellular, WiFi, Battery) -->
+<div class="flex items-center space-x-1.5">
+<svg class="w-4 h-3.5 fill-current" viewbox="0 0 17 12">
+<rect height="4" rx="0.5" width="2.5" x="0" y="8"></rect>
+<rect height="6.5" rx="0.5" width="2.5" x="4" y="5.5"></rect>
+<rect height="9" rx="0.5" width="2.5" x="8" y="3"></rect>
+<rect height="12" rx="0.5" width="2.5" x="12" y="0"></rect>
+</svg>
+<svg class="w-3.5 h-3.5 fill-current" viewbox="0 0 16 16">
+<path d="M8 12.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm4.5-3.5a6.47 6.47 0 00-9 0 .75.75 0 01-1.06-1.06 7.97 7.97 0 0111.12 0 .75.75 0 01-1.06 1.06zm2.5-2.5a9.96 9.96 0 00-14 0 .75.75 0 11-1.06-1.06 11.46 11.46 0 0116.12 0 .75.75 0 01-1.06 1.06z"></path>
+</svg>
+<div class="w-5 h-2.5 border border-current rounded-sm p-0.5 flex items-center">
+<div class="bg-current h-full w-3 rounded-2xs"></div>
+</div>
+</div>
+</header>
+<!-- END: iOS Status Bar -->
+<!-- BEGIN: Top Navigation Bar -->
+<div class="px-4 py-3 flex items-center justify-between border-b border-slate-100 bg-white sticky top-0 z-20">
+<div class="flex items-center space-x-3">
+<!-- Back Button -->
+<button aria-label="Go Back" class="p-1.5 -ml-1 text-slate-700 hover:text-slate-900 active:bg-slate-100 rounded-full transition" type="button">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M15.75 19.5L8.25 12l7.5-7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<h1 class="text-base font-bold text-slate-900">Document Vault</h1>
+</div>
+<!-- S3 Encrypted Badge -->
+<div class="flex items-center space-x-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/70 text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-xs">
+<svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewbox="0 0 20 20">
+<path clip-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" fill-rule="evenodd"></path>
+</svg>
+<span>S3 Encrypted</span>
+</div>
+</div>
+<!-- END: Top Navigation Bar -->
+<!-- Scrollable Main Container -->
+<main class="flex-1 px-4 py-3.5 space-y-4">
+<!-- BEGIN: Scheme Selector Section -->
+<section data-purpose="scheme-selector">
+<label class="block text-xs font-medium text-slate-500 mb-1.5" for="scheme-dropdown">
+          Select a scheme to check readiness
+        </label>
+<!-- Custom Dropdown Selector Card -->
+<div class="flex items-center justify-between p-3 bg-white border border-slate-200 hover:border-emerald-500 rounded-xl shadow-xs cursor-pointer transition" id="scheme-dropdown" role="button" tabindex="0">
+<div class="flex items-center space-x-3 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center flex-shrink-0 text-emerald-600">
+<!-- Agriculture / Scheme Icon -->
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="truncate">
+<p class="text-xs font-bold text-slate-900 leading-tight truncate">PM Kisan Samman Nidhi</p>
+<p class="text-[11px] text-slate-500 leading-tight truncate mt-0.5">Ministry of Agriculture &amp; Farmers Welfare</p>
+</div>
+</div>
+<!-- Chevron Down Icon -->
+<svg class="w-4 h-4 text-slate-400 ml-2 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M19.5 8.25l-7.5 7.5-7.5-7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</section>
+<!-- END: Scheme Selector Section -->
+<!-- BEGIN: Readiness Meter Card -->
+<section class="p-4 bg-emerald-50/40 border border-emerald-100 rounded-2xl flex items-center justify-between shadow-xs" data-purpose="readiness-meter">
+<!-- SVG Donut Progress Chart -->
+<div class="relative w-24 h-24 flex-shrink-0 flex items-center justify-center">
+<svg class="w-24 h-24 transform -rotate-90" viewbox="0 0 100 100">
+<!-- Background circle ring -->
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#e2e8f0" stroke-width="9"></circle>
+<!-- Active progress stroke (66.7% of 251.2 circumf = ~167.5 visible => offset = 251.2 - 167.5 = 83.7) -->
+<circle class="progress-ring-circle" cx="50" cy="50" fill="transparent" r="40" stroke="#059669" stroke-dasharray="251.32" stroke-dashoffset="83.6" stroke-linecap="round" stroke-width="9"></circle>
+</svg>
+<!-- Center Percentage Label -->
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="text-base font-extrabold text-slate-900">66.7%</span>
+</div>
+</div>
+<!-- Progress Description & Callout -->
+<div class="ml-4 flex-1">
+<p class="text-sm font-bold text-slate-900">2 of 3</p>
+<p class="text-xs text-slate-500 leading-tight">documents present</p>
+<span class="inline-block mt-2 text-[11px] font-semibold text-emerald-700 bg-emerald-100/90 px-2.5 py-1 rounded-full">
+            Get ready to apply
+          </span>
+</div>
+</section>
+<!-- END: Readiness Meter Card -->
+<!-- BEGIN: Required Documents Section -->
+<section class="space-y-2.5" data-purpose="required-documents-list">
+<h2 class="text-xs font-bold text-slate-800 uppercase tracking-wide px-0.5">
+          Required Documents for this Scheme
+        </h2>
+<!-- Document Item 1: Aadhaar Card (Uploaded) -->
+<div class="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200/90 shadow-2xs">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+<!-- ID Card / Person Icon -->
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15A2.25 2.25 0 002.25 6.75v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.374a4.125 4.125 0 00-6.338 0 .375.375 0 00.26.626h5.818a.375.375 0 00.26-.626z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div>
+<p class="text-xs font-bold text-slate-900 leading-tight">Aadhaar Card</p>
+<p class="text-[11px] text-slate-500 leading-tight mt-0.5">Identity proof</p>
+</div>
+</div>
+<!-- Uploaded Badge -->
+<span class="inline-flex items-center space-x-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+<svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M4.5 12.75l6 6 9-13.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Uploaded</span>
+</span>
+</div>
+<!-- Document Item 2: Bank Account Details (Uploaded) -->
+<div class="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200/90 shadow-2xs">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+<!-- Bank Icon -->
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.5m-15 10.5V10.5M3 21h18M3 10.5h18" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div>
+<p class="text-xs font-bold text-slate-900 leading-tight">Bank Account Details</p>
+<p class="text-[11px] text-slate-500 leading-tight mt-0.5">For DBT</p>
+</div>
+</div>
+<!-- Uploaded Badge -->
+<span class="inline-flex items-center space-x-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+<svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M4.5 12.75l6 6 9-13.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Uploaded</span>
+</span>
+</div>
+<!-- Document Item 3: Land Ownership Record (Missing) -->
+<div class="flex items-center justify-between p-3 bg-white rounded-xl border border-rose-100 shadow-2xs">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0">
+<!-- Land / Document Warning Icon -->
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div>
+<p class="text-xs font-bold text-slate-900 leading-tight">Land Ownership Record</p>
+<p class="text-[11px] text-slate-500 leading-tight mt-0.5">Proof of land holding</p>
+</div>
+</div>
+<!-- Missing Warning Badge -->
+<span class="inline-flex items-center space-x-1 text-[11px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+<svg class="w-3 h-3 text-rose-600" fill="none" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24">
+<path d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Missing</span>
+</span>
+</div>
+</section>
+<!-- END: Required Documents Section -->
+<!-- BEGIN: Primary CTA Button -->
+<section class="pt-1" data-purpose="primary-action">
+<button class="w-full bg-emerald-800 hover:bg-emerald-900 active:scale-[0.99] text-white py-3 px-4 rounded-xl font-semibold text-xs flex items-center justify-center space-x-2 shadow-sm transition" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Upload Document</span>
+</button>
+</section>
+<!-- END: Primary CTA Button -->
+<!-- BEGIN: Your Documents Section -->
+<section class="pt-1 space-y-2" data-purpose="user-stored-documents">
+<div class="flex items-center justify-between px-0.5">
+<h2 class="text-xs font-bold text-slate-800 uppercase tracking-wide">
+            Your Documents (4)
+          </h2>
+</div>
+<!-- Document Stored Card Item -->
+<div class="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 shadow-2xs hover:bg-slate-50/60 transition">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center flex-shrink-0 border border-rose-100">
+<!-- PDF File Icon -->
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 24 24">
+<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9.5 8.5h-1v2H7V9h2.5c.83 0 1.5.67 1.5 1.5s-.67 1-1.5 1zm5 3.5h-3V9h3c.83 0 1.5.67 1.5 1.5v2c0 .83-.67 1.5-1.5 1.5zm4-3.5H17v1h1.5V14H17v1h-1.5V9H18.5v1.5zM8.5 10.5H8v1h.5c.28 0 .5-.22.5-.5s-.22-.5-.5-.5zm4.5 1.5h1v-1.5h-1V12z"></path>
+</svg>
+</div>
+<div>
+<p class="text-xs font-bold text-slate-900 leading-tight">Aadhaar Card</p>
+<p class="text-[10px] text-slate-400 leading-tight mt-0.5 font-mono">aadhaar_2024.pdf • 2.1 MB</p>
+</div>
+</div>
+<div class="flex items-center space-x-2">
+<!-- Verified Badge -->
+<span class="inline-flex items-center space-x-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+<svg class="w-2.5 h-2.5 text-emerald-600" fill="currentColor" viewbox="0 0 20 20">
+<path clip-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill-rule="evenodd"></path>
+</svg>
+<span>Verified</span>
+</span>
+<!-- 3 Dots Options Menu -->
+<button aria-label="More options" class="p-1 text-slate-400 hover:text-slate-600 active:bg-slate-100 rounded-md" type="button">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 20 20">
+<path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
+</svg>
+</button>
+</div>
+</div>
+</section>
+<!-- END: Your Documents Section -->
+</main>
+<!-- BEGIN: Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full max-w-[420px] bg-white border-t border-slate-200 px-3 py-1.5 flex justify-around items-center z-30 shadow-lg">
+<!-- Tab 1: Advisor -->
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-600 py-1 px-3" href="#">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] mt-1 font-medium">Advisor</span>
+</a>
+<!-- Tab 2: Vault (ACTIVE) -->
+<a class="flex flex-col items-center justify-center text-emerald-700 py-1 px-3" href="#">
+<div class="p-1 rounded-lg bg-emerald-50">
+<svg class="w-5 h-5 text-emerald-700" fill="currentColor" viewbox="0 0 24 24">
+<path clip-rule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" fill-rule="evenodd"></path>
+</svg>
+</div>
+<span class="text-[10px] font-bold mt-0.5">Vault</span>
+</a>
+<!-- Tab 3: Check -->
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-600 py-1 px-3" href="#">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] mt-1 font-medium">Check</span>
+</a>
+<!-- Tab 4: Schemes -->
+<a class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-600 py-1 px-3" href="#">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] mt-1 font-medium">Schemes</span>
+</a>
+</nav>
+<!-- END: Bottom Navigation Bar -->
+</div>
+</body></html>

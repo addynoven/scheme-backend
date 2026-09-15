@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Schemes - Browse Scheme List</title>
+<!-- Tailwind CSS CDN with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration for custom theme styles -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#15803d',
+              600: '#166534',
+              700: '#14532d',
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom utility styles -->
+<style data-purpose="custom-scroll-and-touch">
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    /* Hide scrollbar for IE, Edge and Firefox */
+    .no-scrollbar {
+      -ms-overflow-style: none;  /* IE and Edge */
+      scrollbar-width: none;  /* Firefox */
+    }
+    body {
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-0 sm:p-4">
+<!-- BEGIN: MobileDeviceFrame -->
+<!-- Constrained mobile viewport mimicking iPhone layout -->
+<div class="w-full max-w-[390px] h-[844px] bg-white sm:rounded-[44px] shadow-2xl flex flex-col overflow-hidden relative border border-slate-200" data-purpose="mobile-viewport">
+<!-- BEGIN: iOSStatusBar -->
+<header class="w-full pt-3 pb-1 px-7 flex justify-between items-center bg-white z-20 shrink-0">
+<!-- Time display -->
+<span class="text-[15px] font-semibold tracking-tight text-neutral-900">9:41</span>
+<!-- iOS Right Status Icons (Signal, WiFi, Battery) -->
+<div aria-label="Status Icons" class="flex items-center space-x-2 text-neutral-900">
+<!-- Cellular Icon -->
+<svg class="w-4 h-3.5 fill-current" viewbox="0 0 17 12">
+<rect height="3" rx="0.75" width="2.5" x="0" y="9"></rect>
+<rect height="6" rx="0.75" width="2.5" x="4" y="6"></rect>
+<rect height="9" rx="0.75" width="2.5" x="8" y="3"></rect>
+<rect height="12" rx="0.75" width="2.5" x="12" y="0"></rect>
+</svg>
+<!-- Wifi Icon -->
+<svg class="w-4 h-3.5 fill-current" viewbox="0 0 16 12">
+<path d="M8 12a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm4.95-4.95a7 7 0 0 0-9.9 0l1.06 1.06a5.5 5.5 0 0 1 7.78 0l1.06-1.06zm2.83-2.83a11 11 0 0 0-15.56 0l1.06 1.06a9.5 9.5 0 0 1 13.44 0l1.06-1.06z"></path>
+</svg>
+<!-- Battery Icon -->
+<div class="flex items-center">
+<div class="w-6 h-3 rounded-[4px] border border-neutral-800 p-[1px] flex items-center">
+<div class="w-full h-full bg-neutral-900 rounded-[2px]"></div>
+</div>
+<div class="w-[1.5px] h-[4px] bg-neutral-800 rounded-r-sm ml-[0.5px]"></div>
+</div>
+</div>
+</header>
+<!-- END: iOSStatusBar -->
+<!-- BEGIN: NavigationHeader -->
+<!-- Top app bar with back button & title -->
+<nav class="flex items-center justify-between px-4 py-2 bg-white shrink-0">
+<!-- Back Chevron Button -->
+<button aria-label="Go back" class="p-2 -ml-2 rounded-full hover:bg-slate-100 transition-colors" type="button">
+<svg class="w-5 h-5 text-neutral-800 stroke-[2.5]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Center Title -->
+<h1 class="text-lg font-bold text-neutral-900 tracking-tight">Schemes</h1>
+<!-- Right Spacer for balance -->
+<div class="w-9"></div>
+</nav>
+<!-- END: NavigationHeader -->
+<!-- BEGIN: CategoryFilterPills -->
+<!-- Filter tags horizontal list -->
+<div class="px-4 py-2 border-b border-slate-100 bg-white shrink-0">
+<div class="flex items-center space-x-2 overflow-x-auto no-scrollbar py-0.5" role="tablist">
+<!-- Active Filter: All -->
+<button aria-selected="true" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-700 text-white shadow-sm shrink-0" role="tab" type="button">
+          All
+        </button>
+<!-- Inactive Filter: Cash Grants -->
+<button aria-selected="false" class="px-3.5 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors shrink-0" role="tab" type="button">
+          Cash Grants
+        </button>
+<!-- Inactive Filter: Subsidies -->
+<button aria-selected="false" class="px-3.5 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors shrink-0" role="tab" type="button">
+          Subsidies
+        </button>
+<!-- Inactive Filter: Loans -->
+<button aria-selected="false" class="px-3.5 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors shrink-0" role="tab" type="button">
+          Loans
+        </button>
+</div>
+</div>
+<!-- END: CategoryFilterPills -->
+<!-- BEGIN: MainSchemesContent -->
+<!-- Scrollable list of scheme cards -->
+<main class="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-slate-50 no-scrollbar">
+<!-- BEGIN: SchemeCard1 -->
+<!-- Card 1: PM Kisan Samman Nidhi (Highlighted/Interacted) -->
+<article class="bg-white rounded-2xl p-3.5 border border-emerald-300 shadow-[0_2px_12px_rgba(16,185,129,0.08)] relative overflow-visible">
+<div class="flex items-start justify-between">
+<div class="flex items-start space-x-3">
+<!-- Icon Avatar -->
+<div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
+<svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M12 21v-8m0 0l-4-4m4 4l4-4M5 7c0 4 7 8 7 8s7-4 7-8a7 7 0 10-14 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<!-- Card Content -->
+<div class="flex-1">
+<h2 class="text-sm font-bold text-neutral-900 leading-snug">PM Kisan Samman Nidhi</h2>
+<p class="text-[11px] text-slate-500 font-normal mt-0.5">Ministry of Agriculture</p>
+<div class="text-[13px] font-bold text-emerald-700 mt-1">₹6,000 / year</div>
+<!-- Badges -->
+<div class="flex items-center space-x-1.5 mt-2">
+<span class="text-[10px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">All India</span>
+<span class="text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200/60 px-2 py-0.5 rounded-md">Cash Grant</span>
+</div>
+</div>
+</div>
+<!-- Bookmark button with interactive tap pointer simulation -->
+<div class="relative">
+<button aria-label="Bookmark PM Kisan Samman Nidhi" class="p-1.5 text-neutral-400 hover:text-emerald-700 transition-colors" type="button">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Tapping Hand Pointer Indicator (as seen in workflow step 3) -->
+<div class="absolute -right-2 top-4 pointer-events-none z-10 flex items-center justify-center animate-bounce">
+<svg class="w-8 h-8 drop-shadow-md text-amber-400 fill-amber-100 stroke-amber-800" stroke-width="1.5" viewbox="0 0 24 24">
+<path d="M10 11V4a1.5 1.5 0 0 1 3 0v5h.5a1.5 1.5 0 0 1 1.5 1.5v.5h.5a1.5 1.5 0 0 1 1.5 1.5v.5h.5a1.5 1.5 0 0 1 1.5 1.5v4c0 3.5-3 5.5-5.5 5.5h-2c-2 0-3.5-1.5-4-3l-1.5-3.5a1.5 1.5 0 0 1 2.5-1.5l1 1.5V11z"></path>
+</svg>
+</div>
+</div>
+</div>
+</article>
+<!-- END: SchemeCard1 -->
+<!-- BEGIN: SchemeCard2 -->
+<!-- Card 2: PM Fasal Bima Yojana -->
+<article class="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-sm relative">
+<div class="flex items-start justify-between">
+<div class="flex items-start space-x-3">
+<!-- Icon Avatar -->
+<div class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0 border border-orange-100">
+<svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<!-- Card Content -->
+<div class="flex-1">
+<h2 class="text-sm font-bold text-neutral-900 leading-snug">PM Fasal Bima Yojana</h2>
+<p class="text-[11px] text-slate-500 font-normal mt-0.5">Crop insurance for farmers</p>
+<!-- Badges -->
+<div class="flex items-center space-x-1.5 mt-2.5">
+<span class="text-[10px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">All India</span>
+<span class="text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200/60 px-2 py-0.5 rounded-md">Subsidy</span>
+</div>
+</div>
+</div>
+<!-- Bookmark button -->
+<button aria-label="Bookmark PM Fasal Bima Yojana" class="p-1.5 text-neutral-400 hover:text-emerald-700 transition-colors" type="button">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</article>
+<!-- END: SchemeCard2 -->
+<!-- BEGIN: SchemeCard3 -->
+<!-- Card 3: Kisan Credit Card (KCC) -->
+<article class="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-sm relative">
+<div class="flex items-start justify-between">
+<div class="flex items-start space-x-3">
+<!-- Icon Avatar -->
+<div class="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center shrink-0 border border-teal-100">
+<svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<!-- Card Content -->
+<div class="flex-1">
+<h2 class="text-sm font-bold text-neutral-900 leading-snug">Kisan Credit Card (KCC)</h2>
+<p class="text-[11px] text-slate-500 font-normal mt-0.5">Ministry of Agriculture</p>
+<div class="text-[13px] font-bold text-emerald-700 mt-1">Up to ₹3,00,000</div>
+<!-- Badges -->
+<div class="flex items-center space-x-1.5 mt-2">
+<span class="text-[10px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">All India</span>
+<span class="text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200/60 px-2 py-0.5 rounded-md">Loan</span>
+</div>
+</div>
+</div>
+<!-- Bookmark button -->
+<button aria-label="Bookmark Kisan Credit Card" class="p-1.5 text-neutral-400 hover:text-emerald-700 transition-colors" type="button">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</article>
+<!-- END: SchemeCard3 -->
+<!-- BEGIN: SchemeCard4 -->
+<!-- Card 4: Paramparagat Krishi Vikas Yojana (PKVY) -->
+<article class="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-sm relative">
+<div class="flex items-start justify-between">
+<div class="flex items-start space-x-3">
+<!-- Icon Avatar -->
+<div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 border border-emerald-100">
+<svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<!-- Card Content -->
+<div class="flex-1">
+<h2 class="text-sm font-bold text-neutral-900 leading-snug">Paramparagat Krishi Vikas Yojana (PKVY)</h2>
+<p class="text-[11px] text-slate-500 font-normal mt-0.5">Support for organic farming</p>
+<!-- Badges -->
+<div class="flex items-center space-x-1.5 mt-2.5">
+<span class="text-[10px] font-medium bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">All India</span>
+<span class="text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200/60 px-2 py-0.5 rounded-md">Grant</span>
+</div>
+</div>
+</div>
+<!-- Bookmark button -->
+<button aria-label="Bookmark Paramparagat Krishi Vikas Yojana" class="p-1.5 text-neutral-400 hover:text-emerald-700 transition-colors" type="button">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</article>
+<!-- END: SchemeCard4 -->
+<!-- BEGIN: SchemeCard5 -->
+<!-- Card 5: National Horticulture Mission -->
+<article class="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-sm relative">
+<div class="flex items-start justify-between">
+<div class="flex items-start space-x-3">
+<!-- Icon Avatar -->
+<div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0 border border-amber-100">
+<svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<!-- Card Content -->
+<div class="flex-1">
+<h2 class="text-sm font-bold text-neutral-900 leading-snug">National Horticulture Mission</h2>
+<p class="text-[11px] text-slate-500 font-normal mt-0.5">Support for horticulture development</p>
+</div>
+</div>
+<!-- Bookmark button -->
+<button aria-label="Bookmark National Horticulture Mission" class="p-1.5 text-neutral-400 hover:text-emerald-700 transition-colors" type="button">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+</article>
+<!-- END: SchemeCard5 -->
+</main>
+<!-- END: MainSchemesContent -->
+<!-- BEGIN: BottomNavigationBar -->
+<!-- iOS 4-tab bottom navigation with 'Schemes' highlighted -->
+<footer class="bg-white border-t border-slate-200 px-3 pt-2 pb-5 shrink-0">
+<nav aria-label="Bottom Navigation" class="flex justify-around items-center">
+<!-- Tab 1: Advisor -->
+<button class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-slate-600 transition-colors" type="button">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.75" viewbox="0 0 24 24">
+<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] mt-1 font-medium">Advisor</span>
+</button>
+<!-- Tab 2: Vault -->
+<button class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-slate-600 transition-colors" type="button">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.75" viewbox="0 0 24 24">
+<path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] mt-1 font-medium">Vault</span>
+</button>
+<!-- Tab 3: Check -->
+<button class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-slate-600 transition-colors" type="button">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.75" viewbox="0 0 24 24">
+<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] mt-1 font-medium">Check</span>
+</button>
+<!-- Tab 4: Schemes (Active) -->
+<button aria-current="page" class="flex flex-col items-center justify-center flex-1 py-1 text-emerald-700" type="button">
+<div class="px-3 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/50">
+<svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[10px] mt-0.5 font-bold text-emerald-700">Schemes</span>
+</button>
+</nav>
+<!-- iOS Home Indicator Indicator bar -->
+<div class="w-32 h-1 bg-neutral-900 rounded-full mx-auto mt-2"></div>
+</footer>
+<!-- END: BottomNavigationBar -->
+</div>
+<!-- END: MobileDeviceFrame -->
+</body></html>

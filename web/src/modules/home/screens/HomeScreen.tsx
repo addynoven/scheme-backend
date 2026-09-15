@@ -25,7 +25,6 @@ import {
 } from '../components'
 import { useChat } from '../hooks'
 import { useChatStore } from '../store'
-import { VoiceAssistantModal } from '@/modules/voice'
 import { useAuth } from '@/modules/auth'
 import { DevErrorModal } from '@/core/components/DevErrorModal'
 import { MemoryEnginePanel } from '@/components/MemoryEnginePanel'
@@ -48,8 +47,6 @@ export function HomeScreen({ initialSessionId }: { initialSessionId?: number | s
 
   const { logout, user } = useAuth()
   const {
-    isVoiceModalOpen,
-    setIsVoiceModalOpen,
     isMemoryInspectorOpen,
     activeMemoryTrace,
     activePromptSnippet,
@@ -183,12 +180,6 @@ export function HomeScreen({ initialSessionId }: { initialSessionId?: number | s
               <Brain className="h-3.5 w-3.5 text-purple-400" />
               <span className="hidden sm:inline">Memory Engine</span>
             </button>
-            <button
-              onClick={() => setIsVoiceModalOpen(true)}
-              className="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-lg shadow-purple-500/20 transition-all cursor-pointer"
-            >
-              <Mic className="h-3.5 w-3.5" /> Live Voice
-            </button>
             <Link
               href="/profile"
               className="p-1.5 sm:px-3 sm:py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-medium rounded-xl border border-zinc-800 flex items-center gap-1.5 transition-colors"
@@ -232,21 +223,13 @@ export function HomeScreen({ initialSessionId }: { initialSessionId?: number | s
               setInput={setInput}
               onSend={handleSend}
               isStreaming={isStreaming}
-              isDictating={isDictating}
               isServiceBlocked={isServiceBlocked}
               serviceErrorMessage={serviceErrorMessage}
               onResetServiceBlock={resetServiceBlock}
-              onToggleDictation={() => setIsVoiceModalOpen(true)}
             />
           </div>
         </footer>
       </main>
-
-      {/* Live Voice Assistant Modal */}
-      <VoiceAssistantModal
-        isOpen={isVoiceModalOpen}
-        onClose={() => setIsVoiceModalOpen(false)}
-      />
 
       {/* Memory Engine Inspector Drawer */}
       <MemoryEnginePanel

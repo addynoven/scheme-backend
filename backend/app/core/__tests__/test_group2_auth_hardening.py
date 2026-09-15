@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.modules.auth.models import RefreshToken, User
+from app.modules.auth.models import RefreshToken
 
 
 def test_unauthenticated_requests_return_401(client: TestClient):

@@ -4,7 +4,6 @@ export * from './components'
 export * from './config'
 export * from './errors'
 export * from './query'
-export * from './auth'
+export * from '@/lib/session'
 export * from './storage'
 export * from './theme'
-

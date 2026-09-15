@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
 if TYPE_CHECKING:
-    from app.modules.ingestion.models import IngestionTriageItem
+    pass
 
 
 class Scheme(Base):
@@ -44,7 +44,7 @@ class Scheme(Base):
         "OfficialSource", back_populates="scheme", cascade="all, delete-orphan", lazy="selectin"
     )
     versions: Mapped[list["SchemeVersion"]] = relationship(
-        "SchemeVersion", back_populates="scheme", cascade="all, delete-orphan", lazy="selectin"
+        "SchemeVersion", back_populates="scheme", cascade="all, delete-orphan"
     )
 
 

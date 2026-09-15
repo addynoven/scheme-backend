@@ -11,11 +11,14 @@ from app.seeds.seed_national_schemes import seed_national_schemes
 @pytest.fixture(autouse=True)
 def mock_s3_environment():
     old_endpoint = settings.S3_ENDPOINT_URL
+    old_provider = settings.STORAGE_PROVIDER
     settings.S3_ENDPOINT_URL = None
+    settings.STORAGE_PROVIDER = "s3"
     with mock_aws():
         storage_service.ensure_bucket_exists()
         yield
     settings.S3_ENDPOINT_URL = old_endpoint
+    settings.STORAGE_PROVIDER = old_provider
 
 
 def test_document_vault_upload_and_readiness_calculation(

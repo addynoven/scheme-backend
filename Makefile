@@ -7,6 +7,9 @@ help:
 	@echo "🏛️ Scheme Navigator — Developer Commands"
 	@echo "--------------------------------------------------"
 	@echo "  make dev                 : 🚀 ONE-COMMAND ALL-IN-ONE: Starts DB + S3 + Migrations + Backend + Next.js Frontend"
+	@echo "  make dev-groq            : Launch dev stack with Groq Cloud API (qwen/qwen3.8-27b)"
+	@echo "  make dev-gemini          : Launch dev stack with Google Gemini API (with Groq failover)"
+	@echo "  make dev-cli             : Launch dev stack with Local CLI AI (agy)"
 	@echo "  make start               : Alias for make dev"
 	@echo "  make dev-concurrent      : Run Backend (:8000) and Next.js Frontend (:3000) simultaneously with make -j2"
 	@echo "  make dev-backend         : Run FastAPI backend in dev mode with reload (port 8000)"
@@ -29,6 +32,15 @@ help:
 
 dev:
 	python3 scripts/dev.py
+
+dev-groq:
+	LLM_PROVIDER=groq python3 scripts/dev.py
+
+dev-gemini:
+	LLM_PROVIDER=gemini python3 scripts/dev.py
+
+dev-cli:
+	LLM_PROVIDER=agy python3 scripts/dev.py
 
 start:
 	python3 scripts/dev.py

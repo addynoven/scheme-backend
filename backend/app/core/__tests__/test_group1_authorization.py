@@ -36,7 +36,6 @@ def create_citizen_user(client: TestClient, email: str, phone: str) -> dict[str,
         },
     )
     token = res_login.json()["access_token"]
-    user_id = res_login.json().get("user_id") or 1
     return {"token": token, "headers": {"Authorization": f"Bearer {token}"}, "email": email}
 
 
@@ -87,7 +86,7 @@ def test_schemes_write_endpoints_authorization(client: TestClient, db_session: S
 
 def test_users_endpoints_authorization(client: TestClient, db_session: Session):
     citizen_a = create_citizen_user(client, "usera@example.com", "+919777700001")
-    citizen_b = create_citizen_user(client, "userb@example.com", "+919777700002")
+    create_citizen_user(client, "userb@example.com", "+919777700002")
 
     admin_creds = create_admin_user(db_session, "user.admin@gov.in")
     admin_token = client.post("/auth/login", json=admin_creds).json()["access_token"]
@@ -139,7 +138,7 @@ def test_chat_session_idor_and_mandatory_auth(client: TestClient):
 
 
 def test_admin_role_elevation_audit_logging(client: TestClient, db_session: Session):
-    citizen = create_citizen_user(client, "role.target@example.com", "+919555500001")
+    create_citizen_user(client, "role.target@example.com", "+919555500001")
     admin_creds = create_admin_user(db_session, "role.actor@gov.in")
     admin_token = client.post("/auth/login", json=admin_creds).json()["access_token"]
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
@@ -159,26 +158,3 @@ def test_admin_role_elevation_audit_logging(client: TestClient, db_session: Sess
     assert audit.new_role == "admin"
 
 
-def test_household_member_authorization(client: TestClient):
-    citizen_a = create_citizen_user(client, "household.usera@example.com", "+919444400001")
-    citizen_b = create_citizen_user(client, "household.userb@example.com", "+919444400002")
-
-    # User A adds a household member
-    member_payload = {
-        "full_name": "Child A",
-        "relationship": "daughter",
-        "age": 9,
-        "date_of_birth": "2015-05-10",
-        "gender": "female",
-    }
-    res_add = client.post("/household/members", json=member_payload, headers=citizen_a["headers"])
-    assert res_add.status_code == 201
-    member_id = res_add.json()["id"]
-
-    # User B attempting to get/update/delete User A's household member fails 403
-    assert client.get(f"/household/members/{member_id}", headers=citizen_b["headers"]).status_code == 403
-    assert client.put(f"/household/members/{member_id}", json={"full_name": "Hacked"}, headers=citizen_b["headers"]).status_code == 403
-    assert client.delete(f"/household/members/{member_id}", headers=citizen_b["headers"]).status_code == 403
-
-    # User A can get member successfully
-    assert client.get(f"/household/members/{member_id}", headers=citizen_a["headers"]).status_code == 200

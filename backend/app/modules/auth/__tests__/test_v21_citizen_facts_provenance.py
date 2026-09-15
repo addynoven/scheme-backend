@@ -5,15 +5,10 @@ immutable rows are created in `citizen_facts` with exact source document IDs,
 timestamps, and audit histories.
 """
 
-from unittest.mock import patch
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.modules.auth.models import CitizenFact, Profile, User
-from app.modules.ocr.schemas import (
-    ExtractedDocumentFacts,
-    ExtractedDocumentFactsResponse,
-)
+from app.modules.auth.models import CitizenFact
 
 
 def create_authenticated_citizen(client: TestClient) -> tuple[str, int]:
@@ -43,7 +38,7 @@ def test_v21_citizen_fact_provenance_recording(client: TestClient, db_session: S
     headers = {"Authorization": f"Bearer {token}"}
 
     # 1. Upload PAN Card
-    pan_bytes = b"MOCK_IMAGE_BYTES_PAN_CARD"
+    pan_bytes = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDRdummy_pan_bytes"
     res_upload = client.post(
         "/vault/documents/upload",
         data={"document_type": "PAN Card"},
@@ -84,7 +79,7 @@ def test_v21_citizen_fact_provenance_recording(client: TestClient, db_session: S
         assert fact["verified_at"] is not None
 
     # 4. Upload Second Document (Income Certificate)
-    income_cert_bytes = b"MOCK_INCOME_CERT_BYTES"
+    income_cert_bytes = b"%PDF-1.4 dummy income cert bytes"
     res_income_upload = client.post(
         "/vault/documents/upload",
         data={"document_type": "Income Certificate"},

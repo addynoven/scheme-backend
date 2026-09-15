@@ -1,4 +1,3 @@
-import pytest
 from app.modules.chat.agent_orchestrator import orchestrate_agentic_turn, _call_gemini_api, _call_agy_cli
 from app.modules.chat.tools import (
     execute_check_eligibility,

@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 
 from app.modules.admin.__tests__.test_admin_api import create_admin_user
 from app.modules.vault.models import UserDocument
-from app.modules.vault.service import evaluate_document_readiness, upload_user_document
 
 
 def create_test_citizen(client: TestClient, email: str) -> dict[str, str]:

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Settings - Scheme App</title>
+<!-- Tailwind CSS v3 CDN with forms and container queries plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom style tag for mobile frame and subtle iOS touches -->
+<style data-purpose="custom-styling">
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .safe-top {
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+    .safe-bottom {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 flex justify-center items-center min-h-screen text-slate-800 antialiased font-sans p-0 sm:p-4">
+<!-- BEGIN: MobileDeviceContainer -->
+<!-- iOS Mobile Container with realistic frame on larger displays -->
+<main class="w-full max-w-[390px] h-[844px] bg-white sm:rounded-[44px] sm:shadow-2xl flex flex-col overflow-hidden relative border-0 sm:border-[8px] sm:border-slate-800" data-purpose="mobile-viewport">
+<!-- BEGIN: iOSStatusBar -->
+<!-- Native-style iOS Status Bar -->
+<div class="w-full pt-3 px-7 flex justify-between items-center text-xs font-semibold tracking-tight text-slate-900 z-20" data-purpose="status-bar">
+<span>9:41</span>
+<!-- Dynamic Island / Notch Placeholder for iOS aesthetics -->
+<div class="w-28 h-4 bg-slate-900 rounded-full hidden sm:block"></div>
+<div class="flex items-center space-x-1.5">
+<!-- Cellular Signal Icon -->
+<svg class="w-3.5 h-3.5 fill-current" viewbox="0 0 24 24">
+<path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.22 19.59 10.56 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 2c3.87 0 7 3.13 7 7 0 1.54-.5 2.97-1.35 4.14l-9.79-9.79C9.03 5.5 10.46 5 12 5zm-5.65 2.86l9.79 9.79C14.97 18.5 13.54 19 12 19c-3.87 0-7-3.13-7-7 0-1.54.5-2.97 1.35-4.14z"></path>
+</svg>
+<!-- Wifi Icon -->
+<svg class="w-3.5 h-3.5 fill-current" viewbox="0 0 24 24">
+<path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98C20.93 5.9 16.69 4 12 4zm0 3.2c3.84 0 7.33 1.5 9.94 3.96L12 19.15 2.06 11.16C4.67 8.7 8.16 7.2 12 7.2z"></path>
+</svg>
+<!-- Battery Icon -->
+<div class="w-5 h-2.5 border border-slate-900 rounded-sm p-0.5 flex items-center">
+<div class="w-full h-full bg-slate-900 rounded-2xs"></div>
+</div>
+</div>
+</div>
+<!-- END: iOSStatusBar -->
+<!-- BEGIN: NavigationHeader -->
+<!-- Screen Top Bar with Back Button & Centered Screen Title -->
+<header class="relative px-4 py-3.5 flex items-center border-b border-slate-100 bg-white z-10" data-purpose="screen-header">
+<button aria-label="Go Back" class="p-1.5 text-slate-700 hover:text-slate-950 active:scale-95 transition-transform rounded-full" type="button">
+<svg class="w-5 h-5 stroke-[2.5]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15.75 19.5L8.25 12l7.5-7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<h1 class="absolute left-1/2 -translate-x-1/2 text-base font-semibold text-slate-900 tracking-tight">Settings</h1>
+</header>
+<!-- END: NavigationHeader -->
+<!-- BEGIN: SettingsContent -->
+<!-- Scrollable Setting Options List -->
+<div class="flex-1 overflow-y-auto px-5 py-4 space-y-1" data-purpose="settings-menu-list">
+<!-- Option 1: Language -->
+<a class="group flex items-center justify-between py-3.5 px-2 rounded-xl transition hover:bg-slate-50 active:bg-slate-100" href="#language">
+<div class="flex items-center space-x-3.5 min-w-0 pr-2">
+<!-- Globe / Language Icon -->
+<div class="flex-shrink-0 w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center">
+<svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-semibold text-slate-800 leading-tight">Language</p>
+<p class="text-xs text-slate-500 font-normal mt-0.5 truncate">English (Change)</p>
+</div>
+</div>
+<!-- Right Arrow Chevron -->
+<svg class="w-4 h-4 text-slate-400 flex-shrink-0 group-hover:text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</a>
+<!-- Option 2: Notifications -->
+<a class="group flex items-center justify-between py-3.5 px-2 rounded-xl transition hover:bg-slate-50 active:bg-slate-100" href="#notifications">
+<div class="flex items-center space-x-3.5 min-w-0 pr-2">
+<!-- Notification Bell Icon -->
+<div class="flex-shrink-0 w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center">
+<svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-semibold text-slate-800 leading-tight">Notifications</p>
+<p class="text-xs text-slate-500 font-normal mt-0.5 truncate">Scheme alerts, application updates</p>
+</div>
+</div>
+<!-- Right Arrow Chevron -->
+<svg class="w-4 h-4 text-slate-400 flex-shrink-0 group-hover:text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</a>
+<!-- Option 3: Default OTP Channel -->
+<a class="group flex items-center justify-between py-3.5 px-2 rounded-xl transition hover:bg-slate-50 active:bg-slate-100" href="#otp-channel">
+<div class="flex items-center space-x-3.5 min-w-0 pr-2">
+<!-- Chat / WhatsApp Channel Icon -->
+<div class="flex-shrink-0 w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center">
+<svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a.75.75 0 01-.974-.94 4.484 4.484 0 00.72-2.122A7.98 7.98 0 013 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-semibold text-slate-800 leading-tight">Default OTP Channel</p>
+<p class="text-xs text-slate-500 font-normal mt-0.5 truncate">WhatsApp</p>
+</div>
+</div>
+<!-- Right Arrow Chevron -->
+<svg class="w-4 h-4 text-slate-400 flex-shrink-0 group-hover:text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</a>
+<!-- Option 4: Privacy & Data -->
+<a class="group flex items-center justify-between py-3.5 px-2 rounded-xl transition hover:bg-slate-50 active:bg-slate-100" href="#privacy">
+<div class="flex items-center space-x-3.5 min-w-0 pr-2">
+<!-- Shield / Security Lock Icon -->
+<div class="flex-shrink-0 w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center">
+<svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-semibold text-slate-800 leading-tight">Privacy &amp; Data</p>
+<p class="text-xs text-slate-500 font-normal mt-0.5 truncate">Manage your data, download or delete</p>
+</div>
+</div>
+<!-- Right Arrow Chevron -->
+<svg class="w-4 h-4 text-slate-400 flex-shrink-0 group-hover:text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</a>
+<!-- Option 5: Change Password -->
+<a class="group flex items-center justify-between py-3.5 px-2 rounded-xl transition hover:bg-slate-50 active:bg-slate-100" href="#change-password">
+<div class="flex items-center space-x-3.5 min-w-0 pr-2">
+<!-- Password / Key Icon -->
+<div class="flex-shrink-0 w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center">
+<svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-semibold text-slate-800 leading-tight">Change Password</p>
+</div>
+</div>
+<!-- Right Arrow Chevron -->
+<svg class="w-4 h-4 text-slate-400 flex-shrink-0 group-hover:text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M8.25 4.5l7.5 7.5-7.5 7.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</a>
+</div>
+<!-- END: SettingsContent -->
+<!-- BEGIN: LogoutSection -->
+<!-- Action bottom section for Logout button -->
+<div class="px-7 py-5 bg-white" data-purpose="logout-container">
+<button class="group flex items-center space-x-3 text-red-500 hover:text-red-600 transition-colors w-full text-left py-1 active:opacity-75" type="button">
+<!-- Red Exit / Logout Icon -->
+<svg class="w-5 h-5 stroke-[2] flex-shrink-0 transform rotate-180" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-sm font-semibold tracking-normal">Logout</span>
+</button>
+</div>
+<!-- END: LogoutSection -->
+<!-- BEGIN: iOSHomeIndicator -->
+<!-- iOS bottom indicator bar -->
+<div class="w-full pb-2 pt-1 flex justify-center bg-white" data-purpose="home-indicator">
+<div class="w-32 h-1 bg-slate-900/40 rounded-full"></div>
+</div>
+<!-- END: iOSHomeIndicator -->
+</main>
+<!-- END: MobileDeviceContainer -->
+</body></html>

@@ -1,4 +1,3 @@
-from datetime import date
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -146,7 +145,7 @@ def test_persona_1_farmer_ramesh(client: TestClient, db_session: Session):
         headers=admin_headers,
     )
 
-    res_eligible = client.get(f"/eligibility/users/{user_id}/schemes")
+    res_eligible = client.get(f"/eligibility/users/{user_id}/schemes", headers=admin_headers)
     assert res_eligible.status_code == 200
     matched_slugs = [s["slug"] for s in res_eligible.json()]
 
@@ -178,7 +177,7 @@ def test_persona_2_girl_child_priya(client: TestClient, db_session: Session):
         headers=admin_headers,
     )
 
-    res_eligible = client.get(f"/eligibility/users/{user_id}/schemes")
+    res_eligible = client.get(f"/eligibility/users/{user_id}/schemes", headers=admin_headers)
     assert res_eligible.status_code == 200
     matched_slugs = [s["slug"] for s in res_eligible.json()]
 
@@ -211,7 +210,7 @@ def test_persona_3_senior_citizen_murugan(client: TestClient, db_session: Sessio
         headers=admin_headers,
     )
 
-    res_eligible = client.get(f"/eligibility/users/{user_id}/schemes")
+    res_eligible = client.get(f"/eligibility/users/{user_id}/schemes", headers=admin_headers)
     assert res_eligible.status_code == 200
     matched_slugs = [s["slug"] for s in res_eligible.json()]
 
@@ -243,7 +242,7 @@ def test_persona_4_rural_artisan_sunita(client: TestClient, db_session: Session)
         headers=admin_headers,
     )
 
-    res_eligible = client.get(f"/eligibility/users/{user_id}/schemes")
+    res_eligible = client.get(f"/eligibility/users/{user_id}/schemes", headers=admin_headers)
     assert res_eligible.status_code == 200
     matched_slugs = [s["slug"] for s in res_eligible.json()]
 
@@ -275,7 +274,7 @@ def test_persona_5_high_income_engineer_vikram(client: TestClient, db_session: S
         headers=admin_headers,
     )
 
-    res_eligible = client.get(f"/eligibility/users/{user_id}/schemes")
+    res_eligible = client.get(f"/eligibility/users/{user_id}/schemes", headers=admin_headers)
     assert res_eligible.status_code == 200
     matched_slugs = [s["slug"] for s in res_eligible.json()]
 

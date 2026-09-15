@@ -18,6 +18,15 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days matching Better Auth
     REFRESH_TOKEN_EXPIRE_DAYS: int = 14
 
+    # Storage Configuration (Cloudinary vs S3/MinIO)
+    STORAGE_PROVIDER: str = "cloudinary"  # "cloudinary" | "s3"
+
+    # Cloudinary Object Storage
+    CLOUDINARY_CLOUD_NAME: str | None = "dzao8h1ay"
+    CLOUDINARY_API_KEY: str | None = "818269883432412"
+    CLOUDINARY_API_SECRET: str | None = "TWQzFg_c4N28mPs3g07qlC29HT8"
+    CLOUDINARY_URL: str | None = None
+
     # S3 / MinIO Object Storage
     S3_ENDPOINT_URL: str | None = "http://localhost:9000"
     S3_PUBLIC_ENDPOINT_URL: str | None = "http://localhost:9000"
@@ -27,14 +36,21 @@ class Settings(BaseSettings):
     S3_REGION: str = "us-east-1"
     S3_PRESIGNED_EXPIRY_SECONDS: int = 3600
 
-    # Google Gemini Vision LLM / agy CLI provider
+    # Google Gemini Vision LLM / Groq AI / agy CLI provider
     GEMINI_API_KEY: str | None = None
-    GEMINI_MODEL: str = "gemini-3.8-flash"
-    LLM_PROVIDER: str = "gemini"  # "gemini" | "agy"
-    AGY_MODEL: str = "gemini-3.8-flash-low"
+    GEMINI_MODEL: str = "gemini-3.6-flash"
+    GROQ_API_KEY: str | None = None
+    GROQ_MODEL: str = "qwen/qwen3.8-27b"
+    LLM_PROVIDER: str = "gemini"  # "gemini" | "groq" | "agy"
+    AGY_MODEL: str = "gemini-3.6-flash"
     DEV_MODE: bool = False
     TESTING: bool = False
     FRONTEND_URL: str | None = None
+
+    # Valkey / Redis caching (set VALKEY_URL in .env to enable)
+    # Schemes change rarely — default TTL is 24 hours, tune via CACHE_TTL_SECONDS in .env
+    VALKEY_URL: str | None = None
+    CACHE_TTL_SECONDS: int = 86400  # 24 hours — change via CACHE_TTL_SECONDS in .env
 
     # LangSmith Observability & Tracing (supports modern LANGSMITH_* and legacy LANGCHAIN_* vars)
     LANGSMITH_TRACING: bool | None = None
@@ -75,10 +91,18 @@ class Settings(BaseSettings):
                     "CRITICAL SECURITY CONFIG ERROR: Default SECRET_KEY used in production mode (DEV_MODE=False). "
                     "You MUST set a strong, unique SECRET_KEY in your environment!"
                 )
-            if self.S3_ACCESS_KEY == "minioadmin" or self.S3_SECRET_KEY == "minioadmin":
+            if self.STORAGE_PROVIDER == "s3" and (self.S3_ACCESS_KEY == "minioadmin" or self.S3_SECRET_KEY == "minioadmin"):
                 raise RuntimeError(
                     "CRITICAL SECURITY CONFIG ERROR: Default MinIO/S3 credentials used in production mode (DEV_MODE=False). "
                     "You MUST configure non-default S3_ACCESS_KEY and S3_SECRET_KEY in production!"
+                )
+            if self.STORAGE_PROVIDER == "cloudinary" and not (
+                self.CLOUDINARY_URL
+                or (self.CLOUDINARY_CLOUD_NAME and self.CLOUDINARY_API_KEY and self.CLOUDINARY_API_SECRET)
+            ):
+                raise RuntimeError(
+                    "CRITICAL SECURITY CONFIG ERROR: Cloudinary credentials missing in production mode (DEV_MODE=False). "
+                    "You MUST configure CLOUDINARY_URL or CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET!"
                 )
 
     model_config = SettingsConfigDict(

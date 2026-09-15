@@ -46,14 +46,17 @@ def get_current_user(
 
     # Auto-provision Better Auth verified user in PostgreSQL if missing
     if user is None and email:
+        import hashlib
         from app.core.uid_generator import generate_citizen_uid, generate_household_uid
-        from app.modules.auth.models import CitizenProfile
+        from app.modules.auth.models import Profile
 
         role = "admin" if email.lower() in ("admin@gov.in", "admin@scheme.gov.in") else "citizen"
+        synth_phone = f"+91{int(hashlib.sha256(email.encode()).hexdigest(), 16) % 10**10:010d}"
         user = User(
             citizen_uid=generate_citizen_uid(),
             household_uid=generate_household_uid(),
             email=email,
+            phone=synth_phone,
             hashed_password="BETTER_AUTH_MANAGED",
             role=role,
             is_verified=True,
@@ -63,7 +66,7 @@ def get_current_user(
             db.commit()
             db.refresh(user)
 
-            profile = CitizenProfile(user_id=user.id)
+            profile = Profile(user_id=user.id)
             db.add(profile)
             db.commit()
         except Exception:

@@ -16,14 +16,14 @@ import { useDevErrorStore } from '@/core/errors/devErrorStore'
 
 interface ChatComposerProps {
   input: string
-  setInput: (val: string) => void
+  setInput: (val: string | ((prev: string) => string)) => void
   onSend: (text?: string) => void
   isStreaming: boolean
-  isDictating: boolean
+  isDictating?: boolean
   isServiceBlocked?: boolean
   serviceErrorMessage?: string | null
   onResetServiceBlock?: () => void
-  onToggleDictation: () => void
+  onToggleDictation?: () => void
   placeholder?: string
   citizenState?: string
   autoFocus?: boolean
@@ -35,7 +35,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
   setInput,
   onSend,
   isStreaming,
-  isDictating,
+  isDictating = false,
   isServiceBlocked = false,
   serviceErrorMessage,
   onResetServiceBlock,
@@ -47,6 +47,85 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const { openDevError } = useDevErrorStore()
+
+  // Native Browser Web Speech API (Client-side STT)
+  const [isSpeechSupported, setIsSpeechSupported] = React.useState(false)
+  const [isListening, setIsListening] = React.useState(false)
+  const recognitionRef = useRef<any>(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition =
+        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      if (SpeechRecognition) {
+        setIsSpeechSupported(true)
+        try {
+          const recognition = new SpeechRecognition()
+          recognition.continuous = true
+          recognition.interimResults = true
+          recognition.lang = 'hi-IN'
+
+          recognition.onresult = (event: any) => {
+            let transcript = ''
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+              transcript += event.results[i][0].transcript
+            }
+            if (transcript.trim()) {
+              setInput(transcript.trim())
+            }
+          }
+
+          recognition.onerror = (event: any) => {
+            console.warn('Speech recognition error:', event.error)
+            setIsListening(false)
+          }
+
+          recognition.onend = () => {
+            setIsListening(false)
+          }
+
+          recognitionRef.current = recognition
+        } catch (err) {
+          console.warn('Speech recognition initialization failed:', err)
+          setIsSpeechSupported(false)
+        }
+      }
+    }
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop()
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }, [setInput])
+
+  const handleToggleDictation = () => {
+    if (onToggleDictation) {
+      onToggleDictation()
+      return
+    }
+    if (!recognitionRef.current) return
+    if (isListening) {
+      try {
+        recognitionRef.current.stop()
+      } catch {
+        // ignore
+      }
+      setIsListening(false)
+    } else {
+      try {
+        recognitionRef.current.start()
+        setIsListening(true)
+      } catch (err) {
+        console.warn('Could not start speech recognition:', err)
+      }
+    }
+  }
+
+  const activeDictating = isDictating || isListening
 
   // Auto-resize textarea
   useEffect(() => {
@@ -159,21 +238,23 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
 
           {/* Right Actions: Mic, Send */}
           <div className="flex items-center gap-1.5">
-            {/* Dictation Mic (Voice to Text Input) */}
-            <button
-              type="button"
-              onClick={onToggleDictation}
-              disabled={isServiceBlocked}
-              className={`h-8 px-2.5 rounded-lg flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                isDictating
-                  ? 'bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/80'
-              }`}
-              title={isDictating ? 'Stop recording' : 'Speak to input text'}
-            >
-              {isDictating ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">{isDictating ? 'Listening...' : 'Voice'}</span>
-            </button>
+            {/* Dictation Mic (Voice to Text Input via Web Speech API, hidden if unsupported) */}
+            {(isSpeechSupported || onToggleDictation) && (
+              <button
+                type="button"
+                onClick={handleToggleDictation}
+                disabled={isServiceBlocked}
+                className={`h-8 px-2.5 rounded-lg flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                  activeDictating
+                    ? 'bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse'
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/80'
+                }`}
+                title={activeDictating ? 'Stop listening' : 'Speak to input text (Browser Speech Recognition)'}
+              >
+                {activeDictating ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+                <span className="hidden sm:inline">{activeDictating ? 'Listening...' : 'Voice'}</span>
+              </button>
+            )}
 
             {/* Send Button */}
             <button

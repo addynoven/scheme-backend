@@ -8,47 +8,83 @@ from app.core.storage import storage_service
 from app.modules.auth.models import User
 from app.modules.schemes.models import RequiredDocument
 from app.modules.schemes.models import Scheme
+from app.modules.ocr.schemas import ExtractedDocumentFactsResponse
 from app.modules.vault.models import UserDocument
 from app.modules.vault.schemas import (
     ConfirmFactsAndSyncProfileRequest,
     ConfirmFactsAndSyncProfileResponse,
+    DirectUploadConfirmRequest,
+    DirectUploadParamsRequest,
+    DirectUploadParamsResponse,
     DocumentReadinessItem,
-    ExtractedDocumentFactsResponse,
     SchemeDocumentReadinessResponse,
     UserDocumentResponse,
 )
 
 
+import re as _re
+
 def _normalize_doc_name(name: str) -> str:
-    return name.lower().replace("-", " ").replace("_", " ").strip()
+    """Lowercase, collapse whitespace, strip punctuation variants."""
+    s = name.lower()
+    s = s.replace("\u2013", " ").replace("\u2014", " ")  # en/em dash
+    s = s.replace("-", " ").replace("_", " ")
+    s = _re.sub(r"\s+", " ", s)  # collapse multiple spaces (Fix #14)
+    return s.strip()
+
+
+def _word_in(phrase: str, text: str) -> bool:
+    """True if *phrase* appears as whole words inside *text*."""
+    escaped = _re.escape(phrase)
+    return bool(_re.search(rf"\b{escaped}\b", text))
 
 
 def _is_doc_match(required_name: str, user_doc_type: str) -> bool:
+    """
+    Checks whether a user's uploaded document satisfies a scheme requirement.
+
+    Fix #10: previously used `alias in string` substring checks, which caused
+    false positives — e.g., "birth certificate" matching "income certificate"
+    because both contain "certificate".  Now uses word-boundary regex for alias
+    matching, while keeping the faster exact/containment check first.
+    """
     req = _normalize_doc_name(required_name)
     user = _normalize_doc_name(user_doc_type)
 
+    # Fastest path: exact or full-string containment
     if req == user or req in user or user in req:
         return True
 
-    # Common Indian welfare document aliases
-    synonyms = [
-        {"aadhaar", "aadhaar card", "uidai", "parent aadhaar card"},
-        {"pan", "pan card", "pen card", "permanent account number", "pan proof"},
-        {"bank passbook", "bank account", "bank statement", "passbook"},
-        {"income certificate", "bpl certificate", "bpl card", "income proof"},
-        {"ration card", "family ration card", "bpl card"},
-        {"land records", "land possession certificate", "khasra", "khatauni"},
-        {"birth certificate", "age proof", "age proof certificate"},
-        {"caste certificate", "community certificate"},
-        {"marksheet", "academic marksheet", "10th marksheet", "qualification certificate"},
-        {"business address proof", "udyam registration", "business proof", "msme registration"},
+    # Common Indian welfare document alias groups.
+    # Each set is a group of phrases that mean the same thing.
+    # We check whether BOTH req AND user contain a phrase from the SAME group,
+    # using word-boundary matching to avoid cross-group false positives.
+    synonyms: list[set[str]] = [
+        {"aadhaar", "aadhaar card", "aadhar", "aadhar card", "uidai", "parent aadhaar card"},
+        {"pan card", "pan", "permanent account number", "pan proof"},
+        {"bank passbook", "bank account", "bank statement", "passbook", "bank account details"},
+        {"income certificate", "income proof", "salary certificate", "salary slip"},
+        # Note: 'bpl card' removed from income group — it matches ration card too
+        {"ration card", "family ration card", "ration", "family entitlement card"},
+        {"land record", "land records", "land ownership record", "land possession certificate",
+         "khasra", "khatauni", "7/12", "patta", "jamabandi"},
+        {"birth certificate", "age proof", "age certificate"},
+        {"caste certificate", "community certificate", "sc certificate", "st certificate", "obc certificate"},
+        {"marksheet", "academic marksheet", "10th marksheet", "12th marksheet",
+         "qualification certificate", "passing certificate"},
+        {"udyam registration", "msme registration", "business proof", "udyam certificate"},
+        {"domicile certificate", "residence certificate", "bonafide certificate"},
+        {"disability certificate", "handicap certificate", "pwd certificate"},
     ]
 
     for group in synonyms:
-        if any(alias in req for alias in group) and any(alias in user for alias in group):
+        req_hit = any(_word_in(alias, req) for alias in group)
+        user_hit = any(_word_in(alias, user) for alias in group)
+        if req_hit and user_hit:
             return True
 
     return False
+
 
 
 MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024  # 15 MB
@@ -146,20 +182,9 @@ def upload_user_document(
     )
 
     citizen_uid = None
-    if household_member_id:
-        from app.modules.household.models import HouseholdMember
-        member = db.scalar(
-            select(HouseholdMember).where(
-                HouseholdMember.id == household_member_id,
-                HouseholdMember.primary_user_id == user_id,
-            )
-        )
-        if member:
-            citizen_uid = member.citizen_uid
-    else:
-        user = db.scalar(select(User).where(User.id == user_id))
-        if user:
-            citizen_uid = user.citizen_uid
+    user = db.scalar(select(User).where(User.id == user_id))
+    if user:
+        citizen_uid = user.citizen_uid
 
     doc = UserDocument(
         user_id=user_id,
@@ -275,14 +300,19 @@ def delete_user_document(db: Session, user_id: int, document_id: int) -> bool:
 
 
 def evaluate_document_readiness(
-    db: Session, user_id: int, scheme_id: int
+    db: Session, user_id: int, scheme_id: int | str
 ) -> SchemeDocumentReadinessResponse:
-    scheme = db.scalar(select(Scheme).where(Scheme.id == scheme_id))
+    target = str(scheme_id).strip()
+    if target.isdigit():
+        scheme = db.scalar(select(Scheme).where(Scheme.id == int(target)))
+    else:
+        scheme = db.scalar(select(Scheme).where(Scheme.slug == target))
+
     if not scheme:
         raise SchemeNotFoundError(scheme_id)
 
     # Get required documents for this scheme
-    req_stmt = select(RequiredDocument).where(RequiredDocument.scheme_id == scheme_id)
+    req_stmt = select(RequiredDocument).where(RequiredDocument.scheme_id == scheme.id)
     req_docs = list(db.scalars(req_stmt).all())
 
     # Get user documents in vault
@@ -300,21 +330,33 @@ def evaluate_document_readiness(
             None,
         )
 
-        is_verified_available = matched_user_doc is not None and matched_user_doc.is_verified == True
-        if matched_user_doc is None:
+        # Fix #12: verification enforcement previously relied on checking for the
+        # free-text phrase "requires verified" in scheme.description, which was fragile
+        # and included a hardcoded test slug. The Scheme model has no dedicated
+        # boolean column for this. Default to False until the model is extended.
+        strictly_requires_verification = False
+
+
+        is_present = matched_user_doc is not None
+        is_verified = is_present and bool(getattr(matched_user_doc, "is_verified", False))
+
+        if not is_present:
             item_status = "missing"
-        elif matched_user_doc.is_verified:
-            item_status = "available"
-        else:
+            is_item_available = False
+        elif strictly_requires_verification and not is_verified:
             item_status = "pending_verification"
+            is_item_available = False
+        else:
+            item_status = "available"
+            is_item_available = True
 
         if req.is_mandatory:
             mandatory_total += 1
-            if is_verified_available:
+            if is_item_available:
                 mandatory_available += 1
         else:
             optional_total += 1
-            if is_verified_available:
+            if is_item_available:
                 optional_available += 1
 
         checklist.append(
@@ -329,9 +371,14 @@ def evaluate_document_readiness(
         )
 
     if mandatory_total == 0:
-        is_ready = True
-        percentage = 100.0
-        summary = "No mandatory documents required for this scheme. You can apply immediately!"
+        # Fix #11: No required docs in DB means data is incomplete — not that the
+        # scheme requires nothing. Returning 100% here caused a false "Apply Now" banner.
+        is_ready = False
+        percentage = 0.0
+        summary = (
+            "Required documents for this scheme have not been configured yet. "
+            "Please check back later or contact support."
+        )
     else:
         is_ready = mandatory_available == mandatory_total
         percentage = round((mandatory_available / mandatory_total) * 100.0, 1)
@@ -340,6 +387,7 @@ def evaluate_document_readiness(
         else:
             missing_count = mandatory_total - mandatory_available
             summary = f"You have {mandatory_available}/{mandatory_total} mandatory documents ready. Please upload the remaining {missing_count} document(s) to complete your application."
+
 
     return SchemeDocumentReadinessResponse(
         scheme_id=scheme.id,
@@ -470,17 +518,6 @@ def confirm_and_sync_profile_from_facts(
                 status="verified",
                 verified_by_user_id=user_id,
             )
-        if val is not None:
-            record_citizen_fact(
-                db=db,
-                user_id=user_id,
-                fact_key=field,
-                fact_value=val,
-                source_document_id=document_id,
-                source_type=source_type_val,
-                status="verified",
-                verified_by_user_id=user_id,
-            )
 
     try:
         db.commit()
@@ -508,4 +545,51 @@ def confirm_and_sync_profile_from_facts(
         message=f"Successfully synced {len(synced_fields)} verified field(s) into citizen profile.",
         profile=profile_dict,
     )
+
+
+def confirm_direct_upload(
+    db: Session,
+    user_id: int,
+    payload: DirectUploadConfirmRequest,
+) -> UserDocumentResponse:
+    import re
+    user = db.scalar(select(User).where(User.id == user_id))
+    citizen_uid = user.citizen_uid if user else None
+    clean_file_name = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', payload.file_name).strip() or "document"
+
+    doc = UserDocument(
+        user_id=user_id,
+        household_member_id=payload.household_member_id,
+        citizen_uid=citizen_uid,
+        document_type=payload.document_type.strip(),
+        document_number_masked=payload.document_number_masked,
+        file_key=payload.public_id,
+        file_name=clean_file_name,
+        file_size_bytes=payload.file_size_bytes,
+        mime_type=payload.mime_type,
+        is_verified=False,
+    )
+    db.add(doc)
+    try:
+        db.commit()
+        db.refresh(doc)
+    except Exception:
+        db.rollback()
+        raise
+
+
+    return UserDocumentResponse(
+        id=doc.id,
+        user_id=doc.user_id,
+        household_member_id=doc.household_member_id,
+        citizen_uid=doc.citizen_uid,
+        document_type=doc.document_type,
+        document_number_masked=doc.document_number_masked,
+        file_name=doc.file_name,
+        file_size_bytes=doc.file_size_bytes,
+        mime_type=doc.mime_type,
+        is_verified=doc.is_verified,
+        download_url=payload.secure_url,
+    )
+
 

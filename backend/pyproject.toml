@@ -9,9 +9,14 @@ dependencies = [
     "bcrypt>=4.2.0",
     "beautifulsoup4>=4.15.0",
     "boto3>=1.43.68",
+    "cloudinary>=1.46.2",
     "email-validator>=2.0.0",
     "fastapi>=0.141.1",
     "frictionless>=5.19.0",
+    "groq>=1.7.0",
+    "langchain-core>=1.6.2",
+    "langchain-google-genai>=4.4.0",
+    "langgraph>=1.2.11",
     "langsmith>=0.12.2",
     "moto>=5.2.2",
     "playwright>=1.62.0",
@@ -21,6 +26,7 @@ dependencies = [
     "python-multipart>=0.0.32",
     "sqlalchemy>=2.0.51",
     "uvicorn>=0.52.1",
+    "valkey[hiredis]>=6.0.2",
 ]
 
 [dependency-groups]
@@ -32,3 +38,7 @@ dev = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["app/modules", "tests"]
+markers = [
+    "eval: LLM evaluation tests making external API calls (run explicitly with: pytest -m eval)",
+]
+addopts = "-m 'not eval'"

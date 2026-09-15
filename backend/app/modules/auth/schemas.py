@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 
 # --- Profile Schemas ---
@@ -126,6 +126,23 @@ class UserLogin(BaseModel):
 UserLoginRequest = UserLogin
 
 
+class GoogleAuthRequest(BaseModel):
+    email: EmailStr = Field(
+        ...,
+        examples=["dmcbaditya@gmail.com"],
+        description="Google account email",
+    )
+    full_name: str | None = Field(
+        None,
+        examples=["Aditya"],
+        description="Citizen full name from Google account",
+    )
+    id_token: str | None = Field(
+        None,
+        description="Optional Google ID Token",
+    )
+
+
 class UserUpdate(BaseModel):
     email: EmailStr | None = None
     phone: str | None = None
@@ -136,12 +153,19 @@ class UserResponse(UserBase):
     id: int
     citizen_uid: str | None = None
     household_uid: str | None = None
+    phone_number: str | None = None
     is_verified: bool
     created_at: datetime
     updated_at: datetime
     profile: ProfileResponse | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="after")
+    def populate_phone_number(self):
+        if not self.phone_number and self.phone:
+            self.phone_number = self.phone
+        return self
 
 
 class UserWithProfileResponse(UserResponse):

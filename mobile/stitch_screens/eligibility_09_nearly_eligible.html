@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Nearly Eligible Schemes</title>
+<!-- Tailwind CSS CDN with forms and container queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              emerald: '#05603A',
+              dark: '#111827',
+              gray: '#6B7280',
+              lightGray: '#F9FAFB',
+              border: '#E5E7EB',
+            },
+            amberNotice: {
+              bg: '#FFFBEB',
+              border: '#FDE68A',
+              text: '#B45309',
+              dark: '#92400E',
+            },
+            roseNotice: {
+              bg: '#FFF1F2',
+              border: '#FECDD3',
+              text: '#BE123C',
+              dark: '#9F1239',
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-scroll-and-layout">
+    /* Subtle custom touch scroll behavior */
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 flex justify-center items-center min-h-screen p-0 sm:p-4 font-sans text-brand-dark antialiased">
+<!-- BEGIN: PhoneWrapper -->
+<!-- Container mimicking a standard modern iOS device screen -->
+<main class="w-full max-w-[390px] h-[844px] bg-white sm:rounded-[44px] shadow-2xl overflow-hidden flex flex-col relative border border-gray-200">
+<!-- BEGIN: iOSStatusBar -->
+<!-- Native iOS status bar layout -->
+<header class="w-full pt-3 px-7 pb-2 flex justify-between items-center z-20 shrink-0 select-none">
+<span class="text-[15px] font-semibold tracking-tight text-gray-900">9:41</span>
+<!-- Speaker Notch representation for standalone display -->
+<div class="w-28 h-4 bg-black rounded-full absolute left-1/2 -translate-x-1/2 top-2 hidden sm:block"></div>
+<div class="flex items-center space-x-1.5 text-gray-900">
+<!-- Cellular Signal Icon -->
+<svg class="w-4 h-3.5 fill-current" viewbox="0 0 17 12">
+<rect height="3" rx="0.5" width="3" x="0" y="9"></rect>
+<rect height="5.5" rx="0.5" width="3" x="4.5" y="6.5"></rect>
+<rect height="8.5" rx="0.5" width="3" x="9" y="3.5"></rect>
+<rect height="11.5" rx="0.5" width="3" x="13.5" y="0.5"></rect>
+</svg>
+<!-- Wifi Icon -->
+<svg class="w-4 h-3.5 fill-current" viewbox="0 0 16 12">
+<path clip-rule="evenodd" d="M8 10.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm-4.243-3.243a6 6 0 0 1 8.486 0 .75.75 0 0 0 1.06-1.06 7.5 7.5 0 0 0-10.606 0 .75.75 0 0 0 1.06 1.06zm-2.828-2.828a10 10 0 0 1 14.142 0 .75.75 0 1 0 1.06-1.06 11.5 11.5 0 0 0-16.262 0 .75.75 0 0 0 1.06 1.06z" fill-rule="evenodd"></path>
+</svg>
+<!-- Battery Icon -->
+<div class="flex items-center">
+<div class="w-5 h-2.5 border border-gray-900 rounded-[3px] p-0.5 flex items-center">
+<div class="w-full h-full bg-gray-900 rounded-[1px]"></div>
+</div>
+<div class="w-0.5 h-1 bg-gray-900 rounded-r-[1px] ml-[0.5px]"></div>
+</div>
+</div>
+</header>
+<!-- END: iOSStatusBar -->
+<!-- BEGIN: NavigationBar -->
+<!-- Screen Header with Back Arrow and Screen Title -->
+<nav aria-label="Page navigation" class="relative flex items-center px-4 py-3 border-b border-gray-100 shrink-0">
+<button aria-label="Go back" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors -ml-1 text-gray-700" type="button">
+<svg class="w-5 h-5 stroke-[2.5]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<h1 class="text-base font-semibold text-gray-900 absolute left-1/2 -translate-x-1/2 tracking-tight">
+        Nearly Eligible (3)
+      </h1>
+</nav>
+<!-- END: NavigationBar -->
+<!-- BEGIN: ContentArea -->
+<!-- Scrollable container for scheme cards -->
+<section class="flex-1 overflow-y-auto px-4 py-4 space-y-4" data-purpose="schemes-list">
+<!-- BEGIN: Card1_PMMudraYojana -->
+<article class="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 flex flex-col" data-purpose="scheme-card">
+<!-- Scheme Header -->
+<div class="flex items-center space-x-3 mb-3.5">
+<div class="w-11 h-11 rounded-xl bg-red-50 flex items-center justify-center border border-red-100 shrink-0">
+<!-- Bank/Building Icon -->
+<svg class="w-6 h-6 text-red-500" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 2L2 7v2h20V7L12 2zm-8 7v8h3V9H4zm5 0v8h3V9H9zm5 0v8h3V9h-3zm5 0v8h3V9h-3zM2 19v2h20v-2H2z"></path>
+</svg>
+</div>
+<div>
+<h2 class="text-base font-bold text-gray-900 leading-tight">PM Mudra Yojana</h2>
+<p class="text-xs text-gray-500 font-normal mt-0.5">Micro Loans for Small Businesses</p>
+</div>
+</div>
+<!-- Amber Notice Area -->
+<div class="bg-[#FFFBEB] border border-[#FEEBC8] rounded-xl p-3.5 mb-3 flex flex-col space-y-1.5" data-purpose="eligibility-notice">
+<div class="flex items-center space-x-2 text-[#C05621]">
+<!-- Clock Icon -->
+<svg class="w-4 h-4 fill-none stroke-current stroke-2" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+<span class="text-xs font-bold uppercase tracking-wider text-[#9C4221]">Almost there!</span>
+</div>
+<p class="text-xs text-gray-700 leading-relaxed font-normal pl-6">
+            Your annual income is slightly above the eligible limit of <span class="font-semibold text-gray-900">₹1,50,000</span>.
+          </p>
+</div>
+<!-- Data Comparison Grid -->
+<div class="grid grid-cols-2 gap-2 mb-3.5" data-purpose="income-comparison-boxes">
+<!-- User Income Box -->
+<div class="bg-gray-50 rounded-xl p-2.5 border border-gray-100 flex flex-col justify-center">
+<span class="text-[11px] text-gray-500 mb-0.5">Your entered income</span>
+<span class="text-sm font-semibold text-gray-900">₹1,80,000</span>
+</div>
+<!-- Required Threshold Box -->
+<div class="bg-gray-50 rounded-xl p-2.5 border border-gray-100 flex flex-col justify-center">
+<span class="text-[11px] text-gray-500 mb-0.5">Required</span>
+<span class="text-sm font-semibold text-gray-900">Below ₹1,50,000</span>
+</div>
+</div>
+<!-- Learn More Action Button -->
+<button aria-label="Learn more about PM Mudra Yojana" class="w-full py-2.5 rounded-xl border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors" type="button">
+          Learn More
+        </button>
+</article>
+<!-- END: Card1_PMMudraYojana -->
+<!-- BEGIN: Card2_StandUpIndia -->
+<article class="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 flex flex-col" data-purpose="scheme-card">
+<!-- Scheme Header -->
+<div class="flex items-center space-x-3 mb-3.5">
+<div class="w-11 h-11 rounded-xl bg-orange-50 flex items-center justify-center border border-orange-100 shrink-0">
+<!-- Lion / Emblem Inspired Icon -->
+<svg class="w-6 h-6 text-orange-500" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"></path>
+</svg>
+</div>
+<div>
+<h2 class="text-base font-bold text-gray-900 leading-tight">Stand Up India</h2>
+<p class="text-xs text-gray-500 font-normal mt-0.5">Loan for SC/ST and Women Entrepreneurs</p>
+</div>
+</div>
+<!-- Rose/Red Notice Area -->
+<div class="bg-[#FFF1F2] border border-[#FFE4E6] rounded-xl p-3.5 flex flex-col space-y-1.5" data-purpose="eligibility-notice">
+<div class="flex items-center space-x-2 text-rose-600">
+<!-- Exclamation in circle Icon -->
+<svg class="w-4 h-4 fill-none stroke-current stroke-2" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<line x1="12" x2="12" y1="8" y2="12"></line>
+<line x1="12" x2="12.01" y1="16" y2="16"></line>
+</svg>
+<span class="text-xs font-bold uppercase tracking-wider text-rose-700">Missing condition</span>
+</div>
+<p class="text-xs text-gray-700 leading-relaxed font-normal pl-6">
+            You are not in the eligible category <span class="font-medium text-gray-900">(SC/ST/Women)</span>.
+          </p>
+</div>
+</article>
+<!-- END: Card2_StandUpIndia -->
+</section>
+<!-- END: ContentArea -->
+<!-- BEGIN: iOSHomeIndicator -->
+<div class="w-full flex justify-center pb-2 pt-1 bg-white shrink-0">
+<div class="w-32 h-1 bg-gray-300 rounded-full"></div>
+</div>
+<!-- END: iOSHomeIndicator -->
+</main>
+<!-- END: PhoneWrapper -->
+</body></html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Scheme App - Your Results</title>
+<!-- Tailwind CSS v3 CDN with forms and container queries plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#0c4a25',
+              deep: '#0e432b'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+<!-- BEGIN: Base Layout Styles -->
+<style data-purpose="base-layout">
+    body {
+      background-color: #f1f5f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mobile-frame {
+      width: 100%;
+      max-width: 390px;
+      height: 844px;
+      background-color: #ffffff;
+      border-radius: 44px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 10px #1e293b;
+    }
+    /* Hide scrollbar for category pills row */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<!-- END: Base Layout Styles -->
+</head>
+<body>
+<!-- BEGIN: Mobile Device Frame -->
+<div class="mobile-frame" data-purpose="mobile-viewport">
+<!-- BEGIN: iOS Status Bar -->
+<header class="w-full pt-3 px-7 pb-1 flex justify-between items-center text-slate-800 text-xs font-semibold select-none z-20 shrink-0">
+<!-- Time Display -->
+<span>9:41</span>
+<!-- Sensor Notch Simulation -->
+<div class="w-28 h-4 bg-transparent rounded-full"></div>
+<!-- Status Icons -->
+<div class="flex items-center space-x-1.5">
+<!-- Cellular Signal Icon -->
+<svg class="w-4 h-3.5 fill-current" viewbox="0 0 24 24">
+<path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L12 22l7.03-4.39C20.26 16.07 21 14.12 21 12c0-4.97-4.03-9-9-9zm0 2c3.87 0 7 3.13 7 7 0 1.54-.5 2.97-1.35 4.14L12 19.64l-5.65-3.5C5.5 14.97 5 13.54 5 12c0-3.87 3.13-7 7-7z" opacity="0"></path>
+<rect height="5" rx="1" width="3" x="2" y="16"></rect>
+<rect height="9" rx="1" width="3" x="7" y="12"></rect>
+<rect height="13" rx="1" width="3" x="12" y="8"></rect>
+<rect height="17" rx="1" width="3" x="17" y="4"></rect>
+</svg>
+<!-- Wi-Fi Icon -->
+<svg class="w-3.5 h-3.5 fill-current" viewbox="0 0 24 24">
+<path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98A16.88 16.88 0 0012 4zm0 3.5c3.34 0 6.42 1.25 8.78 3.32L12 19.5 3.22 10.82A13.46 13.46 0 0112 7.5z"></path>
+</svg>
+<!-- Battery Icon -->
+<div class="w-5 h-2.5 border border-slate-800 rounded-sm p-0.5 flex items-center">
+<div class="w-full h-full bg-slate-800 rounded-2xs"></div>
+</div>
+</div>
+</header>
+<!-- END: iOS Status Bar -->
+<!-- BEGIN: Navigation Top Bar -->
+<nav aria-label="Screen Navigation" class="w-full px-5 py-2.5 flex items-center shrink-0 border-b border-slate-50">
+<!-- Back Arrow Button -->
+<button aria-label="Go Back" class="w-8 h-8 -ml-1.5 flex items-center justify-center text-slate-700 hover:text-slate-950 transition-colors" type="button">
+<svg class="w-5 h-5 stroke-current stroke-2" fill="none" viewbox="0 0 24 24">
+<path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- View Title -->
+<h1 class="flex-1 text-center font-bold text-slate-800 text-[17px] pr-6">Your Results</h1>
+</nav>
+<!-- END: Navigation Top Bar -->
+<!-- BEGIN: Scrollable Content View -->
+<main class="flex-1 overflow-y-auto px-4 pt-2 pb-6 space-y-4 no-scrollbar">
+<!-- BEGIN: Hero Celebration Box -->
+<section aria-label="Celebration Summary" class="relative bg-white pt-2 pb-2 text-center">
+<!-- Festive Confetti / Dot Highlights -->
+<div class="relative w-24 h-24 mx-auto flex items-center justify-center" data-purpose="celebration-badge">
+<!-- Decorative Particle Dots -->
+<span class="absolute -top-1 left-3 w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+<span class="absolute top-2 right-1 w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+<span class="absolute bottom-1 left-2 w-2 h-2 rounded-full bg-orange-400 opacity-80"></span>
+<span class="absolute -bottom-1 right-4 w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+<span class="absolute top-8 -left-3 w-2 h-1 rounded-full bg-amber-300 transform rotate-45"></span>
+<span class="absolute top-9 -right-3 w-2 h-1.5 rounded-full bg-emerald-300 transform -rotate-12"></span>
+<!-- Central Check Circle -->
+<div class="w-14 h-14 bg-emerald-700 rounded-full flex items-center justify-center shadow-md shadow-emerald-700/20">
+<svg class="w-7 h-7 text-white stroke-[2.5]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+</div>
+<!-- Subtitle & Main Eligibility Highlights -->
+<p class="text-xs font-semibold text-emerald-800 tracking-wide mt-1">You are eligible for</p>
+<h2 class="text-2xl font-extrabold text-emerald-800 leading-tight mt-0.5">
+          12 schemes
+        </h2>
+<p class="text-base font-bold text-emerald-900 mt-0.5">
+          worth <span class="text-emerald-700 font-extrabold">₹48,000</span> <span class="text-xs font-semibold text-emerald-800">/ year</span>
+</p>
+</section>
+<!-- END: Hero Celebration Box -->
+<!-- BEGIN: Category Filter Pills -->
+<section aria-label="Category Filters" class="flex items-center space-x-2 overflow-x-auto no-scrollbar py-1">
+<!-- Active Filter -->
+<button class="whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-800 text-white shadow-sm hover:bg-emerald-900 transition-colors" type="button">
+          All (12)
+        </button>
+<!-- Inactive Filters -->
+<button class="whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:border-slate-300 transition-colors" type="button">
+          Cash Grants (6)
+        </button>
+<button class="whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:border-slate-300 transition-colors" type="button">
+          Subsidies (4)
+        </button>
+<button class="whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:border-slate-300 transition-colors" type="button">
+          Loans (2)
+        </button>
+</section>
+<!-- END: Category Filter Pills -->
+<!-- BEGIN: Eligible Schemes List -->
+<section aria-label="Eligible Schemes Results" class="space-y-3 pt-1">
+<h3 class="text-sm font-bold text-slate-800">Eligible Schemes</h3>
+<!-- Scheme Card 1: PM Kisan Samman Nidhi -->
+<article class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow transition-shadow" data-purpose="scheme-item">
+<!-- Header info: Icon, Name, Ministry, Amount -->
+<div class="flex items-start space-x-3">
+<!-- Agriculture Sprout Icon Badge -->
+<div class="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 text-emerald-700">
+<svg class="w-6 h-6 stroke-[1.8]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 21v-8m0 0a5 5 0 015-5h2a7 7 0 01-7 7v6zm0-8a5 5 0 00-5-5H5a7 7 0 007 7z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="text-sm font-bold text-slate-900 leading-snug truncate">PM Kisan Samman Nidhi</h4>
+<p class="text-[11px] text-slate-500 truncate mt-0.5">Ministry of Agriculture &amp; Farmers Welfare</p>
+<!-- Benefit Amount Tag -->
+<p class="text-sm font-extrabold text-emerald-700 mt-1">₹6,000 <span class="text-xs font-medium text-emerald-800">/ year</span></p>
+</div>
+</div>
+<!-- Eligibility Checklist -->
+<ul class="mt-3.5 space-y-1.5 border-t border-slate-100 pt-3 text-xs text-slate-600 font-medium">
+<li class="flex items-center space-x-2">
+<svg class="w-3.5 h-3.5 text-emerald-600 shrink-0 stroke-[2.5]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>You are a registered farmer</span>
+</li>
+<li class="flex items-center space-x-2">
+<svg class="w-3.5 h-3.5 text-emerald-600 shrink-0 stroke-[2.5]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Age is within eligible range</span>
+</li>
+<li class="flex items-center space-x-2">
+<svg class="w-3.5 h-3.5 text-emerald-600 shrink-0 stroke-[2.5]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Your land records match</span>
+</li>
+</ul>
+<!-- Action Buttons -->
+<div class="mt-4 grid grid-cols-2 gap-2.5">
+<button class="w-full py-2 px-3 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold text-center transition-colors shadow-sm" type="button">
+              Apply Online
+            </button>
+<button class="w-full py-2 px-3 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold text-center transition-colors" type="button">
+              View Details
+            </button>
+</div>
+</article>
+<!-- Scheme Card 2: PM Ujjwala Yojana (Preview card at screen bottom) -->
+<article class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm opacity-95" data-purpose="scheme-item-secondary">
+<div class="flex items-start space-x-3">
+<!-- Flame / Cylinder Icon Badge -->
+<div class="w-10 h-10 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center shrink-0 text-orange-600">
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
+<path d="M12 2c-.5 2.5-3 4-3 7 0 2.8 2.2 5 5 5s5-2.2 5-5c0-4-4-5.5-7-7zm0 10c-1.7 0-3-1.3-3-3 0-1.1.7-2.1 1.6-2.6-.2 1 .5 2 1.4 2.4.9.4 1.5 1.3 1.5 2.2 0 1.1-.9 1-1.5 1z" opacity="0.3"></path>
+<path d="M17.55 11.2C17.2 9.5 16.1 8 14.8 6.9c-.3-.2-.7 0-.7.3.1 1.2-.4 2.4-1.3 3.1-.7.6-1.7.8-2.6.5-.4-.1-.8.2-.8.6 0 .2.1.4.2.5 1.2 1.6 1.4 3.7.5 5.5-.6 1.1-1.6 1.9-2.8 2.1-.4 0-.6.4-.4.7 1.4 2.6 4.2 4.3 7.3 4.3 4.6 0 8.3-3.7 8.3-8.3 0-1.7-.5-3.3-1.5-4.6-.2-.3-.6-.2-.6.1.1 1-.2 2-.9 2.7-.4.5-1 .8-1.7.9-.4 0-.7-.3-.6-.7z"></path>
+</svg>
+</div>
+<div class="flex-1 min-w-0">
+<h4 class="text-sm font-bold text-slate-900 truncate">PM Ujjwala Yojana</h4>
+<p class="text-[11px] text-slate-500 truncate mt-0.5">Ministry of Petroleum &amp; Natural Gas</p>
+</div>
+</div>
+</article>
+</section>
+<!-- END: Eligible Schemes List -->
+</main>
+<!-- END: Scrollable Content View -->
+<!-- BEGIN: iOS Home Indicator Bar -->
+<footer class="w-full pb-2 pt-1 flex justify-center bg-white shrink-0">
+<div class="w-32 h-1 bg-slate-900 rounded-full"></div>
+</footer>
+<!-- END: iOS Home Indicator Bar -->
+</div>
+<!-- END: Mobile Device Frame -->
+</body></html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Scheme App - Keep Chatting</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#16a34a',
+              600: '#15803d',
+              700: '#166534',
+              dark: '#0e3a24',
+            }
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom Scrollbar & Layout Styles -->
+<style data-purpose="base-layout">
+    /* iOS friendly frame and scrollbar hiding */
+    body {
+      -webkit-tap-highlight-color: transparent;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-0 sm:p-4 text-slate-800 antialiased font-sans">
+<!-- BEGIN: MobileDeviceFrame -->
+<main class="w-full sm:max-w-[390px] h-[844px] bg-slate-50 flex flex-col relative overflow-hidden shadow-2xl sm:rounded-[44px] border-0 sm:border-[8px] border-slate-900" data-purpose="mobile-container">
+<!-- BEGIN: iOSStatusBar -->
+<header class="w-full pt-3 px-7 pb-1 flex justify-between items-center bg-white z-20 select-none" data-purpose="status-bar">
+<span class="text-[14px] font-semibold tracking-tight text-slate-900">9:41</span>
+<!-- Dynamic island / speaker notch area representation for aesthetics -->
+<div class="flex items-center space-x-1.5 text-slate-900">
+<!-- Cellular Signal -->
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path class="opacity-0" d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.2.2-.2.51 0 .71.1.1.23.15.35.15s.26-.05.35-.15l1.83-1.83C8.42 19.38 10.13 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"></path>
+<path d="M2 17h2v4H2zm4-3h2v7H6zm4-4h2v11h-2zm4-4h2v15h-2zm4-4h2v19h-2z"></path>
+</svg>
+<!-- Wifi -->
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98A16.88 16.88 0 0 0 12 4zm0 3.12c3.7 0 7.07 1.42 9.6 3.76L12 19.48 2.4 10.88A14.28 14.28 0 0 1 12 7.12z"></path>
+</svg>
+<!-- Battery -->
+<div class="w-6 h-3 border border-slate-900 rounded-[3px] p-0.5 flex items-center">
+<div class="bg-slate-900 h-full w-full rounded-[1px]"></div>
+</div>
+</div>
+</header>
+<!-- END: iOSStatusBar -->
+<!-- BEGIN: AppHeader -->
+<section class="bg-white border-b border-slate-100 px-4 py-2.5 flex items-center justify-between z-10 shadow-sm" data-purpose="app-header">
+<!-- Left side: Logo & Advisor Status -->
+<div class="flex items-center space-x-2.5">
+<div class="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-sm">
+<!-- Leaf / sprout icon matching Scheme App branding -->
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
+<path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66C7.57 17.55 9.5 12.8 17 11V8m0-6C9.5 2 4.06 6.94 4.06 14.5c0 .32.02.65.05.97C6.03 10.91 9.77 8.35 15 8V4c0-.55-.45-1-1-1m3 0a1 1 0 0 0-1 1v4.06c4.08.76 7 4.28 7 8.44 0 .76-.11 1.48-.3 2.18l1.93.52C22.87 19.26 23 18.15 23 17c0-6.08-4.92-11-11-11h-1z"></path>
+</svg>
+</div>
+<div class="flex flex-col">
+<h1 class="text-sm font-bold text-slate-900 leading-tight">Scheme App</h1>
+<div class="flex items-center space-x-1">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+<span class="text-[11px] font-medium text-slate-500 leading-none">Online</span>
+</div>
+</div>
+</div>
+<!-- Right side: Notifications & User Avatar -->
+<div class="flex items-center space-x-3">
+<button aria-label="Notifications" class="relative p-1 text-slate-600 hover:text-slate-800 transition-colors">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24">
+<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+<!-- Profile Avatar -->
+<div class="w-8 h-8 rounded-full border border-emerald-500 overflow-hidden shadow-sm bg-amber-100 flex items-center justify-center">
+<svg class="w-7 h-7 text-amber-800" fill="currentColor" viewbox="0 0 24 24">
+<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
+</svg>
+</div>
+</div>
+</section>
+<!-- END: AppHeader -->
+<!-- BEGIN: ChatScrollArea -->
+<main class="flex-1 overflow-y-auto px-3.5 py-4 space-y-4 no-scrollbar bg-[#f8fafc]" data-purpose="chat-messages-container">
+<!-- Chat Bubble: User Query 1 -->
+<div class="flex flex-col items-end space-y-1">
+<div class="max-w-[80%] bg-[#e6f4ea] text-slate-800 text-[13.5px] leading-snug px-3.5 py-2.5 rounded-2xl rounded-tr-none border border-[#cbe9d3] shadow-sm">
+          What documents are required for this scheme?
+        </div>
+<div class="flex items-center space-x-1 pr-1">
+<span class="text-[10px] text-slate-400">10:28 AM</span>
+<svg class="w-3 h-3 text-emerald-600" fill="currentColor" viewbox="0 0 24 24">
+<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path>
+</svg>
+</div>
+</div>
+<!-- Chat Bubble: Advisor Response 1 -->
+<div class="flex items-start space-x-2">
+<!-- Robot AI Advisor Avatar -->
+<div class="w-7 h-7 rounded-full bg-emerald-600 flex-shrink-0 flex items-center justify-center text-white shadow-sm mt-0.5">
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5 2.5 2.5 0 0 0 7.5 18 2.5 2.5 0 0 0 10 15.5 2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5 2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5 2.5 2.5 0 0 0-2.5-2.5"></path>
+</svg>
+</div>
+<!-- Content Card -->
+<div class="max-w-[84%] bg-white rounded-2xl rounded-tl-none p-3.5 shadow-sm border border-slate-100 text-slate-800 text-[13px] leading-relaxed space-y-3">
+<p class="font-medium text-slate-700">You'll typically need:</p>
+<!-- Numbered Document Checklist -->
+<ol class="space-y-1.5 font-normal text-slate-800 pl-0.5">
+<li class="flex items-baseline space-x-2">
+<span class="font-bold text-slate-900 text-xs w-3.5">1</span>
+<span>Aadhaar Card</span>
+</li>
+<li class="flex items-baseline space-x-2">
+<span class="font-bold text-slate-900 text-xs w-3.5">2</span>
+<span>Land ownership record</span>
+</li>
+<li class="flex items-baseline space-x-2">
+<span class="font-bold text-slate-900 text-xs w-3.5">3</span>
+<span>Bank account details</span>
+</li>
+<li class="flex items-baseline space-x-2">
+<span class="font-bold text-slate-900 text-xs w-3.5">4</span>
+<span>Passport size photo</span>
+</li>
+<li class="flex items-baseline space-x-2">
+<span class="font-bold text-slate-900 text-xs w-3.5">5</span>
+<span>Application form (online/offline)</span>
+</li>
+</ol>
+<p class="text-slate-600 text-[12px] pt-1 leading-normal">
+            You can upload these to your Vault and reuse them for multiple schemes.
+          </p>
+<!-- Action Button: Open Document Vault -->
+<button class="w-full flex items-center justify-center space-x-2 py-2 px-3 rounded-lg border border-emerald-600 bg-emerald-50 text-emerald-800 font-medium text-xs hover:bg-emerald-100 active:scale-[0.99] transition-all" type="button">
+<svg class="w-4 h-4 text-emerald-700 fill-none stroke-current stroke-2" viewbox="0 0 24 24">
+<path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span>Open Document Vault</span>
+<span class="text-sm font-bold leading-none">→</span>
+</button>
+</div>
+</div>
+<!-- Chat Bubble: User Follow-up Query -->
+<div class="flex flex-col items-end space-y-1 pt-1">
+<div class="max-w-[80%] bg-[#e6f4ea] text-slate-800 text-[13.5px] leading-snug px-3.5 py-2.5 rounded-2xl rounded-tr-none border border-[#cbe9d3] shadow-sm">
+          Can I apply offline too?
+        </div>
+<div class="flex items-center space-x-1 pr-1">
+<span class="text-[10px] text-slate-400">10:29 AM</span>
+<svg class="w-3 h-3 text-emerald-600" fill="currentColor" viewbox="0 0 24 24">
+<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path>
+</svg>
+</div>
+</div>
+<!-- Chat Bubble: Advisor Follow-up Response -->
+<div class="flex items-start space-x-2">
+<!-- Robot AI Avatar -->
+<div class="w-7 h-7 rounded-full bg-emerald-600 flex-shrink-0 flex items-center justify-center text-white shadow-sm mt-0.5">
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5 2.5 2.5 0 0 0 7.5 18 2.5 2.5 0 0 0 10 15.5 2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5 2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5 2.5 2.5 0 0 0-2.5-2.5"></path>
+</svg>
+</div>
+<!-- Content Card -->
+<div class="max-w-[84%] bg-white rounded-2xl rounded-tl-none p-3.5 shadow-sm border border-slate-100 text-slate-800 text-[13px] leading-relaxed space-y-2">
+<p class="text-slate-800">Yes, you can apply through:</p>
+<ul class="space-y-1 text-slate-700 list-none pl-1">
+<li class="flex items-start space-x-2">
+<span class="text-slate-900 font-bold leading-tight">•</span>
+<span><strong class="font-semibold text-slate-800">Online portal</strong> (recommended)</span>
+</li>
+<li class="flex items-start space-x-2">
+<span class="text-slate-900 font-bold leading-tight">•</span>
+<span><strong class="font-semibold text-slate-800">Common Service Center</strong> (CSC)</span>
+</li>
+<li class="flex items-start space-x-2">
+<span class="text-slate-900 font-bold leading-tight">•</span>
+<span><strong class="font-semibold text-slate-800">State agriculture office</strong> (for offline)</span>
+</li>
+</ul>
+</div>
+</div>
+</main>
+<!-- END: ChatScrollArea -->
+<!-- BEGIN: InputComposer -->
+<div class="bg-white px-3 py-2 border-t border-slate-200" data-purpose="chat-input-bar">
+<div class="flex items-center space-x-2">
+<!-- Input Field Container -->
+<div class="flex-1 flex items-center bg-slate-100 rounded-full px-3.5 py-1.5 border border-slate-200 focus-within:border-emerald-500 focus-within:bg-white transition-all">
+<input class="w-full bg-transparent border-0 p-0 text-[13.5px] text-slate-800 placeholder-slate-400 focus:ring-0 focus:outline-none" placeholder="Type your message..." type="text"/>
+<!-- Attachment Paperclip -->
+<button aria-label="Attach Document" class="text-slate-400 hover:text-slate-600 ml-1.5 focus:outline-none" type="button">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2 -rotate-45" viewbox="0 0 24 24">
+<path d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- Microphone Button -->
+<button aria-label="Voice Input" class="w-10 h-10 rounded-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white flex items-center justify-center shadow-md transition-all flex-shrink-0" type="button">
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
+<path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"></path>
+<path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"></path>
+</svg>
+</button>
+</div>
+</div>
+<!-- END: InputComposer -->
+<!-- BEGIN: BottomNavigation -->
+<nav class="bg-white border-t border-slate-200 px-6 pt-2 pb-5 flex justify-between items-center select-none" data-purpose="bottom-nav">
+<!-- Item: Advisor (Active) -->
+<a class="flex flex-col items-center group" href="#">
+<div class="text-emerald-600 mb-0.5">
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
+<path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5 2.5 2.5 0 0 0 7.5 18 2.5 2.5 0 0 0 10 15.5 2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5 2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5 2.5 2.5 0 0 0-2.5-2.5"></path>
+</svg>
+</div>
+<span class="text-[10px] font-semibold text-emerald-700">Advisor</span>
+</a>
+<!-- Item: Vault -->
+<a class="flex flex-col items-center group" href="#">
+<div class="text-slate-400 group-hover:text-slate-600 mb-0.5">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24">
+<path d="M4 7v10c0 1.1.9 2 2 2h12a2 2 0 002-2V7M4 7a2 2 0 012-2h12a2 2 0 012 2M4 7h16m-9 4h2" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[10px] font-medium text-slate-500">Vault</span>
+</a>
+<!-- Item: Check -->
+<a class="flex flex-col items-center group" href="#">
+<div class="text-slate-400 group-hover:text-slate-600 mb-0.5">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24">
+<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[10px] font-medium text-slate-500">Check</span>
+</a>
+<!-- Item: Schemes -->
+<a class="flex flex-col items-center group" href="#">
+<div class="text-slate-400 group-hover:text-slate-600 mb-0.5">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24">
+<path d="M4 6h16M4 10h16M4 14h16M4 18h16" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="text-[10px] font-medium text-slate-500">Schemes</span>
+</a>
+</nav>
+<!-- END: BottomNavigation -->
+<!-- BEGIN: iOSHomeIndicator -->
+<div class="absolute bottom-1 left-1/2 -translate-x-1/2 w-32 h-1 bg-slate-900 rounded-full opacity-30 pointer-events-none"></div>
+<!-- END: iOSHomeIndicator -->
+</main>
+<!-- END: MobileDeviceFrame -->
+</body></html>

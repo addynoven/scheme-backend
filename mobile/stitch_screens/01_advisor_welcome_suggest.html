@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Scheme App - Advisor</title>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: '#0F766E', // Forest/Teal scheme green
+              50: '#F0FDF4',
+              100: '#DCFCE7',
+              600: '#16A34A',
+              700: '#15803D',
+              800: '#166534'
+            },
+            appBg: '#F8FAFC'
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-scroll-and-layout">
+    /* Prevent default bounce and ensure crisp mobile viewport styling */
+    body {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background-color: #E2E8F0;
+    }
+    /* Hide scrollbars for clean presentation */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-0 md:p-6 font-sans text-slate-900">
+<!-- BEGIN: PhoneShellWrapper -->
+<div class="w-full max-w-[400px] h-[844px] bg-slate-50 flex flex-col rounded-[44px] shadow-2xl overflow-hidden border-[8px] border-slate-900 relative">
+<!-- BEGIN: StatusBar -->
+<header class="w-full pt-3 px-6 pb-2 flex justify-between items-center bg-white shrink-0 z-20" data-purpose="mobile-status-bar">
+<!-- Time -->
+<span class="text-[15px] font-semibold tracking-tight text-slate-900">9:41</span>
+<!-- Dynamic Island / Speaker cutout simulation -->
+<div class="w-20 h-4 bg-slate-900 rounded-full mx-auto -mt-1 opacity-0 pointer-events-none"></div>
+<!-- Device Indicators -->
+<div class="flex items-center space-x-1.5 text-slate-900">
+<!-- Cellular Signal -->
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M2 17h3v4H2v-4zm5-4h3v8H7v-8zm5-5h3v13h-3V8zm5-5h3v18h-3V3z"></path>
+</svg>
+<!-- Wifi -->
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98A17.92 17.92 0 0012 4zm0 2.9c3.78 0 7.26 1.41 9.94 3.73L12 18.57 2.06 10.63C4.74 8.31 8.22 6.9 12 6.9z"></path>
+</svg>
+<!-- Battery Icon -->
+<div class="w-6 h-3 border border-slate-900 rounded-[3px] p-0.5 flex items-center">
+<div class="h-full w-full bg-slate-900 rounded-[1px]"></div>
+</div>
+</div>
+</header>
+<!-- END: StatusBar -->
+<!-- BEGIN: TopAppHeader -->
+<section class="bg-white border-b border-slate-100 px-4 py-2.5 flex items-center justify-between shrink-0 z-10" data-purpose="app-navigation-header">
+<!-- Left: Logo & Brand Info -->
+<div class="flex items-center space-x-2.5">
+<!-- Leaf App Logo Emblem -->
+<div class="w-8 h-8 rounded-full bg-emerald-700 flex items-center justify-center text-white shadow-sm">
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
+<path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A9.49 9.49 0 0017 8zm0 0c0-4-3.5-7-9-7a13.3 13.3 0 00-6.17 1.5l1.45 1.7A11.3 11.3 0 018 3c4.5 0 7 2.5 7 5z"></path>
+</svg>
+</div>
+<!-- Title & Status -->
+<div>
+<h1 class="text-base font-bold leading-tight text-slate-900 tracking-tight">Scheme App</h1>
+<div class="flex items-center space-x-1.5">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+<span class="text-xs font-medium text-slate-500">Online</span>
+</div>
+</div>
+</div>
+<!-- Right: Action Icons (Notifications & Profile) -->
+<div class="flex items-center space-x-3">
+<!-- Notification Bell with Alert Dot -->
+<button aria-label="Notifications" class="relative p-1 text-slate-700 hover:text-slate-900 transition-colors" type="button">
+<svg class="w-6 h-6 stroke-current fill-none stroke-[1.8]" viewbox="0 0 24 24">
+<path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="absolute top-1 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
+</button>
+<!-- Citizen Profile Avatar -->
+<div class="w-8 h-8 rounded-full ring-2 ring-emerald-600/30 overflow-hidden bg-emerald-100 flex items-center justify-center">
+<svg class="w-7 h-7 text-emerald-800" fill="currentColor" viewbox="0 0 24 24">
+<circle cx="12" cy="8" r="4"></circle>
+<path d="M12 14c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5z"></path>
+</svg>
+</div>
+</div>
+</section>
+<!-- END: TopAppHeader -->
+<!-- BEGIN: ChatContentScrollArea -->
+<main class="flex-1 overflow-y-auto px-4 py-4 space-y-4 no-scrollbar bg-slate-50/70" data-purpose="chat-scroll-view">
+<!-- Greeting Card / AI Bot Introduction Bubble -->
+<article class="bg-white rounded-3xl p-5 border border-slate-150 shadow-sm space-y-4" data-purpose="ai-greeting-bubble">
+<!-- Text Header Portion -->
+<div class="space-y-2">
+<div class="flex items-center space-x-2">
+<h2 class="text-xl font-bold tracking-tight text-slate-900">
+              Namaste! <span class="inline-block animate-wave origin-bottom-right">👋</span>
+</h2>
+</div>
+<h3 class="text-lg font-bold leading-tight text-slate-800">
+            What welfare support are you looking for today?
+          </h3>
+<p class="text-xs leading-relaxed text-slate-600 font-normal">
+            I can help you find government schemes, check eligibility, and guide you through the application process.
+          </p>
+</div>
+<!-- Pastoral / Friendly Indian Citizen Illustration -->
+<div class="w-full h-36 rounded-2xl bg-gradient-to-br from-emerald-50 via-teal-100 to-green-50 flex items-center justify-center relative overflow-hidden border border-emerald-100/60" data-purpose="welcoming-banner-illustration">
+<!-- Background decorative field elements -->
+<div class="absolute -bottom-6 -left-6 w-32 h-32 rounded-full bg-emerald-200/50 blur-xl"></div>
+<div class="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-teal-200/40 blur-lg"></div>
+<!-- Stylized Graphic Representation -->
+<div class="relative z-10 flex flex-col items-center">
+<div class="w-20 h-20 rounded-full bg-white/90 p-1.5 shadow-md flex items-center justify-center ring-4 ring-emerald-500/20">
+<!-- Illustrated Citizen SVG -->
+<svg class="w-full h-full text-emerald-800" fill="none" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="#FEF3C7" r="46"></circle>
+<!-- Woman avatar representation -->
+<circle cx="50" cy="38" fill="#D97706" r="16"></circle>
+<path d="M30 78c0-12 9-20 20-20s20 8 20 20v6H30v-6z" fill="#047857"></path>
+<path d="M42 36c0 4.4 3.6 8 8 8s8-3.6 8-8-3.6-8-8-8-8 3.6-8 8z" fill="#FCD34D"></path>
+<!-- Bindi -->
+<circle cx="50" cy="34" fill="#DC2626" r="1.5"></circle>
+<!-- Saree Drape -->
+<path d="M42 58L68 84H54L34 64z" fill="#F59E0B"></path>
+</svg>
+</div>
+<div class="mt-2 text-[11px] font-semibold text-emerald-800 bg-white/80 backdrop-blur-sm px-3 py-0.5 rounded-full shadow-sm">
+              Empowering Every Citizen
+            </div>
+</div>
+</div>
+<!-- Suggestion Prompt Pills / Chips Container -->
+<div class="space-y-2 pt-1" data-purpose="quick-suggestion-chips">
+<!-- Option 1: Farmer pump subsidies -->
+<button class="w-full text-left px-3.5 py-2.5 bg-slate-50 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200/80 hover:border-emerald-300 rounded-xl transition-all flex items-center space-x-3 text-slate-800 text-xs font-medium" type="button">
+<span class="text-base leading-none">🌾</span>
+<span>Farmer pump subsidies</span>
+</button>
+<!-- Option 2: College scholarships -->
+<button class="w-full text-left px-3.5 py-2.5 bg-slate-50 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200/80 hover:border-emerald-300 rounded-xl transition-all flex items-center space-x-3 text-slate-800 text-xs font-medium" type="button">
+<span class="text-base leading-none">🎓</span>
+<span>College scholarships</span>
+</button>
+<!-- Option 3: Maternal allowances -->
+<button class="w-full text-left px-3.5 py-2.5 bg-slate-50 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200/80 hover:border-emerald-300 rounded-xl transition-all flex items-center space-x-3 text-slate-800 text-xs font-medium" type="button">
+<span class="text-base leading-none">🤱</span>
+<span>Maternal allowances</span>
+</button>
+<!-- Option 4: Pension for senior citizens -->
+<button class="w-full text-left px-3.5 py-2.5 bg-slate-50 hover:bg-emerald-50 active:bg-emerald-100 border border-slate-200/80 hover:border-emerald-300 rounded-xl transition-all flex items-center space-x-3 text-slate-800 text-xs font-medium" type="button">
+<span class="text-base leading-none">🧓</span>
+<span>Pension for senior citizens</span>
+</button>
+<!-- Option 5: More topics -->
+<button class="inline-flex items-center px-4 py-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 border border-slate-200 rounded-full transition-colors text-slate-700 text-xs font-semibold space-x-2" type="button">
+<span class="tracking-widest font-black leading-none">•••</span>
+<span>More topics</span>
+</button>
+</div>
+</article>
+</main>
+<!-- END: ChatContentScrollArea -->
+<!-- BEGIN: InputBarSection -->
+<section class="bg-white px-3 py-2 border-t border-slate-150 shrink-0" data-purpose="chat-input-bar">
+<div class="flex items-center space-x-2">
+<!-- Message Input Field with Attachment Icon -->
+<div class="flex-1 bg-slate-100 hover:bg-slate-100/90 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-600 rounded-full px-4 py-2 flex items-center space-x-2 transition-all">
+<input class="w-full bg-transparent border-0 p-0 text-xs text-slate-800 placeholder:text-slate-400 focus:ring-0 focus:outline-none" placeholder="Type your message..." type="text"/>
+<!-- Attachment Clip Icon -->
+<button aria-label="Attach Document" class="text-slate-400 hover:text-slate-600 transition-colors shrink-0" type="button">
+<svg class="w-5 h-5 -rotate-45" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.37l-9.878 9.878a1.5 1.5 0 01-2.122-2.122l8.82-8.82" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</button>
+</div>
+<!-- Microphone Voice Input Button -->
+<button aria-label="Voice Input" class="w-10 h-10 rounded-full bg-emerald-700 hover:bg-emerald-800 active:scale-95 transition-all text-white flex items-center justify-center shadow-md shrink-0" type="button">
+<svg class="w-5 h-5 fill-current" viewbox="0 0 24 24">
+<path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"></path>
+<path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"></path>
+</svg>
+</button>
+</div>
+</section>
+<!-- END: InputBarSection -->
+<!-- BEGIN: BottomNavigation -->
+<nav class="bg-white border-t border-slate-150 px-2 py-1.5 flex justify-around items-center shrink-0 z-20" data-purpose="tab-bar-navigation">
+<!-- Tab 1: Advisor (Active) -->
+<button class="flex flex-col items-center justify-center flex-1 py-1 text-emerald-700 transition-colors" type="button">
+<div class="relative">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24">
+<path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="absolute -top-0.5 -right-1 w-1.5 h-1.5 bg-emerald-600 rounded-full"></span>
+</div>
+<span class="text-[10px] font-bold tracking-tight mt-0.5">Advisor</span>
+</button>
+<!-- Tab 2: Vault -->
+<button class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-slate-600 transition-colors" type="button">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24">
+<path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-medium tracking-tight mt-0.5">Vault</span>
+</button>
+<!-- Tab 3: Check -->
+<button class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-slate-600 transition-colors" type="button">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24">
+<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-medium tracking-tight mt-0.5">Check</span>
+</button>
+<!-- Tab 4: Schemes -->
+<button class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-slate-600 transition-colors" type="button">
+<svg class="w-5 h-5 fill-none stroke-current stroke-2" viewbox="0 0 24 24">
+<path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+<span class="text-[10px] font-medium tracking-tight mt-0.5">Schemes</span>
+</button>
+</nav>
+<!-- END: BottomNavigation -->
+<!-- Home indicator line -->
+<div class="w-32 h-1 bg-slate-900 rounded-full mx-auto my-1.5 shrink-0 opacity-40"></div>
+</div>
+<!-- END: PhoneShellWrapper -->
+</body></html>

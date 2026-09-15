@@ -83,6 +83,10 @@ def _call_gemini_api(contents: list[dict[str, Any]], system_instruction: str) ->
     _LAST_LLM_ERROR.clear()
 
     if not settings.GEMINI_API_KEY:
+        if getattr(settings, "GROQ_API_KEY", None):
+            logger.info("ℹ️ [Gemini Key Missing] Seamlessly delegating to Groq AI...")
+            from app.modules.chat.groq_provider import call_groq_api
+            return call_groq_api(contents, system_instruction)
         err_msg = "GEMINI_API_KEY is missing in environment while LLM_PROVIDER='gemini'."
         logger.error(f"🚨 [CRITICAL CONFIG ERROR] {err_msg}")
         _LAST_LLM_ERROR = {
@@ -99,8 +103,8 @@ def _call_gemini_api(contents: list[dict[str, Any]], system_instruction: str) ->
         "generationConfig": {"temperature": 0.2, "maxOutputTokens": 1024},
     }
 
-    configured_model = settings.GEMINI_MODEL or "gemini-3.8-flash"
-    models_to_try = [configured_model, "gemini-3.8-flash", "gemini-2.5-flash-lite", "gemini-flash-latest"]
+    configured_model = settings.GEMINI_MODEL or "gemini-3.6-flash"
+    models_to_try = [configured_model, "gemini-3.6-flash", "gemini-3.7-flash", "gemini-3.8-flash"]
     seen = set()
     deduped_models = [m for m in models_to_try if not (m in seen or seen.add(m))]
 
@@ -108,35 +112,79 @@ def _call_gemini_api(contents: list[dict[str, Any]], system_instruction: str) ->
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={settings.GEMINI_API_KEY}"
         data_bytes = json.dumps(payload).encode("utf-8")
 
-        for attempt in range(3):
+        for attempt in range(2):
             req = urllib.request.Request(
                 url, data=data_bytes, headers={"Content-Type": "application/json"}, method="POST"
             )
             try:
-                with urllib.request.urlopen(req, timeout=15) as resp:
+                with urllib.request.urlopen(req, timeout=12) as resp:
                     if resp.status == 200:
                         return json.loads(resp.read().decode("utf-8"))
             except urllib.error.HTTPError as e:
-                # Do NOT retry client validation (400) or auth (401/403) errors
-                if e.code in (400, 401, 403):
-                    logger.error(f"❌ [Gemini API] Client error HTTP {e.code} for model {model}: {e.read().decode('utf-8', errors='ignore')}")
+                if e.code in (401, 403):
+                    logger.error(f"❌ [Gemini API] Auth error HTTP {e.code} for model {model}")
                     _LAST_LLM_ERROR = {
                         "error_code": f"HTTP_{e.code}",
-                        "message": f"Client request error HTTP {e.code}",
+                        "message": f"Auth error HTTP {e.code}",
                         "provider": "gemini",
                     }
-                    return None
-                elif e.code in (429, 500, 502, 503, 504):
+                    break
+                elif e.code == 400:
+                    err_detail = e.read().decode("utf-8", errors="ignore")
+                    logger.warning(f"⚠️ [Gemini API 400] Model {model} rejected request: {err_detail}. Failing over...")
+                    _LAST_LLM_ERROR = {
+                        "error_code": "HTTP_400",
+                        "message": err_detail,
+                        "provider": "gemini",
+                    }
+                    break
+                elif e.code == 429:
+                    logger.warning(f"⚠️ [Gemini Rate Limit (429)] Triggering immediate failover on model {model}...")
+                    if getattr(settings, "GROQ_API_KEY", None):
+                        from app.modules.chat.groq_provider import call_groq_api
+                        groq_res = call_groq_api(contents, system_instruction)
+                        if groq_res:
+                            return groq_res
+                    # Secondary fallback to local CLI AI (agy)
+                    logger.warning("⚠️ [Gemini 429 & Groq Unavailable] Falling back to Local CLI AI (agy)...")
+                    agy_res = _call_agy_cli(contents, system_instruction)
+                    if agy_res:
+                        agy_res["provider"] = "agy"
+                        return agy_res
+                    break
+                elif e.code == 404:
+                    logger.warning(f"⚠️ [Gemini API] model {model} HTTP 404 Not Found. Skipping model...")
+                    break
+                elif e.code in (500, 502, 503, 504):
                     logger.warning(f"⚠️ [Gemini API] model {model} HTTP {e.code}, retrying in {0.01 * (2 ** attempt)}s...")
                     time.sleep(0.01 * (2 ** attempt))
             except Exception as e:
                 logger.warning(f"⚠️ [Gemini API] exception on model {model}: {e}")
                 time.sleep(0.01)
 
+    # Failover to Groq AI if Gemini was exhausted
+    if getattr(settings, "GROQ_API_KEY", None):
+        logger.warning("⚠️ [Gemini Exhausted] Seamlessly failing over to Groq AI...")
+        from app.modules.chat.groq_provider import call_groq_api
+        groq_res = call_groq_api(contents, system_instruction)
+        if groq_res:
+            logger.info(f"✅ [Failover Success] Groq AI handled request successfully with {groq_res.get('actual_model', groq_res.get('model'))}.")
+            return groq_res
+        logger.warning("⚠️ [Failover Failed] Groq AI fallback was also exhausted.")
+
+    # Secondary failover to Local CLI AI (agy) if Groq is also exhausted
+    logger.warning("⚠️ [Gemini & Groq Exhausted] Falling back to Local CLI AI (agy)...")
+    agy_res = _call_agy_cli(contents, system_instruction)
+    if agy_res:
+        logger.info("✅ [Failover Success] Local CLI AI (agy) handled request successfully.")
+        agy_res["provider"] = "agy"
+        return agy_res
+
     _LAST_LLM_ERROR = {
         "error_code": "AI_RATE_LIMIT_EXCEEDED",
-        "message": "All Gemini models rate limited or failed.",
+        "message": "Dev Mode: Upstream AI Rate Limit Exceeded (HTTP 429) across all models. Switch LLM_PROVIDER=agy in .env or run local CLI directly.",
         "provider": "gemini",
+        "stack_trace": "HTTPError: 429 Too Many Requests: Upstream Gemini and fallback providers rate limit exceeded.",
     }
     return None
 
@@ -206,6 +254,13 @@ def _call_agy_cli(contents: list[dict[str, Any]], system_instruction: str) -> di
         f"---\n\nConversation Context & User Query:\n{prompt_body}"
     )
 
+    has_tool_result = any(
+        c.get("role") in ("function", "tool") or any("functionResponse" in p for p in c.get("parts", []))
+        for c in contents
+    )
+    if has_tool_result:
+        full_prompt += "\n\nCRITICAL INSTRUCTION: Factual Tool Results are already provided above. Do NOT request another tool call. You MUST output action: 'text' to explain the results clearly to the citizen."
+
     model_name = getattr(settings, "AGY_MODEL", "gemini-3.7-flash-low") or "gemini-3.7-flash-low"
     logger.info(f"🤖 [agy CLI] Executing prompt using model: {model_name} (sandbox=True)")
     cmd = [
@@ -263,10 +318,25 @@ def _call_agy_cli(contents: list[dict[str, Any]], system_instruction: str) -> di
         return None
 
 
-def call_llm_provider(contents: list[dict[str, Any]], system_instruction: str) -> dict[str, Any] | None:
-    provider = (getattr(settings, "LLM_PROVIDER", None) or "gemini").lower()
+def call_llm_provider(
+    contents: list[dict[str, Any]],
+    system_instruction: str,
+    forced_provider: str | None = None,
+) -> dict[str, Any] | None:
+    provider = (forced_provider or getattr(settings, "LLM_PROVIDER", None) or "gemini").lower()
     if provider == "agy":
         return _call_agy_cli(contents, system_instruction)
+    elif provider == "groq":
+        from app.modules.chat.groq_provider import call_groq_api
+        groq_res = call_groq_api(contents, system_instruction)
+        if groq_res:
+            return groq_res
+        logger.warning("⚠️ [Groq Exhausted/Rate-Limited] Falling back to Local CLI AI (agy)...")
+        agy_res = _call_agy_cli(contents, system_instruction)
+        if agy_res:
+            agy_res["provider"] = "agy"
+            return agy_res
+        return None
     return _call_gemini_api(contents, system_instruction)
 
 
@@ -322,17 +392,26 @@ def orchestrate_agentic_turn(
 
     iteration = 0
     final_response_text = ""
+    active_turn_provider: str | None = None
+    actual_provider = (getattr(settings, "LLM_PROVIDER", None) or "gemini").lower()
+    actual_model = getattr(settings, "GROQ_MODEL", "openai/gpt-oss-120b") if actual_provider == "groq" else getattr(settings, "GEMINI_MODEL", "gemini-3.6-flash")
 
     while iteration < MAX_TOOL_ITERATIONS:
         iteration += 1
-        api_res = call_llm_provider(contents, SYSTEM_INSTRUCTION)
+        api_res = call_llm_provider(contents, SYSTEM_INSTRUCTION, forced_provider=active_turn_provider)
+        if api_res:
+            if "provider" in api_res:
+                active_turn_provider = api_res["provider"]
+                actual_provider = active_turn_provider
+            if "model" in api_res:
+                actual_model = api_res.get("actual_model", api_res["model"])
 
         if not api_res:
             err_info = _LAST_LLM_ERROR or {}
             err_code = err_info.get("error_code", "LLM_PROVIDER_FAILURE")
-            provider = (getattr(settings, "LLM_PROVIDER", None) or "gemini").lower()
+            provider = active_turn_provider or (getattr(settings, "LLM_PROVIDER", None) or "gemini").lower()
 
-            logger.error(f"❌ [Agentic Turn] LLM Provider '{provider}' failed. Error Code: {err_code}")
+            logger.error(f"❌ [Agentic Turn] LLM Provider '{provider}' failed. Error Code: {err_code} | Details: {err_info.get('message')}")
 
             empty_memory = {
                 "working_memory": {"model_name": settings.GEMINI_MODEL, "provider": provider},
@@ -341,22 +420,19 @@ def orchestrate_agentic_turn(
                 "procedural_memory": {"tools_executed": []},
             }
 
-            if getattr(settings, "DEV_MODE", True):
-                dev_message = (
-                    f"🚨 **[Dev Mode Error: {err_code}]**\n\n"
-                    f"LLM Provider `{provider}` failed: {err_info.get('message', 'Unknown failure')}"
-                )
-                return dev_message, [], [], {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}, empty_memory, "rate_limit_exceeded" if err_code == "AI_RATE_LIMIT_EXCEEDED" else "service_unavailable", err_code, None
-
+            clean_fallback_message = (
+                "I am having trouble connecting to the welfare assistant right now. "
+                "Please try again in a moment."
+            )
             return (
-                "I'm having trouble connecting right now. Please try again in a moment.",
+                clean_fallback_message,
                 [],
                 [],
                 {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
                 empty_memory,
-                "service_unavailable",
-                "SERVICE_UNAVAILABLE",
-                None,
+                "rate_limit_exceeded" if err_code in ("AI_RATE_LIMIT_EXCEEDED", "HTTP_429") else "service_unavailable",
+                err_code,
+                err_info.get("stack_trace"),
             )
 
         usage = api_res.get("usageMetadata", {})
@@ -472,7 +548,7 @@ def orchestrate_agentic_turn(
                     "functionResponse": {"name": fn_name, "response": {"status": "error", "message": f"Unknown tool '{fn_name}'"}}
                 })
 
-        contents.append({"role": "function", "parts": function_response_parts})
+        contents.append({"role": "user", "parts": function_response_parts})
 
     duration_ms = int((time.perf_counter() - start_time) * 1000)
     logger.info(
@@ -494,8 +570,8 @@ def orchestrate_agentic_turn(
 
     memory_trace = {
         "working_memory": {
-            "model_name": getattr(settings, "GEMINI_MODEL", "gemini-3.8-flash"),
-            "provider": getattr(settings, "LLM_PROVIDER", "gemini"),
+            "model_name": actual_model,
+            "provider": actual_provider,
             "system_instruction_summary": SYSTEM_INSTRUCTION[:140] + "...",
             "iterations_count": iteration,
             "prompt_tokens": token_usage.get("prompt_tokens", 0),

@@ -28,13 +28,11 @@ import {
   fetchPopularSchemes,
   extractVaultDocumentFacts,
   confirmAndSyncProfileFacts,
-  listHouseholdMembers,
   type UserDocument,
   type Scheme,
   type SchemeDocumentReadiness,
   type ExtractedDocumentFactsResponse,
   type ConfirmFactsAndSyncProfileRequest,
-  type HouseholdMember,
 } from '@/lib/api'
 import {
   getCitizenToken,
@@ -61,11 +59,6 @@ export function VaultScreen() {
   const [citizenEmail, setCitizenEmail] = useState<string | null>(null)
   const [primaryCitizenUid, setPrimaryCitizenUid] = useState<string | null>(null)
   const [checkingAuth, setCheckingAuth] = useState(true)
-
-  // Household & Member Filter State
-  const [householdMembers, setHouseholdMembers] = useState<HouseholdMember[]>([])
-  const [selectedMemberFilter, setSelectedMemberFilter] = useState<number | 'all'>('all')
-  const [uploadTargetMemberId, setUploadTargetMemberId] = useState<number | null>(null)
 
   // Auth form state
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
@@ -110,8 +103,7 @@ export function VaultScreen() {
           setIsAuthenticated(true)
           setCitizenEmail(res.email)
           setPrimaryCitizenUid(res.citizen_uid || null)
-          listHouseholdMembers().then(setHouseholdMembers).catch(() => {})
-          loadDocuments('all')
+          loadDocuments()
           loadSchemesList()
           setCheckingAuth(false)
         })
@@ -124,9 +116,9 @@ export function VaultScreen() {
     }
   }, [])
 
-  function loadDocuments(filter = selectedMemberFilter) {
+  function loadDocuments() {
     setLoadingDocs(true)
-    listVaultDocuments(filter === 'all' ? null : filter)
+    listVaultDocuments()
       .then((docs) => setDocuments(docs))
       .catch((err) => console.error(err))
       .finally(() => setLoadingDocs(false))
@@ -204,8 +196,7 @@ export function VaultScreen() {
       const uploadedDoc = await uploadVaultDocument(
         file,
         selectedDocType,
-        docMaskedNumber || undefined,
-        uploadTargetMemberId
+        docMaskedNumber || undefined
       )
       setUploadSuccess(`Successfully stored "${uploadedDoc.file_name}" in your secure MinIO S3 Vault.`)
       setDocMaskedNumber('')
@@ -472,8 +463,8 @@ export function VaultScreen() {
             )}
 
             <form onSubmit={handleUpload} className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="flex flex-col gap-1.5 text-xs sm:col-span-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5 text-xs">
                   <label className="font-semibold text-zinc-300">Document Type *</label>
                   <select
                     value={selectedDocType}
@@ -488,23 +479,7 @@ export function VaultScreen() {
                   </select>
                 </div>
 
-                <div className="flex flex-col gap-1.5 text-xs sm:col-span-1">
-                  <label className="font-semibold text-zinc-300">Target Family Member</label>
-                  <select
-                    value={uploadTargetMemberId === null ? '' : String(uploadTargetMemberId)}
-                    onChange={(e) => setUploadTargetMemberId(e.target.value === '' ? null : Number(e.target.value))}
-                    className="px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
-                  >
-                    <option value="">👤 Self (Primary - {primaryCitizenUid || 'Head'})</option>
-                    {householdMembers.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.life_stage === 'MINOR' ? '🧒' : m.life_stage === 'SENIOR' ? '👵' : '👤'} {m.full_name} ({m.relationship} • {m.citizen_uid})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1.5 text-xs sm:col-span-1">
+                <div className="flex flex-col gap-1.5 text-xs">
                   <label className="font-semibold text-zinc-300">Masked ID / Certificate No.</label>
                   <input
                     type="text"
@@ -547,42 +522,6 @@ export function VaultScreen() {
               </div>
               <span className="text-[11px] text-zinc-500">Encrypted in MinIO S3</span>
             </div>
-
-            {/* Member Filter Pills */}
-            {householdMembers.length > 0 && (
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
-                <button
-                  onClick={() => {
-                    setSelectedMemberFilter('all')
-                    loadDocuments('all')
-                  }}
-                  className={`px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
-                    selectedMemberFilter === 'all'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800'
-                  }`}
-                >
-                  All Family Docs
-                </button>
-                {householdMembers.map((m) => (
-                  <button
-                    key={m.id}
-                    onClick={() => {
-                      setSelectedMemberFilter(m.id)
-                      loadDocuments(m.id)
-                    }}
-                    className={`px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
-                      selectedMemberFilter === m.id
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800'
-                    }`}
-                  >
-                    <span>{m.life_stage === 'MINOR' ? '🧒' : m.life_stage === 'SENIOR' ? '👵' : '👤'}</span>
-                    <span>{m.full_name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
 
             {loadingDocs ? (
               <div className="py-12 text-center text-zinc-500 text-xs">Loading vault items...</div>

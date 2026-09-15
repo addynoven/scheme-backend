@@ -2,7 +2,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.core.security import create_refresh_token, hash_password
+from app.core.security import create_refresh_token
 from app.modules.auth.models import User
 from app.modules.eligibility.bitmask_engine import bitmask_engine
 from app.modules.schemes.models import Scheme
@@ -122,7 +122,7 @@ def test_fact_sync_foreign_doc_rejected(client: TestClient, db_session: Session)
 def test_voice_live_websocket_unauthenticated_rejected(client: TestClient):
     # Unauthenticated WebSocket connection to /voice/live fails or closes
     try:
-        with client.websocket_connect("/voice/live") as websocket:
+        with client.websocket_connect("/voice/live"):
             pass
         assert False, "WebSocket should have been rejected without auth token"
     except Exception:

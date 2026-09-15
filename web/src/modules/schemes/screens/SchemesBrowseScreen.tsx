@@ -19,8 +19,11 @@ import {
   BookOpen,
   ArrowLeft,
 } from 'lucide-react'
-import { schemesRepository } from '../repositories'
-import { type Scheme } from '@/core'
+import {
+  getSchemeCategories,
+  listSchemesPaginated,
+  type Scheme,
+} from '@/lib/api'
 
 const INDIAN_STATES = [
   'All',
@@ -98,7 +101,7 @@ export function SchemesBrowseScreen() {
 
   // Load real categories from backend on mount
   useEffect(() => {
-    schemesRepository.getCategories()
+    getSchemeCategories()
       .then((cats) => {
         if (cats && cats.length > 0) {
           setCategoriesList(cats)
@@ -120,7 +123,7 @@ export function SchemesBrowseScreen() {
     setLoading(true)
     try {
       const skip = (page - 1) * pageSize
-      const res = await schemesRepository.list({
+      const res = await listSchemesPaginated({
         skip,
         limit: pageSize,
         search: debouncedSearch.trim() || undefined,
