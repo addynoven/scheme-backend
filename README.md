@@ -1,378 +1,349 @@
-# 🏛️ Citizen Welfare Navigator & Sovereign Scheme Engine
+# Scheme Navigator
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Python](https://img.shields.io/badge/Python-3.13+-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
-[![React Native](https://img.shields.io/badge/React_Native-0.81.5_(Expo_54)-61DAFB?style=flat&logo=react&logoColor=black)](https://reactnative.dev/)
-[![Next.js](https://img.shields.io/badge/Next.js-16.3_(Turbopack)-000000?style=flat&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9_/_6.0-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Valkey / Redis](https://img.shields.io/badge/Valkey_/_Redis-Caching_Layer-DC382D?style=flat&logo=redis&logoColor=white)](https://valkey.io/)
-[![Cloudinary / MinIO](https://img.shields.io/badge/Storage-Cloudinary_%26_MinIO_S3-3448C5?style=flat&logo=cloudinary&logoColor=white)](https://cloudinary.com)
-[![LangGraph](https://img.shields.io/badge/LangGraph-AI_Orchestration-FF6F00?style=flat&logo=langchain&logoColor=white)](https://langchain-ai.github.io/langgraph/)
-[![Tests](https://img.shields.io/badge/Tests-100%25%20Passing-brightgreen?style=flat&logo=pytest&logoColor=white)](https://pytest.org)
+> A modular welfare-scheme platform for discovering government schemes, evaluating eligibility, managing supporting documents, and getting AI-assisted guidance.
 
-A high-performance **Feature-Driven Modular Monolith** that aggregates over **4,160+ Central and State welfare schemes**, evaluates citizen profiles with a **sub-millisecond deterministic bitmask rule engine**, extracts verified citizen demographics via **Document Vision OCR into an immutable facts ledger**, caches hot catalog queries with **distributed Valkey / Redis**, and serves citizens through both a **Next.js 16 Web Portal** and a **de-mocked React Native / Expo Mobile App** powered by a **3-tier resilience AI cascade** (Google Gemini $\to$ Groq Cloud $\to$ Local CLI `agy`) with real-time SSE streaming.
+[![Python](https://img.shields.io/badge/Python-3.13%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.141%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React Native](https://img.shields.io/badge/React_Native-Expo_54-61DAFB?logo=react&logoColor=black)](https://reactnative.dev/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-AI_Orchestration-1C3C3C)](https://www.langchain.com/langgraph)
 
----
+## Overview
 
-## 🎯 The Problem We Solved
+Scheme Navigator is a full-stack welfare discovery and eligibility platform.
 
-Every year, thousands of crores in Indian central and state welfare benefits go unclaimed. The barriers are systemic:
-1. **Fragmented Portals & Complex Criteria**: Eligibility rules (age brackets, income ceilings, land ownership, occupation codes, state residence) are buried inside 50-page government gazettes across hundreds of different ministry sites.
-2. **Repetitive Paperwork**: Citizens are forced to manually enter and explain the same basic demographic data across every scheme inquiry.
-3. **Language & Accessibility Barriers**: Rural and low-income citizens struggle with rigid forms and technical jargon; mobile-first and voice-assisted access is essential.
-4. **Cloud API & High-Traffic Bottlenecks**: Public welfare systems must withstand heavy traffic without failing when upstream LLM APIs experience rate limits or outages.
+```text
+Citizen profile
+      |
+      v
+Scheme catalog ---> Eligibility engine ---> Explainable result
+      |                                      |
+      v                                      v
+Required documents <-------------------- Application readiness
+      |
+      v
+Document vault / OCR facts
+      |
+      v
+AI advisor with scheme context
+```
 
----
+The backend is a **feature-driven modular monolith** built around FastAPI, SQLAlchemy, PostgreSQL, Valkey/Redis-compatible caching, object storage, and an AI orchestration layer. The same repository contains the Next.js web client and React Native mobile client.
 
-## 💡 System Architecture
+## The problem
+
+Welfare information can be hard to use because scheme details, eligibility criteria, required documents, and application guidance are distributed across different sources and often written for non-technical, program-specific workflows.
+
+This project focuses on four engineering problems:
+
+- **Discovery** - make a large scheme catalog searchable and browsable.
+- **Eligibility** - evaluate structured rules deterministically instead of asking an LLM to make the decision.
+- **Documents** - connect citizen documents and extracted facts to scheme requirements.
+- **Assistance** - provide conversational guidance while keeping core business rules separate from generation.
+
+## Features
+
+### Deterministic eligibility engine
+
+Scheme rules are compiled into an in-memory representation and evaluated against structured citizen facts. The API also provides an explainable result path so users can see which criteria passed or failed.
+
+### Scheme catalog
+
+The schemes domain manages scheme metadata such as categories, ministries, benefits, eligibility rules, and required documents. Hot catalog paths can be cached through Valkey/Redis-compatible storage.
+
+### AI advisor
+
+The chat domain uses LangGraph for multi-turn orchestration and can stream responses over Server-Sent Events (SSE). Provider failover can be configured so the advisor can fall back when a primary model provider is unavailable.
+
+### Citizen document vault
+
+The vault supports S3-compatible object storage and Cloudinary-backed storage. Documents can be processed with vision models to extract structured citizen facts while retaining document provenance.
+
+### Administration
+
+The admin domain provides APIs for managing schemes, benefits, eligibility rules, and required-document checklists.
+
+## Architecture
 
 ```mermaid
 graph TD
-    Citizen["Citizen / Officer"] --> Clients
-    
-    subgraph Clients ["Client Platforms"]
-        Web["Next.js 16 Web App (App Router / Turbopack / Web Speech)"]
-        Mobile["React Native / Expo 54 Mobile App (MMKV / Native Haptics / Real API)"]
-    end
-    
-    Clients --> Gateway["FastAPI Gateway (backend/app/main.py)"]
-    
-    subgraph Backend ["backend/app/modules/ (Modular Monolith)"]
-        Chat["chat/ (LangGraph Multi-Turn Agent & SSE Streaming)"]
-        Auth["auth/ (JWT Auth, Citizen Facts & Verified Profile)"]
-        Schemes["schemes/ (Faceted Search, Categories & Ministry Catalog)"]
-        Elig["eligibility/ (⚡ In-Memory Bitmask Engine & Explainable Reasoner)"]
-        Vault["vault/ (Document Storage, OCR Scanner & Readiness)"]
-        Admin["admin/ (Operations Center & Visual Rule Builder)"]
-    end
-    
-    Gateway --> Chat
-    Gateway --> Auth
-    Gateway --> Schemes
-    Gateway --> Elig
-    Gateway --> Vault
-    Gateway --> Admin
-    
-    Schemes --> Cache[("⚡ Valkey / Redis Distributed Cache")]
-    Cache -->|Cache Miss| Postgres[("PostgreSQL 17 DB")]
-    
-    Chat --> Cascade{"3-Tier AI Resilience Cascade"}
-    Cascade -->|Tier 1: Cloud Primary| Gemini["Google Gemini 3.8 / 3.7 Flash"]
-    Cascade -->|Tier 2: Fast Failover| Groq["Groq Cloud (qwen / llama-3.3)"]
-    Cascade -->|Tier 3: Air-Gapped Fallback| LocalCLI["Local CLI AI (agy)"]
-    
-    Elig --> RAM["⚡ RAM Bitmasks (850µs / 7,200+ QPS)"]
-    Vault --> Storage[("Cloudinary CDN / MinIO S3 Encrypted Storage")]
-    Auth --> Postgres
+    C[Citizen / Officer] --> W[Next.js Web]
+    C --> M[React Native / Expo]
+
+    W --> API[FastAPI API]
+    M --> API
+
+    API --> AUTH[Auth]
+    API --> SCHEMES[Scheme Catalog]
+    API --> ELIG[Eligibility Engine]
+    API --> CHAT[AI Advisor]
+    API --> VAULT[Document Vault]
+    API --> ADMIN[Admin]
+
+    AUTH --> DB[(PostgreSQL)]
+    SCHEMES --> CACHE[(Valkey / Redis)]
+    CACHE --> DB
+    ELIG --> RAM[(In-memory Rule Index)]
+    VAULT --> OBJ[(S3 / MinIO / Cloudinary)]
+    CHAT --> LLM[Configured LLM Providers]
 ```
 
----
-
-## 🚀 Core Platform Capabilities
-
-### 1. 📱 Production React Native Mobile App (`mobile/`)
-- **100% De-Mocked Architecture**: Fully wired to live backend API endpoints with zero fake mock files.
-- **Instant Eligibility Engine Client**: Evaluates citizen demographics directly against the backend `/eligibility/explain` engine with step-by-step guidance.
-- **High-Speed Offline Persistence**: Powered by `react-native-mmkv` for sub-millisecond scheme caching and `expo-secure-store` for authenticated sessions.
-- **Document Vault & Cloudinary Sync**: Uploads identity and income documents with dynamic image transformations and category auto-tagging.
-- **AI Advisor with Real Streaming**: Conversational chat with citations, recommendations, and multi-turn context.
-- **Bi-Directional Support**: Categorized FAQ database, instant search, and official grievance escalation channels.
-
-### 2. ⚡ In-Memory Bitmask Rule Engine (`/check` & `/eligibility`)
-- **Sub-Millisecond Evaluations**: Pre-compiles all 4,160+ Central and State welfare scheme eligibility rules into integer bitmasks loaded directly in RAM.
-- **Zero SQL Overhead**: Evaluates full citizen eligibility checks in **~850 microseconds (0.85 ms)** on a single core without hitting the database.
-- **Multi-Core Scaling**: Exceeds **7,200 queries/second** on a 16-core machine (`make benchmark-multicore`).
-- **Explainable Reasoner (`/eligibility/explain`)**: Instead of a black-box yes/no, categorizes schemes into **Eligible**, **Nearly Eligible** (pinpoints unmet criteria, e.g. *"Requires income under ₹1.5L, your declared income is ₹2.0L"*), and **Ineligible**.
-
-### 3. ⚡ High-Throughput Valkey / Redis Caching Layer
-- **Transparent Query Cache**: Caches scheme detail queries, slug lookups, faceted searches, and category catalogs with configurable TTL (`CACHE_TTL_SECONDS`).
-- **Pydantic & ISO Timestamp Handling**: Robust serialization preserving nested relational models (`benefits`, `eligibility_rules`, `required_documents`).
-- **Auto-Invalidation**: Real-time cache invalidation on scheme creation, updates, and version snapshots.
-
-### 4. 💬 Flagship Conversational Citizen Advisor (`/` & `/c/[id]`)
-- **Natural Language Advisory**: Understands informal and mixed Hinglish inputs (*"I am a 42-year-old farmer in UP with 2 acres of land, what support can I get?"*).
-- **Indexical & Anaphoric Reasoning**: Remembers previous turns and resolves conversational references (*"how do I apply for the second one?"*).
-- **Real-Time Token Streaming (SSE)**: Streams generated responses token-by-token with zero waiting or blank states.
-- **Actionable Grounded Citations**: Direct links, ministry source chips, and actionable benefit cards embedded directly in the message stream.
-
-### 5. 🪪 Citizen Document Vault & OCR Fact Feeder (`/vault`)
-- **Hybrid Storage Support**: Production-grade support for Cloudinary CDN or MinIO S3 object storage with presigned URLs and binary magic-byte inspection (PDF, PNG, JPG, WebP).
-- **Multimodal OCR Fact Extraction**: Uses Vision AI to extract verified demographic facts (Full Name, Date of Birth, Gender, State, District, Income, Caste) directly from uploaded documents.
-- **Immutable Fact Audit Trail (`citizen_facts`)**: Extracted facts are recorded with source document provenance (`source_document_id`, `source_type="document_ocr"`, `verified_at`).
-- **Application Readiness Meter**: Compares citizen uploaded documents against a target scheme's required checklist in real time (e.g., 2/3 documents uploaded $\to$ 66.7% Ready).
-
-### 6. 🛡️ 3-Tier AI Resilience Cascade
-Public welfare platforms cannot go down when commercial APIs hit rate limits:
-1. **Tier 1 (Google Gemini 3.8 / 3.7 Flash)**: Primary LLM for deep reasoning and multi-step tool calling.
-2. **Tier 2 (Groq Cloud `qwen3.8-27b` / `llama-3.3-70b`)**: Sub-100ms failover triggered immediately upon HTTP 429 (quota exhaustion) or timeout.
-3. **Tier 3 (Local CLI AI `agy`)**: Instant local process fallback when external internet or cloud quotas are completely unavailable.
-
-### 7. 🏛️ Government Operations Center & Visual Rule Builder (`/admin`)
-- **Welfare Schemes Management**: Search, filter, inspect, publish, and delete live and draft schemes.
-- **Visual Eligibility Builder**: Construct conditional logic rules without writing code (Field: `annual_income`, Operator: `lte`, Value: `200000`).
-- **Benefit & Document Checklist Editor**: Define financial grants, interest subsidies, and mandatory application documents per scheme.
-
----
-
-## 📐 Architecture & Modular Monolith Pattern
-
-Code is organized strictly **by business capability**, avoiding technical layer silos (`controllers/`, `services/`, `models/`). Every domain feature in `backend/app/modules/<feature>/` follows the standardized 4-file pattern:
-
-```
-backend/app/modules/
-├── auth/          # Authentication, JWT, Citizen Profiles & Provenance Facts
-│   ├── models.py
-│   ├── schemas.py
-│   ├── service.py
-│   └── router.py
-├── schemes/       # Welfare Scheme Catalog, Categories, Search & Valkey Caching
-│   ├── models.py
-│   ├── schemas.py
-│   ├── service.py
-│   └── router.py
-├── eligibility/   # ⚡ Deterministic Bitmask Engine & Explainable Reasoner
-│   ├── engine.py
-│   ├── bitmask.py
-│   ├── schemas.py
-│   ├── service.py
-│   └── router.py
-├── chat/          # LangGraph Multi-Turn Agent, SSE Streaming & Failover
-│   ├── chat_graph.py
-│   ├── groq_provider.py
-│   ├── tools.py
-│   ├── schemas.py
-│   ├── service.py
-│   └── router.py
-├── vault/         # S3 / Cloudinary Storage, OCR Fact Extraction & Readiness Meter
-│   ├── models.py
-│   ├── schemas.py
-│   ├── service.py
-│   └── router.py
-└── admin/         # Administrative Portal & Scheme Configuration
-    ├── router.py
-    └── schemas.py
-```
-
----
-
-## 🗂️ Project Layout
+## Repository structure
 
 ```text
 scheme-backend/
-├── backend/                  # FastAPI 0.115+ Backend Application
+├── backend/
 │   ├── app/
-│   │   ├── core/             # Cross-cutting concerns (config, deps, security, cache, errors)
-│   │   ├── modules/          # Feature-Driven domain modules (auth, schemes, eligibility, chat, vault, admin)
-│   │   ├── seeds/            # Database seeders (4,160+ National & State schemes + Default Admin)
-│   │   ├── database.py       # SQLAlchemy engine & SessionLocal factory
-│   │   └── main.py           # FastAPI entrypoint mounting feature routers
-│   ├── alembic/              # Database schema migrations
-│   ├── pyproject.toml        # UV package manager dependencies
-│   └── Dockerfile            # Container build specification
+│   │   ├── core/                 # Config, security, caching, errors, dependencies
+│   │   ├── modules/
+│   │   │   ├── auth/             # Authentication and citizen profiles
+│   │   │   ├── schemes/          # Scheme catalog and search
+│   │   │   ├── eligibility/      # Rule compilation and evaluation
+│   │   │   ├── chat/             # LangGraph agent, providers, tools, SSE
+│   │   │   ├── vault/            # Documents, storage, OCR-derived facts
+│   │   │   └── admin/            # Administrative APIs
+│   │   ├── seeds/                # Seed data and admin bootstrap
+│   │   ├── database.py           # SQLAlchemy setup
+│   │   └── main.py               # FastAPI entrypoint
+│   ├── alembic/                  # Database migrations
+│   ├── pyproject.toml            # Python dependencies and pytest config
+│   └── Dockerfile
 │
-├── mobile/                   # React Native (Expo 54 + TypeScript) Mobile Application
-│   ├── src/
-│   │   ├── app/              # Expo Router tabs & navigation screens
-│   │   ├── core/             # HTTP client, MMKV storage, theme, and config validation
-│   │   └── features/         # Feature-first domain modules:
-│   │       ├── advisor/      # AI Advisor chat interface, thinking steps, prompt chips
-│   │       ├── auth/         # Authentication flow, secure token store, phone/OTP
-│   │       ├── check/        # Real-time eligibility evaluation flow & questionnaire
-│   │       ├── onboarding/   # Language selection & first-run state
-│   │       ├── profile/      # Citizen settings, linked accounts, preferences
-│   │       ├── schemes/      # Scheme discovery, category filters, bookmarks
-│   │       ├── support/      # Categorized FAQs and grievance support
-│   │       └── vault/        # Document upload, Cloudinary sync & fact extraction
-│   └── package.json
-│
-├── web/                      # Next.js 16 (App Router + Turbopack) Frontend
-│   ├── src/
-│   │   ├── app/              # Next.js App Router pages (/, /c/[id], /vault, /schemes, /check, /admin)
-│   │   ├── modules/          # Feature-first frontend components, hooks, and repositories
-│   │   ├── core/             # Shared layout, AppSidebar, and API client
-│   │   └── lib/              # Session token management & type definitions
-│   └── package.json
-│
-├── scripts/
-│   ├── dev.py                # All-in-one local development launcher
-│   ├── benchmark_multicore.py# 100k queries multi-core benchmark
-│   └── test_human_conversations_e2e.py # Multi-persona real-world simulation
-│
-├── compose.yaml              # Docker Compose: PostgreSQL 17 + MinIO S3 + Backend + Web
-├── Makefile                  # 1-Command developer automation shortcuts
+├── mobile/                       # React Native / Expo application
+├── web/                           # Next.js application
+├── scripts/                      # Development, benchmarks, E2E utilities
+├── compose.yaml                  # Local PostgreSQL, MinIO, backend, web
+├── Makefile                      # Common developer commands
 └── README.md
 ```
 
----
+## Tech stack
 
-## ⚡ Quickstart & Setup
+| Area | Technology |
+| --- | --- |
+| API | FastAPI, Uvicorn |
+| Language | Python 3.13+ |
+| Database | PostgreSQL 17, SQLAlchemy, Alembic |
+| Cache | Valkey / Redis-compatible backend |
+| Object storage | MinIO / S3, Cloudinary |
+| Auth | JWT |
+| AI orchestration | LangGraph, LangChain |
+| LLM providers | Gemini, Groq, optional local CLI provider |
+| Web | Next.js 16, TypeScript |
+| Mobile | React Native, Expo 54, TypeScript |
+| Testing | pytest |
+| Dev tooling | uv, Docker Compose, Make |
+
+The backend dependency configuration currently requires Python 3.13+, FastAPI 0.141+, SQLAlchemy 2.x, PostgreSQL connectivity through psycopg, Valkey support, LangGraph, Gemini/Groq integrations, and pytest. fileciteturn2file0
+
+## Quick start
 
 ### Prerequisites
-- **Python 3.13+** with [`uv`](https://docs.astral.sh/uv/)
-- **Node.js 20+** and `npm`
-- **Docker** and `docker compose` running
-- *(Optional for Mobile)*: **Android Studio** (SDK 35) or **Expo Go**
 
----
+- Python 3.13+
+- [uv](https://docs.astral.sh/uv/)
+- Node.js 20+
+- Docker and Docker Compose
 
-### Option A: The One-Command All-in-One Launcher (Web + Backend)
+### 1. Clone
 
-Run the comprehensive development orchestrator:
+```bash
+git clone https://github.com/addynoven/scheme-backend.git
+cd scheme-backend
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+The example environment file defines PostgreSQL, JWT, S3/MinIO, Gemini, and Valkey settings. Fill in external credentials and replace development secrets before using a shared or production environment. fileciteturn5file0
+
+### 3. Start development
+
+For the repository's combined development launcher:
+
 ```bash
 make dev
 ```
-This automatically:
-1. Starts PostgreSQL 17 and MinIO S3 containers in the background.
-2. Waits for PostgreSQL to become healthy and ready.
-3. Runs Alembic database schema migrations.
-4. Auto-seeds the database with 4,160+ schemes and the default admin (`admin@gov.in` / `AdminPass123!`).
-5. Spawns the FastAPI backend on `http://localhost:8000` (Swagger docs at `/docs`).
-6. Spawns the Next.js web application on `http://localhost:3000`.
 
----
+The Makefile also exposes separate commands for the backend, web app, migrations, seeding, tests, and benchmarks. fileciteturn4file0
 
-### Option B: Running the Mobile App
+For the Docker Compose stack:
 
-1. **Install Dependencies**:
-   ```bash
-   cd mobile
-   npm install
-   ```
-
-2. **Start Metro Bundler**:
-   ```bash
-   npm run start
-   ```
-
-3. **Run on Android Emulator / Physical Device**:
-   ```bash
-   npm run android
-   ```
-
-4. **Build Standalone Release APK**:
-   ```bash
-   cd mobile/android
-   ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64
-   # Output APK: mobile/android/app/build/outputs/apk/release/app-release.apk
-   ```
-
----
-
-### Option C: Step-by-Step Manual Launch
-
-#### 1. Start Infrastructure
 ```bash
-docker compose up -d postgres minio minio-createbuckets
+docker compose up -d
 ```
 
-#### 2. Run Backend
-```bash
-cd backend
-uv sync
-uv run alembic upgrade head
-uv run python -m app.seeds.seed_national_schemes
-uv run uvicorn app.main:app --reload --port 8000
-```
+Compose provisions PostgreSQL 17, MinIO, the backend, and the web app, with service health checks and startup dependencies. fileciteturn3file0
 
-#### 3. Run Web Frontend
-```bash
-cd web
-npm install
-npm run dev
-```
-
----
-
-## ⚙️ Environment Configuration
-
-Copy `.env.example` to `.env` in the root directory:
-
-```env
-# Database (PostgreSQL 17)
-DATABASE_URL=postgresql+psycopg://scheme_user:scheme_password@localhost:5432/scheme_db
-
-# Security & JWT
-SECRET_KEY=change_this_to_a_secure_random_secret_in_production_key_123456
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=10080
-
-# Valkey / Redis Distributed Cache
-VALKEY_URL=valkeys://default:<password>@<host>:<port>
-CACHE_TTL_SECONDS=86400
-
-# Object Storage (Cloudinary or MinIO)
-STORAGE_PROVIDER=cloudinary
-CLOUDINARY_CLOUD_NAME=dzao8h1ay
-CLOUDINARY_API_KEY=818269883432412
-CLOUDINARY_API_SECRET=TWQzFg_c4N28mPs3g07qlC29HT8
-
-# AI & LLM Keys
-GEMINI_API_KEY=your_gemini_key
-GROQ_API_KEY=your_groq_key
-LLM_PROVIDER=gemini
-```
-
----
-
-## 🧪 Testing & Verification
-
-The codebase maintains rigorous automated testing across backend, web, and mobile modules:
-
-### 1. Mobile Test Suite (68 Unit & Integration Tests)
-```bash
-cd mobile && npm run test && npm run typecheck
-# Output: 68 tests passed, 0 failures, 0 TypeScript errors
-```
-
-### 2. Backend Core & Valkey Caching Tests
-```bash
-cd backend && uv run pytest app/modules/schemes/__tests__/test_valkey_caching.py -v
-# Output: 2 passed (verifying cache hits and bypass)
-```
-
-### 3. Backend Integration Suite (`schemes`, `eligibility`, `vault`, `auth`, `chat`)
-```bash
-cd backend && uv run pytest app/modules/ -v
-# Output: All module tests passing
-```
-
-### 4. Web Production Build & Typecheck
-```bash
-cd web && npm run build
-# Output: Compiled successfully, 0 errors, static & dynamic routes generated
-```
-
----
-
-## 📊 In-Memory Bitmask Engine Benchmark
-
-Evaluated on a 16-core system across 100,000 randomized citizen profiles against 4,145 schemes in RAM:
+### 4. Local URLs
 
 ```text
-======================================================================
-🔥 MULTI-CORE BITMASK ENGINE BENCHMARK (16 CPU CORES)
-======================================================================
-• Active Worker Processes:    16 (1 per CPU core)
-• Total Processed Queries:   100,000 Citizen Profiles
-• Schemes Evaluated per Run: 4,145 Schemes in RAM
-• Total Execution Time:      13.840 seconds
-• Combined Multi-Core QPS:   7,225 queries/second
-• Average Latency per Query: 138.40 microseconds (µs)
-• Total Rule Evaluations:    38,220,000 evaluations
-======================================================================
+Web app:       http://localhost:3000
+API:           http://localhost:8000
+Swagger docs:  http://localhost:8000/docs
+MinIO API:     http://localhost:9000
+MinIO Console: http://localhost:9001
 ```
 
----
+## Common commands
 
-## 🔐 Security & Governance
+```bash
+# Full development stack
+make dev
 
-- **Argon2id & JWT**: Secure password hashing with Argon2id and stateless JSON Web Tokens matching Better Auth standards.
-- **IDOR Protection**: Strict user identity ownership checks on citizen profiles, vault documents, and eligibility evaluations.
-- **Binary Magic-Byte Inspection**: Uploaded files undergo binary header inspection (PDF `%PDF`, PNG `\x89PNG`, JPEG `\xff\xd8\xff`, WebP `RIFF...WEBP`) preventing MIME-spoofing attacks.
-- **Immutable Fact Provenance Ledger**: Demographics extracted from documents are signed with source document IDs, verification timestamps, and verification type (`document_ocr`).
+# Backend only
+make dev-backend
 
----
+# Web only
+make dev-web
 
-## 📄 License
-This project is open-source software licensed under the **MIT License**.
+# Migrations
+make migrate
+
+# Seed scheme data
+make seed
+
+# Create development admin
+make seed-admin
+
+# Tests
+make test
+
+# Coverage
+make test-cov
+
+# E2E tests
+make test-e2e
+
+# Eligibility benchmark
+make benchmark-multicore
+
+# Full Docker stack
+make up
+
+# Stop Docker stack
+make down
+```
+
+These commands are defined in the repository Makefile. fileciteturn4file0
+
+## API surface
+
+The backend is organized by business capability:
+
+```text
+/auth
+/schemes
+/eligibility
+/chat
+/vault
+/admin
+```
+
+Interactive OpenAPI documentation is available at `/docs` when the API is running.
+
+For the exact request and response contracts, treat the routers and Pydantic schemas under `backend/app/modules/` as the source of truth.
+
+## Design decisions
+
+### Modular monolith over microservices
+
+The domains are related closely enough that splitting them into networked services would add operational complexity without removing the core coupling between citizen data, schemes, eligibility, documents, and chat.
+
+The code is therefore separated by **business capability** while remaining one deployable backend.
+
+### Deterministic rules before AI
+
+Eligibility is fundamentally a rules evaluation problem:
+
+```text
+Structured citizen facts + scheme rules
+                |
+                v
+      Deterministic eligibility
+                |
+                v
+        Explainable result
+                |
+                v
+        AI guidance / UX
+```
+
+The LLM can help users understand the result, but it does not need to become the source of truth for structured eligibility rules.
+
+### Database as source of truth, cache as accelerator
+
+PostgreSQL stores the durable catalog and application state. Valkey/Redis is used to reduce repeated reads on hot catalog paths; cache invalidation keeps it aligned with underlying changes.
+
+### Graceful AI degradation
+
+The conversational layer can use a provider cascade so temporary quota, latency, or availability problems do not have to take down the rest of the platform.
+
+## Testing
+
+The backend uses pytest. The default configuration excludes LLM evaluation tests that make external API calls; those tests are marked with `eval` and can be run explicitly. fileciteturn2file0
+
+```bash
+# Normal test suite
+make test
+
+# One feature
+make test-feature FEAT=eligibility
+
+# End-to-end tests
+make test-e2e
+
+# External LLM evaluation tests
+cd backend
+uv run pytest -m eval
+```
+
+## Security and configuration
+
+Do not commit real secrets.
+
+The checked-in example environment currently includes development defaults for PostgreSQL and MinIO, plus placeholders for Gemini and Valkey credentials. fileciteturn5file0
+
+Before any public deployment, review at minimum:
+
+- `SECRET_KEY` and JWT settings
+- S3/MinIO credentials and public access configuration
+- LLM and Valkey credentials
+- CORS and network exposure
+- document storage permissions
+- logging and observability
+- production database credentials and backups
+
+## Development status
+
+This repository contains the backend API plus its web and mobile clients. It is intended to be both a working application and an engineering project for exploring deterministic rule evaluation, document-aware workflows, caching, modular architecture, and resilient AI integration.
+
+For production deployment, treat the repository's development defaults as examples rather than secure production configuration.
+
+## Contributing
+
+Keep business logic inside the relevant feature module and preserve the feature-first structure.
+
+```bash
+git checkout -b feat/my-change
+
+# Make changes
+make test
+make lint
+
+git commit -m "feat: describe the change"
+```
+
+## License
+
+No license file is currently declared in the repository. Without an explicit license, the code should not be assumed to be available for unrestricted reuse.
+
+## Author
+
+Built by [addynoven](https://github.com/addynoven).
+
+[Repository](https://github.com/addynoven/scheme-backend)
