@@ -1,5 +1,7 @@
+from datetime import datetime, timezone
 import json
 import logging
+from types import SimpleNamespace
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
@@ -21,19 +23,30 @@ logger = logging.getLogger("app.schemes")
 # All scheme cache keys are prefixed with "scheme:" so
 # cache_invalidate_pattern("scheme:*") flushes everything at once.
 
-def _key_scheme_id(scheme_id: int) -> str:
+def key_scheme_id(scheme_id: int) -> str:
     return f"scheme:id:{scheme_id}"
 
-def _key_scheme_slug(slug: str) -> str:
+def key_scheme_slug(slug: str) -> str:
     return f"scheme:slug:{slug}"
 
-def _key_categories() -> str:
+def key_categories() -> str:
     return "scheme:categories"
 
-def _key_list(**kwargs) -> str:
+def key_list(**kwargs) -> str:
     # Stable, sorted query-param fingerprint
     parts = sorted(f"{k}={v}" for k, v in kwargs.items() if v is not None)
     return "scheme:list:" + ":".join(parts) if parts else "scheme:list:all"
+
+_key_scheme_id = key_scheme_id
+_key_scheme_slug = key_scheme_slug
+_key_categories = key_categories
+_key_list = key_list
+
+
+def _iso_or_now(dt: datetime | None) -> str:
+    if dt is not None:
+        return dt.isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
 def _scheme_to_dict(scheme: Scheme) -> dict:
@@ -48,30 +61,58 @@ def _scheme_to_dict(scheme: Scheme) -> dict:
         "ministry": scheme.ministry,
         "description": scheme.description,
         "status": scheme.status,
-        "publication_state": scheme.publication_state,
-        "source_freshness": scheme.source_freshness,
+        "publication_state": getattr(scheme, "publication_state", "published"),
+        "source_freshness": getattr(scheme, "source_freshness", "fresh"),
         "application_url": scheme.application_url,
         "official_website": scheme.official_website,
         "launch_date": str(scheme.launch_date) if scheme.launch_date else None,
-        "created_at": str(scheme.created_at) if scheme.created_at else None,
-        "updated_at": str(scheme.updated_at) if scheme.updated_at else None,
+        "created_at": _iso_or_now(getattr(scheme, "created_at", None)),
+        "updated_at": _iso_or_now(getattr(scheme, "updated_at", None)),
         "benefits": [
-            {"id": b.id, "scheme_id": b.scheme_id, "title": b.title, "description": b.description}
+            {
+                "id": b.id,
+                "scheme_id": b.scheme_id,
+                "title": b.title,
+                "description": b.description,
+                "created_at": _iso_or_now(getattr(b, "created_at", None)),
+                "updated_at": _iso_or_now(getattr(b, "updated_at", None)),
+            }
             for b in (scheme.benefits or [])
         ],
         "eligibility_rules": [
-            {"id": r.id, "scheme_id": r.scheme_id, "field_name": r.field_name,
-             "operator": r.operator, "rule_value": r.rule_value}
+            {
+                "id": r.id,
+                "scheme_id": r.scheme_id,
+                "field_name": r.field_name,
+                "operator": r.operator,
+                "rule_value": r.rule_value,
+                "created_at": _iso_or_now(getattr(r, "created_at", None)),
+                "updated_at": _iso_or_now(getattr(r, "updated_at", None)),
+            }
             for r in (scheme.eligibility_rules or [])
         ],
         "required_documents": [
-            {"id": d.id, "scheme_id": d.scheme_id, "document_name": d.document_name,
-             "is_mandatory": d.is_mandatory, "description": d.description}
+            {
+                "id": d.id,
+                "scheme_id": d.scheme_id,
+                "document_name": d.document_name,
+                "is_mandatory": d.is_mandatory,
+                "description": d.description,
+                "created_at": _iso_or_now(getattr(d, "created_at", None)),
+                "updated_at": _iso_or_now(getattr(d, "updated_at", None)),
+            }
             for d in (scheme.required_documents or [])
         ],
         "official_sources": [
-            {"id": s.id, "scheme_id": s.scheme_id, "title": s.title,
-             "url": s.url, "source_type": s.source_type}
+            {
+                "id": s.id,
+                "scheme_id": s.scheme_id,
+                "title": s.title,
+                "url": s.url,
+                "source_type": s.source_type,
+                "created_at": _iso_or_now(getattr(s, "created_at", None)),
+                "updated_at": _iso_or_now(getattr(s, "updated_at", None)),
+            }
             for s in (scheme.official_sources or [])
         ],
     }
@@ -80,23 +121,12 @@ def _scheme_to_dict(scheme: Scheme) -> dict:
 def _invalidate_all_scheme_caches() -> None:
     """Wipe every scheme-related Valkey key. Called after any mutation."""
     count = cache_invalidate_pattern("scheme:*")
+    global _cached_categories
+    _cached_categories = None
     logger.debug("Invalidated %d scheme cache key(s)", count)
 
 
 def get_scheme_by_id(db: Session, scheme_id: int) -> Scheme | None:
-    # ── 1. Cache hit ──────────────────────────────────────────────────────────
-    cached = cache_get(_key_scheme_id(scheme_id))
-    if cached is not None:
-        try:
-            data = json.loads(cached)
-            # Re-hydrate as a lightweight dict-backed Scheme-like object is
-            # complex; instead we just skip and refresh from DB on cache miss.
-            # For now we rely on list caches; per-scheme lookup stays DB-backed
-            # unless the object is already in the identity map.
-        except Exception:
-            pass
-
-    # ── 2. DB query ───────────────────────────────────────────────────────────
     stmt = (
         select(Scheme)
         .where(Scheme.id == scheme_id)
@@ -109,10 +139,9 @@ def get_scheme_by_id(db: Session, scheme_id: int) -> Scheme | None:
     )
     scheme = db.scalar(stmt)
 
-    # ── 3. Populate cache ─────────────────────────────────────────────────────
     if scheme is not None:
         try:
-            cache_set(_key_scheme_id(scheme_id), json.dumps(_scheme_to_dict(scheme)))
+            cache_set(key_scheme_id(scheme_id), json.dumps(_scheme_to_dict(scheme)))
         except Exception:
             pass
 
@@ -120,15 +149,6 @@ def get_scheme_by_id(db: Session, scheme_id: int) -> Scheme | None:
 
 
 def get_scheme_by_slug(db: Session, slug: str) -> Scheme | None:
-    # ── 1. Cache hit ──────────────────────────────────────────────────────────
-    cached = cache_get(_key_scheme_slug(slug))
-    if cached is not None:
-        try:
-            _ = json.loads(cached)  # validates JSON; actual ORM re-hydration skipped (see get_scheme_by_id)
-        except Exception:
-            pass
-
-    # ── 2. DB query ───────────────────────────────────────────────────────────
     stmt = (
         select(Scheme)
         .where(Scheme.slug == slug)
@@ -141,16 +161,17 @@ def get_scheme_by_slug(db: Session, slug: str) -> Scheme | None:
     )
     scheme = db.scalar(stmt)
 
-    # ── 3. Populate cache ─────────────────────────────────────────────────────
     if scheme is not None:
         try:
             payload = json.dumps(_scheme_to_dict(scheme))
-            cache_set(_key_scheme_slug(slug), payload)
-            cache_set(_key_scheme_id(scheme.id), payload)  # dual-index
+            cache_set(key_scheme_slug(slug), payload)
+            cache_set(key_scheme_id(scheme.id), payload)  # dual-index
         except Exception:
             pass
 
     return scheme
+
+
 
 
 def get_scheme_by_name(db: Session, name: str) -> Scheme | None:
@@ -252,8 +273,10 @@ def create_scheme_version_snapshot(db: Session, scheme_id: int, source_hash: str
     try:
         db.commit()
         db.refresh(sv)
+        _invalidate_all_scheme_caches()
     except Exception:
         db.rollback()
+
 
     return sv
 
@@ -270,27 +293,15 @@ def list_schemes(
     search: str | None = None,
     sort_by: str | None = None,
 ) -> tuple[list[Scheme], int]:
-    # ── 1. Cache hit ──────────────────────────────────────────────────────────
-    cache_key = _key_list(
+    cache_key = key_list(
         skip=skip, limit=limit, ministry=ministry, category=category,
         state=state, status=status, benefit_type=benefit_type,
         search=search, sort_by=sort_by,
     )
-    cached = cache_get(cache_key)
-    if cached is not None:
-        try:
-            data = json.loads(cached)
-            # Return raw dicts wrapped as Scheme-like objects is not viable;
-            # instead we store [serialisable_list, total] and return the dicts
-            # from the router layer. For now we skip re-hydration here and let
-            # the actual router use the full caching via search_schemes / browse.
-            # The real hot-path benefit is in search_schemes below.
-            pass
-        except Exception:
-            pass
 
-    # ── 2. DB query ───────────────────────────────────────────────────────────
+    # ── 1. DB query ───────────────────────────────────────────────────────────
     query = select(Scheme)
+
 
     if ministry:
         query = query.where(Scheme.ministry.ilike(f"%{ministry}%"))

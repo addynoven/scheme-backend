@@ -1,32 +1,45 @@
-# React + TypeScript + Vite
+# 🌐 Citizen Welfare Navigator — Web Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Production-grade citizen portal built with **Next.js 16 (App Router + Turbopack)**, **Tailwind CSS**, and **TypeScript**.
 
-Currently, two official plugins are available:
+## 🚀 Capabilities
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Conversational AI Advisor** (`/` & `/c/[id]`): Multi-turn SSE token streaming with grounded scheme citations and source chips.
+- **Browser-Native Speech-to-Text**: Client-side zero-latency STT via Web Speech API (`webkitSpeechRecognition`).
+- **Instant Eligibility Evaluator** (`/check`): Interactive multi-step form evaluating citizen demographics with explainable criteria.
+- **Document Vault** (`/vault`): MinIO S3 and Cloudinary file uploads with Vision OCR fact extraction and readiness progress tracker.
+- **Government Operations Center** (`/admin`): Visual scheme manager and rule builder for welfare administrators.
 
-## React Compiler
+## 🛠️ Development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Install dependencies
+npm install
 
-## Expanding the Oxlint configuration
+# Start development server on http://localhost:3000
+npm run dev
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+# Run Vitest test suite
+npm test
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+# Run Oxlint
+npm run lint
+
+# Build production bundle
+npm run build
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## 📐 Architecture
+
+Follows a feature-driven modular structure in `src/modules/`:
+```text
+src/
+├── app/          # Next.js App Router route handlers & pages
+├── modules/      # Feature modules (home, vault, schemes, check, admin)
+│   ├── home/     # Conversational chat, composer, citations
+│   ├── vault/    # Vault dropzone, OCR review modals
+│   ├── schemes/  # Browse catalogs & scheme details
+│   ├── check/    # Instant eligibility quiz
+│   └── admin/    # Visual rule builder & scheme editor
+└── core/         # Shared layouts, AppSidebar, and API client
+```

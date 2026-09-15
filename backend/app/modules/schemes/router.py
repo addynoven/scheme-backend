@@ -1,6 +1,9 @@
+import json
+
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
+from app.core.cache import cache_get
 from app.core.deps import get_current_admin_user
 from app.core.exceptions import SchemeNotFoundError
 from app.database import get_db
@@ -20,6 +23,9 @@ from app.modules.schemes.service import (
     get_scheme_by_id,
     get_scheme_by_slug,
     get_scheme_categories,
+    key_list,
+    key_scheme_id,
+    key_scheme_slug,
     list_schemes,
     search_schemes,
     update_scheme,
@@ -63,6 +69,30 @@ def list_schemes_endpoint(
     sort_by: str | None = Query(None, description="Sort order: 'name_asc', 'name_desc', 'id_desc', 'id_asc', 'category_asc'"),
     db: Session = Depends(get_db),
 ):
+    cache_key = key_list(
+        skip=skip,
+        limit=limit,
+        ministry=ministry,
+        category=category,
+        state=state,
+        status=status_filter,
+        benefit_type=benefit_type,
+        search=search,
+        sort_by=sort_by,
+    )
+    cached = cache_get(cache_key)
+    if cached is not None:
+        try:
+            data = json.loads(cached)
+            return PaginatedResponse(
+                items=data["items"],
+                total=data["total"],
+                skip=skip,
+                limit=limit,
+            )
+        except Exception:
+            pass
+
     items, total = list_schemes(
         db=db,
         skip=skip,
@@ -100,6 +130,28 @@ def search_schemes_endpoint(
     sort_by: str | None = Query(None, description="Sort order: 'name_asc', 'name_desc', 'id_desc', 'id_asc'"),
     db: Session = Depends(get_db),
 ):
+    cache_key = key_list(
+        skip=skip,
+        limit=limit,
+        category=category,
+        state=state,
+        status=status_filter,
+        search=q,
+        sort_by=sort_by,
+    )
+    cached = cache_get(cache_key)
+    if cached is not None:
+        try:
+            data = json.loads(cached)
+            return PaginatedResponse(
+                items=data["items"],
+                total=data["total"],
+                skip=skip,
+                limit=limit,
+            )
+        except Exception:
+            pass
+
     items, total = search_schemes(
         db=db,
         q=q,
@@ -116,6 +168,7 @@ def search_schemes_endpoint(
         skip=skip,
         limit=limit,
     )
+
 
 
 @router.get(
@@ -195,6 +248,13 @@ def get_scheme_by_slug_endpoint(
     slug: str,
     db: Session = Depends(get_db),
 ):
+    cached = cache_get(key_scheme_slug(slug))
+    if cached is not None:
+        try:
+            return json.loads(cached)
+        except Exception:
+            pass
+
     scheme = get_scheme_by_slug(db=db, slug=slug)
     if not scheme:
         raise SchemeNotFoundError(slug)
@@ -212,10 +272,18 @@ def get_scheme_by_id_endpoint(
     scheme_id: int,
     db: Session = Depends(get_db),
 ):
+    cached = cache_get(key_scheme_id(scheme_id))
+    if cached is not None:
+        try:
+            return json.loads(cached)
+        except Exception:
+            pass
+
     scheme = get_scheme_by_id(db=db, scheme_id=scheme_id)
     if not scheme:
         raise SchemeNotFoundError(scheme_id)
     return scheme
+
 
 
 @router.patch(
