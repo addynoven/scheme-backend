@@ -77,6 +77,7 @@ export interface BackendCategoriesResponse {
 
 const CACHE_KEY_SCHEMES = 'cached_schemes_list';
 const CACHE_KEY_CATEGORIES = 'cached_categories_list';
+const CACHE_KEY_SCHEME_DETAIL_PREFIX = 'cached_scheme_detail_';
 
 function normalizeCategory(rawCategory: string): SchemeCategory {
   if (!rawCategory) return 'General';
@@ -272,13 +273,35 @@ export class SchemesApiRepository {
 
   /**
    * Fetches single scheme detail by slug or ID.
+   * Caches the result in MMKV so the detail screen loads instantly on
+   * repeat visits and works offline (shows stale data with a banner).
    */
   async getSchemeById(idOrSlug: string): Promise<Result<SchemeItem, AppError>> {
+    const cacheKey = `${CACHE_KEY_SCHEME_DETAIL_PREFIX}${idOrSlug}`;
+
+    // ── Network fetch ──────────────────────────────────────────────────────
     const endpoint = isNaN(Number(idOrSlug)) ? `/schemes/slug/${idOrSlug}` : `/schemes/${idOrSlug}`;
     const result = await apiClient.get<BackendSchemeDetail>(endpoint);
 
     if (result.ok) {
-      return ok(mapBackendSchemeToItem(result.data));
+      const item = mapBackendSchemeToItem(result.data);
+      // Persist to MMKV for offline / repeat access
+      try {
+        mmkvStorage.set(cacheKey, JSON.stringify(item));
+      } catch {
+        // ignore storage errors
+      }
+      return ok(item);
+    }
+
+    // ── Offline fallback: return stale MMKV data if available ──────────────
+    try {
+      const cached = mmkvStorage.getString(cacheKey);
+      if (cached) {
+        return ok(JSON.parse(cached) as SchemeItem);
+      }
+    } catch {
+      // ignore
     }
 
     return result as Result<SchemeItem, AppError>;

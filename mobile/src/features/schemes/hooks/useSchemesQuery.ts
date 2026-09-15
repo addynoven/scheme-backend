@@ -2,6 +2,11 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { schemeKeys } from '../keys';
 import { PaginatedSchemes, SchemeFilter, SchemeItem } from '../models/schemes.model';
 import { schemesApi } from '../repositories/schemes.api';
+import { mmkvStorage } from '../../../core/storage/mmkv';
+
+// MMKV keys for last-synced timestamps
+export const SYNC_TS_SCHEMES = 'sync_ts_schemes_list';
+export const SYNC_TS_CATEGORIES = 'sync_ts_categories_list';
 
 /**
  * Hook to fetch schemes from FastAPI backend with TanStack Query caching.
@@ -15,6 +20,7 @@ export function useSchemesQuery(filter?: Partial<SchemeFilter>) {
       if (!result.ok) {
         throw result.error;
       }
+      mmkvStorage.set(SYNC_TS_SCHEMES, String(Date.now()));
       return result.data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes fresh
@@ -33,6 +39,10 @@ export function useInfiniteSchemesQuery(filter?: Partial<SchemeFilter>, pageSize
       const result = await schemesApi.getSchemesPaginated(filter, pageParam as number, pageSize);
       if (!result.ok) {
         throw result.error;
+      }
+      // Record sync time on first page load
+      if ((pageParam as number) === 0) {
+        mmkvStorage.set(SYNC_TS_SCHEMES, String(Date.now()));
       }
       return result.data;
     },
@@ -63,6 +73,8 @@ export function useSchemeDetailQuery(idOrSlug: string) {
 
 /**
  * Hook to fetch live categories with scheme counts.
+ * Categories change very rarely (only when admin adds a new scheme category),
+ * so we use a 24-hour staleTime matching the backend Valkey TTL.
  */
 export function useCategoriesQuery() {
   return useQuery<Array<{ category: string; count: number }>, Error>({
@@ -72,8 +84,9 @@ export function useCategoriesQuery() {
       if (!result.ok) {
         throw result.error;
       }
+      mmkvStorage.set(SYNC_TS_CATEGORIES, String(Date.now()));
       return result.data;
     },
-    staleTime: 15 * 60 * 1000,
+    staleTime: 24 * 60 * 60 * 1000, // 24 hours — categories barely ever change
   });
 }

@@ -16,6 +16,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
 import { useSchemesStore } from '../store/useSchemesStore';
 import { useInfiniteSchemesQuery } from '../hooks/useSchemesQuery';
+import { SYNC_TS_SCHEMES } from '../hooks/useSchemesQuery';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import { DiscoveryHeroBanner } from '../components/DiscoveryHeroBanner';
 import { CategoryGrid } from '../components/CategoryGrid';
@@ -28,6 +29,39 @@ import { ProfileMenuModal, LogoutConfirmModal, useProfileStore } from '@/feature
 import { SchemeFilter } from '../models/schemes.model';
 import { spacing } from '@/core/theme/spacing';
 import { palette } from '@/core/theme/colors';
+import { mmkvStorage } from '@/core/storage/mmkv';
+
+// ─── Last-synced age helper ────────────────────────────────────────────────────
+
+function formatSyncAge(tsMs: number | null): string {
+  if (!tsMs) return '';
+  const diffMs = Date.now() - tsMs;
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+function useLastSynced(mmkvKey: string): string {
+  const [label, setLabel] = useState(() => {
+    const raw = mmkvStorage.getString(mmkvKey);
+    return raw ? formatSyncAge(Number(raw)) : '';
+  });
+
+  useEffect(() => {
+    // Refresh the label every 60 s while screen is mounted
+    const interval = setInterval(() => {
+      const raw = mmkvStorage.getString(mmkvKey);
+      setLabel(raw ? formatSyncAge(Number(raw)) : '');
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [mmkvKey]);
+
+  return label;
+}
 
 interface SchemesScreenProps {
   onOpenProfileMenu?: () => void;
@@ -38,6 +72,7 @@ export const SchemesScreen: React.FC<SchemesScreenProps> = ({ onOpenProfileMenu 
   const insets = useSafeAreaInsets();
   const [isSearching, setIsSearching] = useState(false);
   const { currentUser } = useAuthStore();
+  const lastSyncedLabel = useLastSynced(SYNC_TS_SCHEMES);
 
   const {
     activeTab,
@@ -181,6 +216,12 @@ export const SchemesScreen: React.FC<SchemesScreenProps> = ({ onOpenProfileMenu 
         <View style={styles.headerRight}>
           {isFetching && !isLoading ? (
             <ActivityIndicator size="small" color={palette.emerald700} style={{ marginRight: 6 }} />
+          ) : null}
+          {!isFetching && lastSyncedLabel ? (
+            <View style={styles.syncBadge} accessibilityLabel={`Data synced ${lastSyncedLabel}`}>
+              <FontAwesome name="check-circle" size={10} color="#059669" style={{ marginRight: 3 }} />
+              <Text style={styles.syncBadgeText}>{lastSyncedLabel}</Text>
+            </View>
           ) : null}
           <TouchableOpacity
             style={styles.avatarBtn}
@@ -507,6 +548,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  syncBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  syncBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#065F46',
   },
   avatarBtn: {
     width: 36,

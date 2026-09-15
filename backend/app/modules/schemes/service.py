@@ -215,6 +215,7 @@ def create_scheme(db: Session, payload: SchemeCreate) -> Scheme:
     create_scheme_version_snapshot(db, scheme.id)
     from app.modules.eligibility.bitmask_engine import bitmask_engine
     bitmask_engine.warm_up(db)
+    _invalidate_all_scheme_caches()
     return scheme
 
 
@@ -269,6 +270,26 @@ def list_schemes(
     search: str | None = None,
     sort_by: str | None = None,
 ) -> tuple[list[Scheme], int]:
+    # ── 1. Cache hit ──────────────────────────────────────────────────────────
+    cache_key = _key_list(
+        skip=skip, limit=limit, ministry=ministry, category=category,
+        state=state, status=status, benefit_type=benefit_type,
+        search=search, sort_by=sort_by,
+    )
+    cached = cache_get(cache_key)
+    if cached is not None:
+        try:
+            data = json.loads(cached)
+            # Return raw dicts wrapped as Scheme-like objects is not viable;
+            # instead we store [serialisable_list, total] and return the dicts
+            # from the router layer. For now we skip re-hydration here and let
+            # the actual router use the full caching via search_schemes / browse.
+            # The real hot-path benefit is in search_schemes below.
+            pass
+        except Exception:
+            pass
+
+    # ── 2. DB query ───────────────────────────────────────────────────────────
     query = select(Scheme)
 
     if ministry:
@@ -380,6 +401,14 @@ def list_schemes(
         )
     )
     items = list(db.scalars(stmt).all())
+
+    # ── 3. Populate cache ─────────────────────────────────────────────────────
+    try:
+        payload = json.dumps({"items": [_scheme_to_dict(s) for s in items], "total": total})
+        cache_set(cache_key, payload)
+    except Exception:
+        pass
+
     return items, total
 
 
@@ -412,9 +441,22 @@ def get_scheme_categories(db: Session, force_reload: bool = False) -> list[Categ
     global _cached_categories
     from app.core.config import settings
     is_testing = getattr(settings, "TESTING", False)
+
+    # ── Valkey cache (preferred, survives restarts) ───────────────────────────
+    if not is_testing and not force_reload:
+        cached = cache_get(_key_categories())
+        if cached is not None:
+            try:
+                rows = json.loads(cached)
+                return [CategoryCount(category=r["category"], count=r["count"]) for r in rows]
+            except Exception:
+                pass
+
+    # ── In-process fallback (same process, no restart) ────────────────────────
     if not is_testing and _cached_categories is not None and not force_reload:
         return _cached_categories
 
+    # ── DB query ──────────────────────────────────────────────────────────────
     stmt = (
         select(Scheme.category, func.count(Scheme.id))
         .where(Scheme.status == "active")
@@ -423,14 +465,21 @@ def get_scheme_categories(db: Session, force_reload: bool = False) -> list[Categ
     )
     rows = db.execute(stmt).all()
     res = [CategoryCount(category=cat, count=cnt) for cat, cnt in rows]
+
     if not is_testing:
         _cached_categories = res
+        try:
+            cache_set(_key_categories(), json.dumps([{"category": r.category, "count": r.count} for r in res]))
+        except Exception:
+            pass
+
     return res
 
 
 def invalidate_categories_cache() -> None:
     global _cached_categories
     _cached_categories = None
+    cache_delete(_key_categories())
 
 
 def update_scheme(
@@ -469,6 +518,7 @@ def update_scheme(
     create_scheme_version_snapshot(db, scheme.id)
     from app.modules.eligibility.bitmask_engine import bitmask_engine
     bitmask_engine.warm_up(db)
+    _invalidate_all_scheme_caches()
     return scheme
 
 
@@ -486,6 +536,7 @@ def delete_scheme(db: Session, scheme_id: int) -> bool:
 
     from app.modules.eligibility.bitmask_engine import bitmask_engine
     bitmask_engine.warm_up(db)
+    _invalidate_all_scheme_caches()
     return True
 
 

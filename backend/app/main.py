@@ -225,6 +225,19 @@ def health_check(db: Session = Depends(get_db)):
     # 3. Bitmask Engine Readiness
     checks["bitmask_engine"] = "warmed" if bitmask_engine.is_warmed else "unwarmed"
 
+    # 4. Valkey / Redis Cache
+    try:
+        from app.core.cache import is_cache_available
+        from app.core.config import settings as app_settings
+        if app_settings.VALKEY_URL:
+            checks["cache"] = "healthy" if is_cache_available() else "unhealthy"
+        else:
+            checks["cache"] = "disabled"
+    except Exception as e:
+        import logging
+        logging.getLogger("app.health").error(f"Health check cache ping failed: {e}")
+        checks["cache"] = "unhealthy"
+
     status_str = "ok" if is_healthy else "degraded"
 
     if not is_healthy:
