@@ -14,6 +14,7 @@ const CATEGORIES: { id: SocialCategory; label: string }[] = [
   { id: 'obc', label: 'OBC' },
   { id: 'sc', label: 'SC' },
   { id: 'st', label: 'ST' },
+  { id: 'ews', label: 'EWS' },
 ];
 
 export const CategorySelector: React.FC<CategorySelectorProps> = ({ selected, onSelect }) => {

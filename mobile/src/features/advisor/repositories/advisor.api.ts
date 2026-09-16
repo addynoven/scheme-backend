@@ -206,10 +206,17 @@ export class ApiAdvisorRepository implements AdvisorRepository {
     const recommendations: SchemeRecommendation[] = (data.sources || []).map((s) => ({
       id: s.slug,
       title: s.title,
-      ministry: 'Government of India',
+      ministry:
+        s.jurisdiction ||
+        (s.state && s.state.toUpperCase() !== 'ALL_INDIA'
+          ? `Government of ${s.state}`
+          : 'Government of India'),
       benefitAmount: '',
-      benefitDescription: 'Verified citizen welfare scheme',
-      tags: ['Verified', 'Government Scheme'],
+      benefitDescription: s.summary || '',
+      tags: [
+        '✓ Verified',
+        s.category || (s.state && s.state.toUpperCase() !== 'ALL_INDIA' ? s.state : 'Central Scheme'),
+      ].filter(Boolean),
     }));
 
     const sources =

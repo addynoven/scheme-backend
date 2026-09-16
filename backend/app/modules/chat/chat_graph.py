@@ -222,7 +222,14 @@ def tools_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
                     if slug not in citations:
                         citations.append(slug)
                     if not any(src["slug"] == slug for src in sources):
-                        sources.append({"title": name, "slug": slug})
+                        sources.append({
+                            "title": name,
+                            "slug": slug,
+                            "summary": s.get("summary_benefit") or s.get("summary") or s.get("description"),
+                            "category": s.get("category"),
+                            "state": s.get("state"),
+                            "jurisdiction": s.get("jurisdiction"),
+                        })
 
         elif fn_name == "search_schemes_directory":
             result = execute_search_schemes_directory(db, fn_args)
@@ -234,7 +241,14 @@ def tools_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
                     if slug not in citations:
                         citations.append(slug)
                     if not any(src["slug"] == slug for src in sources):
-                        sources.append({"title": name, "slug": slug})
+                        sources.append({
+                            "title": name,
+                            "slug": slug,
+                            "summary": s.get("summary"),
+                            "category": s.get("category"),
+                            "state": s.get("state"),
+                            "jurisdiction": s.get("jurisdiction"),
+                        })
 
         elif fn_name == "get_scheme_details":
             result = execute_get_scheme_details(db, fn_args)
@@ -245,7 +259,14 @@ def tools_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
                 if slug not in citations:
                     citations.append(slug)
                 if not any(src["slug"] == slug for src in sources):
-                    sources.append({"title": name, "slug": slug})
+                    sources.append({
+                        "title": name,
+                        "slug": slug,
+                        "summary": result.get("summary_benefit") or result.get("summary") or result.get("description"),
+                        "category": result.get("category"),
+                        "state": result.get("state"),
+                        "jurisdiction": result.get("jurisdiction"),
+                    })
 
         elif fn_name == "browse_schemes_and_knowledge":
             result = execute_browse_schemes_and_knowledge(db, fn_args)
@@ -257,7 +278,14 @@ def tools_node(state: AgentState, config: RunnableConfig) -> dict[str, Any]:
                     if slug not in citations:
                         citations.append(slug)
                     if not any(src["slug"] == slug for src in sources):
-                        sources.append({"title": name, "slug": slug})
+                        sources.append({
+                            "title": name,
+                            "slug": slug,
+                            "summary": s.get("summary_benefit") or s.get("summary") or s.get("description"),
+                            "category": s.get("category"),
+                            "state": s.get("state"),
+                            "jurisdiction": s.get("jurisdiction"),
+                        })
 
         else:
             result = {"status": "error", "message": f"Unknown tool '{fn_name}'"}

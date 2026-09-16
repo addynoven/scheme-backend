@@ -11,6 +11,10 @@ class ChatMessageCreate(BaseModel):
 class SchemeCitation(BaseModel):
     title: str
     slug: str
+    summary: str | None = None
+    category: str | None = None
+    state: str | None = None
+    jurisdiction: str | None = None
 
 
 class TokenUsageMetrics(BaseModel):

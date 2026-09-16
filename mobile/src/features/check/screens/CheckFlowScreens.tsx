@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
+  Modal,
   ScrollView,
   StyleSheet,
   Switch,
@@ -21,6 +23,7 @@ import { BenefitType, GenderType, SocialCategory } from '../models/check.model';
 import { spacing } from '@/core/theme/spacing';
 import { useRouter } from 'expo-router';
 import { toastService } from '@/core/components/Toast';
+import { ALL_INDIAN_STATES, POPULAR_STATES, getDistrictsForState } from '../data/indiaLocations';
 
 // =========================================================================
 // SCREEN 0: START
@@ -123,8 +126,46 @@ export const DemographicsScreen: React.FC = () => {
   const { formData, updateDemographics, setStep } = useCheckStore();
   const demo = formData.demographics;
 
-  const states = ['Maharashtra', 'Karnataka', 'Gujarat', 'Uttar Pradesh', 'Madhya Pradesh'];
-  const districts = ['Pune', 'Mumbai Suburban', 'Nagpur', 'Nashik', 'Aurangabad'];
+  const [stateModalVisible, setStateModalVisible] = useState(false);
+  const [districtModalVisible, setDistrictModalVisible] = useState(false);
+  const [stateSearch, setStateSearch] = useState('');
+  const [districtSearch, setDistrictSearch] = useState('');
+  const [showCustomDistrict, setShowCustomDistrict] = useState(false);
+  const [customDistrictText, setCustomDistrictText] = useState('');
+
+  const currentDistricts = getDistrictsForState(demo.state);
+
+  const filteredStates = ALL_INDIAN_STATES.filter((s) =>
+    s.toLowerCase().includes(stateSearch.toLowerCase().trim())
+  );
+
+  const filteredDistricts = currentDistricts.filter((d) =>
+    d.toLowerCase().includes(districtSearch.toLowerCase().trim())
+  );
+
+  const handleSelectState = (st: string) => {
+    const districts = getDistrictsForState(st);
+    const newDistrict = districts.length > 0 ? districts[0] : 'All Districts';
+    updateDemographics({ state: st, district: newDistrict });
+    setShowCustomDistrict(false);
+    setStateModalVisible(false);
+    setStateSearch('');
+  };
+
+  const handleSelectDistrict = (dist: string) => {
+    updateDemographics({ district: dist });
+    setShowCustomDistrict(false);
+    setDistrictModalVisible(false);
+    setDistrictSearch('');
+  };
+
+  const handleCustomDistrictSubmit = () => {
+    if (customDistrictText.trim()) {
+      updateDemographics({ district: customDistrictText.trim() });
+      setShowCustomDistrict(false);
+      setDistrictModalVisible(false);
+    }
+  };
 
   return (
     <View style={styles.screenContainer}>
@@ -182,46 +223,263 @@ export const DemographicsScreen: React.FC = () => {
 
         {/* State Selection */}
         <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>State</Text>
-          <View style={styles.optionsRow}>
-            {states.map((st) => {
-              const isSelected = demo.state === st;
-              return (
-                <TouchableOpacity
-                  key={st}
-                  style={[styles.chipSelect, isSelected && styles.chipSelectActive]}
-                  onPress={() => updateDemographics({ state: st })}
-                >
-                  <Text style={[styles.chipSelectText, isSelected && styles.chipSelectTextActive]}>
-                    {st}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+          <Text style={styles.fieldLabel}>State / Union Territory</Text>
+          {/* Dropdown selector matching design */}
+          <TouchableOpacity
+            style={styles.dropdownSelector}
+            onPress={() => setStateModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.dropdownLeft}>
+              <FontAwesome name="map-marker" size={16} color="#047857" style={styles.dropdownIcon} />
+              <Text style={styles.dropdownValue}>{demo.state || 'Select State'}</Text>
+            </View>
+            <FontAwesome name="chevron-down" size={12} color="#64748B" />
+          </TouchableOpacity>
+
+          {/* Quick Select Popular States */}
+          <View style={styles.quickChipsContainer}>
+            <Text style={styles.quickChipsLabel}>Quick Select State:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickChipsScroll}>
+              {POPULAR_STATES.map((st) => {
+                const isSelected = demo.state === st;
+                return (
+                  <TouchableOpacity
+                    key={st}
+                    style={[styles.chipSelect, isSelected && styles.chipSelectActive]}
+                    onPress={() => handleSelectState(st)}
+                  >
+                    <Text style={[styles.chipSelectText, isSelected && styles.chipSelectTextActive]}>
+                      {st}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+              <TouchableOpacity
+                style={styles.moreStatesChip}
+                onPress={() => setStateModalVisible(true)}
+              >
+                <Text style={styles.moreStatesChipText}>All 36 States ▾</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
 
         {/* District Selection */}
         <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>District</Text>
-          <View style={styles.optionsRow}>
-            {districts.map((dst) => {
-              const isSelected = demo.district === dst;
-              return (
+          <Text style={styles.fieldLabel}>District ({demo.state})</Text>
+          {/* Dropdown selector matching design */}
+          <TouchableOpacity
+            style={styles.dropdownSelector}
+            onPress={() => setDistrictModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.dropdownLeft}>
+              <FontAwesome name="building-o" size={15} color="#047857" style={styles.dropdownIcon} />
+              <Text style={styles.dropdownValue}>{demo.district || 'Select District'}</Text>
+            </View>
+            <FontAwesome name="chevron-down" size={12} color="#64748B" />
+          </TouchableOpacity>
+
+          {/* Quick Select Districts for Selected State */}
+          <View style={styles.quickChipsContainer}>
+            <Text style={styles.quickChipsLabel}>Districts in {demo.state}:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickChipsScroll}>
+              {currentDistricts.slice(0, 8).map((dst) => {
+                const isSelected = demo.district === dst;
+                return (
+                  <TouchableOpacity
+                    key={dst}
+                    style={[styles.chipSelect, isSelected && styles.chipSelectActive]}
+                    onPress={() => handleSelectDistrict(dst)}
+                  >
+                    <Text style={[styles.chipSelectText, isSelected && styles.chipSelectTextActive]}>
+                      {dst}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+              {currentDistricts.length > 8 && (
                 <TouchableOpacity
-                  key={dst}
-                  style={[styles.chipSelect, isSelected && styles.chipSelectActive]}
-                  onPress={() => updateDemographics({ district: dst })}
+                  style={styles.moreStatesChip}
+                  onPress={() => setDistrictModalVisible(true)}
                 >
-                  <Text style={[styles.chipSelectText, isSelected && styles.chipSelectTextActive]}>
-                    {dst}
-                  </Text>
+                  <Text style={styles.moreStatesChipText}>More ({currentDistricts.length}) ▾</Text>
                 </TouchableOpacity>
-              );
-            })}
+              )}
+            </ScrollView>
           </View>
+
+          {/* Custom District Input Toggle */}
+          {showCustomDistrict ? (
+            <View style={styles.customDistrictContainer}>
+              <TextInput
+                style={styles.customDistrictInput}
+                placeholder="Type your district / city name"
+                placeholderTextColor="#94A3B8"
+                value={customDistrictText}
+                onChangeText={setCustomDistrictText}
+                autoFocus
+              />
+              <TouchableOpacity
+                style={styles.customDistrictApplyBtn}
+                onPress={handleCustomDistrictSubmit}
+              >
+                <Text style={styles.customDistrictApplyText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.customDistrictToggle}
+              onPress={() => {
+                setShowCustomDistrict(true);
+                setCustomDistrictText(demo.district);
+              }}
+            >
+              <FontAwesome name="pencil" size={12} color="#047857" style={{ marginRight: 6 }} />
+              <Text style={styles.customDistrictToggleText}>Can't find your district? Enter manually</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
+
+      {/* State Search Modal */}
+      <Modal
+        visible={stateModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setStateModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeaderRow}>
+              <Text style={styles.modalTitle}>Select State / UT</Text>
+              <TouchableOpacity
+                onPress={() => setStateModalVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <FontAwesome name="close" size={18} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalSearchBox}>
+              <FontAwesome name="search" size={14} color="#94A3B8" style={{ marginRight: 8 }} />
+              <TextInput
+                style={styles.modalSearchInput}
+                placeholder="Search state (e.g. Goa, Delhi...)"
+                placeholderTextColor="#94A3B8"
+                value={stateSearch}
+                onChangeText={setStateSearch}
+                autoFocus
+              />
+              {stateSearch ? (
+                <TouchableOpacity onPress={() => setStateSearch('')}>
+                  <FontAwesome name="times-circle" size={14} color="#94A3B8" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            <FlatList
+              data={filteredStates}
+              keyExtractor={(item) => item}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => {
+                const isSelected = demo.state === item;
+                return (
+                  <TouchableOpacity
+                    style={[styles.modalItemRow, isSelected && styles.modalItemRowSelected]}
+                    onPress={() => handleSelectState(item)}
+                  >
+                    <Text style={[styles.modalItemText, isSelected && styles.modalItemTextSelected]}>
+                      {item}
+                    </Text>
+                    {isSelected && <FontAwesome name="check" size={14} color="#047857" />}
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* District Search Modal */}
+      <Modal
+        visible={districtModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setDistrictModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeaderRow}>
+              <Text style={styles.modalTitle}>Select District in {demo.state}</Text>
+              <TouchableOpacity
+                onPress={() => setDistrictModalVisible(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <FontAwesome name="close" size={18} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalSearchBox}>
+              <FontAwesome name="search" size={14} color="#94A3B8" style={{ marginRight: 8 }} />
+              <TextInput
+                style={styles.modalSearchInput}
+                placeholder={`Search district in ${demo.state}...`}
+                placeholderTextColor="#94A3B8"
+                value={districtSearch}
+                onChangeText={setDistrictSearch}
+                autoFocus
+              />
+              {districtSearch ? (
+                <TouchableOpacity onPress={() => setDistrictSearch('')}>
+                  <FontAwesome name="times-circle" size={14} color="#94A3B8" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            <FlatList
+              data={filteredDistricts}
+              keyExtractor={(item) => item}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => {
+                const isSelected = demo.district === item;
+                return (
+                  <TouchableOpacity
+                    style={[styles.modalItemRow, isSelected && styles.modalItemRowSelected]}
+                    onPress={() => handleSelectDistrict(item)}
+                  >
+                    <Text style={[styles.modalItemText, isSelected && styles.modalItemTextSelected]}>
+                      {item}
+                    </Text>
+                    {isSelected && <FontAwesome name="check" size={14} color="#047857" />}
+                  </TouchableOpacity>
+                );
+              }}
+              ListFooterComponent={
+                <View style={styles.modalFooterInput}>
+                  <Text style={styles.modalFooterLabel}>Or enter custom district name:</Text>
+                  <View style={styles.customDistrictContainer}>
+                    <TextInput
+                      style={styles.customDistrictInput}
+                      placeholder="Enter custom district"
+                      placeholderTextColor="#94A3B8"
+                      value={customDistrictText}
+                      onChangeText={setCustomDistrictText}
+                    />
+                    <TouchableOpacity
+                      style={styles.customDistrictApplyBtn}
+                      onPress={handleCustomDistrictSubmit}
+                    >
+                      <Text style={styles.customDistrictApplyText}>Save</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              }
+            />
+          </View>
+        </View>
+      </Modal>
 
       {/* Sticky Bottom CTA */}
       <View style={styles.stickyFooter}>
@@ -245,6 +503,10 @@ export const EconomicScreen: React.FC = () => {
   const { formData, updateEconomic, setStep } = useCheckStore();
   const eco = formData.economic;
 
+  const [customIncomeText, setCustomIncomeText] = useState(
+    eco.annualIncome > 0 ? String(eco.annualIncome) : ''
+  );
+
   const incomePresets = [
     { label: '0', value: 0 },
     { label: '₹1.2L', value: 120000 },
@@ -252,6 +514,18 @@ export const EconomicScreen: React.FC = () => {
     { label: '₹5L', value: 500000 },
     { label: '₹10L+', value: 1000000 },
   ];
+
+  const handleCustomIncomeChange = (text: string) => {
+    const cleaned = text.replace(/[^0-9]/g, '');
+    setCustomIncomeText(cleaned);
+    const num = parseInt(cleaned, 10);
+    updateEconomic({ annualIncome: isNaN(num) ? 0 : num });
+  };
+
+  const handlePresetSelect = (val: number) => {
+    updateEconomic({ annualIncome: val });
+    setCustomIncomeText(val > 0 ? String(val) : '');
+  };
 
   return (
     <View style={styles.screenContainer}>
@@ -303,7 +577,7 @@ export const EconomicScreen: React.FC = () => {
                 <TouchableOpacity
                   key={preset.value}
                   style={[styles.presetChip, isSelected && styles.presetChipActive]}
-                  onPress={() => updateEconomic({ annualIncome: preset.value })}
+                  onPress={() => handlePresetSelect(preset.value)}
                 >
                   <Text style={[styles.presetText, isSelected && styles.presetTextActive]}>
                     {preset.label}
@@ -311,6 +585,22 @@ export const EconomicScreen: React.FC = () => {
                 </TouchableOpacity>
               );
             })}
+          </View>
+
+          {/* Custom Numeric Income Input */}
+          <View style={styles.customIncomeBox}>
+            <Text style={styles.customIncomeLabel}>Or enter exact annual income:</Text>
+            <View style={styles.customIncomeInputRow}>
+              <Text style={styles.rupeePrefix}>₹</Text>
+              <TextInput
+                style={styles.customIncomeInput}
+                keyboardType="numeric"
+                value={customIncomeText}
+                onChangeText={handleCustomIncomeChange}
+                placeholder="e.g. 180000"
+                placeholderTextColor="#94A3B8"
+              />
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -1778,5 +2068,220 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#334155',
+  },
+  dropdownSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#047857',
+    borderRadius: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+    marginBottom: spacing.xs,
+  },
+  dropdownLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  dropdownIcon: {
+    marginRight: 10,
+  },
+  dropdownValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  quickChipsContainer: {
+    marginTop: 4,
+    marginBottom: spacing.sm,
+  },
+  quickChipsLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  quickChipsScroll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 2,
+  },
+  moreStatesChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moreStatesChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#047857',
+  },
+  customDistrictContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  customDistrictInput: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: '#0F172A',
+  },
+  customDistrictApplyBtn: {
+    backgroundColor: '#047857',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  customDistrictApplyText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  customDistrictToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    paddingVertical: 4,
+  },
+  customDistrictToggleText: {
+    fontSize: 12,
+    color: '#047857',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+    maxHeight: '80%',
+  },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  modalSearchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    marginBottom: spacing.md,
+  },
+  modalSearchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#0F172A',
+    paddingVertical: 4,
+  },
+  modalItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  modalItemRowSelected: {
+    backgroundColor: '#ECFDF5',
+    marginHorizontal: -spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: 8,
+  },
+  modalItemText: {
+    fontSize: 14,
+    color: '#334155',
+    fontWeight: '500',
+  },
+  modalItemTextSelected: {
+    color: '#047857',
+    fontWeight: '700',
+  },
+  modalFooterInput: {
+    paddingVertical: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    marginTop: spacing.sm,
+  },
+  modalFooterLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    marginBottom: 6,
+    fontWeight: '600',
+  },
+  customIncomeBox: {
+    marginTop: spacing.md,
+    padding: spacing.md,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  customIncomeLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  customIncomeInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    paddingHorizontal: spacing.md,
+  },
+  rupeePrefix: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#047857',
+    marginRight: 6,
+  },
+  customIncomeInput: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+    paddingVertical: 10,
   },
 });

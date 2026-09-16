@@ -12,6 +12,30 @@ interface MessageBubbleProps {
   readonly onSchemePress: (schemeId: string) => void;
   readonly onVaultPress: () => void;
   readonly onFollowUpPress?: (text: string) => void;
+  readonly onViewAllPress?: () => void;
+}
+
+function formatAiMessageText(text: string, hasRecommendations: boolean): string {
+  if (!text) return '';
+
+  let cleaned = text;
+
+  // When rich recommendation cards are rendered below, remove redundant scheme list items
+  // e.g. "1. 🇮🇳 **Central / National Scheme**: [PM ...](/schemes/...) - Description..."
+  if (hasRecommendations) {
+    cleaned = cleaned.replace(
+      /^\s*(?:\d+\.|\*|\-)\s*(?:[^\n]*?)\[([^\]]+)\]\(\/schemes\/[^\)]+\)[^\n]*\n?/gim,
+      ''
+    );
+  }
+
+  // Strip raw markdown links [Text](url) -> Text so raw URLs/slugs never leak
+  cleaned = cleaned.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+
+  // Clean up excess newlines
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n').trim();
+
+  return cleaned;
 }
 
 export function MessageBubble({
@@ -19,6 +43,7 @@ export function MessageBubble({
   onSchemePress,
   onVaultPress,
   onFollowUpPress,
+  onViewAllPress,
 }: MessageBubbleProps) {
   const isUser = message.sender === 'user';
 
@@ -36,6 +61,9 @@ export function MessageBubble({
     );
   }
 
+  const hasRecs = Boolean(message.recommendations && message.recommendations.length > 0);
+  const formattedText = formatAiMessageText(message.text, hasRecs);
+
   return (
     <View style={styles.aiContainer}>
       {/* Bot Avatar */}
@@ -45,18 +73,43 @@ export function MessageBubble({
 
       {/* Bubble Content */}
       <View style={styles.aiBubble}>
-        <Text style={styles.aiText}>{message.text}</Text>
+        {formattedText ? <Text style={styles.aiText}>{formattedText}</Text> : null}
 
-        {/* Scheme Recommendation Cards */}
-        {message.recommendations && message.recommendations.length > 0 ? (
-          <View style={styles.recommendationsList}>
-            {message.recommendations.map((scheme) => (
-              <SchemeRecommendationCard
-                key={scheme.id}
-                scheme={scheme}
-                onPress={onSchemePress}
-              />
-            ))}
+        {/* Structured Recommendations Section */}
+        {hasRecs ? (
+          <View style={styles.recommendationsSection}>
+            <View style={styles.sectionHeaderRow}>
+              <View style={styles.sectionHeaderLeft}>
+                <FontAwesome name="bookmark" size={11} color={palette.emerald700} />
+                <Text style={styles.sectionTitle}>TOP MATCHES</Text>
+              </View>
+              <View style={styles.matchCountBadge}>
+                <Text style={styles.matchCountText}>{message.recommendations!.length} Recommended</Text>
+              </View>
+            </View>
+
+            <View style={styles.recommendationsList}>
+              {message.recommendations!.map((scheme) => (
+                <SchemeRecommendationCard
+                  key={scheme.id}
+                  scheme={scheme}
+                  onPress={onSchemePress}
+                />
+              ))}
+            </View>
+
+            {onViewAllPress ? (
+              <TouchableOpacity
+                style={styles.viewAllBtn}
+                onPress={onViewAllPress}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="View all matching schemes in directory"
+              >
+                <Text style={styles.viewAllText}>View All Schemes in Directory</Text>
+                <FontAwesome name="arrow-right" size={11} color={palette.emerald800} />
+              </TouchableOpacity>
+            ) : null}
           </View>
         ) : null}
 
@@ -100,11 +153,15 @@ export function MessageBubble({
           </View>
         ) : null}
 
-        {/* Sources Footer matching Frame 4 */}
-        {message.sources && message.sources.length > 0 ? (
+        {/* Sources Footer matching Frame 4 - only show if no recommendation cards exist */}
+        {message.sources && message.sources.length > 0 && !hasRecs ? (
           <View style={styles.sourcesContainer}>
             <Text style={styles.sourcesLabel}>Sources: </Text>
-            <Text style={styles.sourcesText}>{message.sources.join(' | ')}</Text>
+            <Text style={styles.sourcesText}>
+              {message.sources
+                .map((s) => s.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()))
+                .join(' | ')}
+            </Text>
           </View>
         ) : null}
 
@@ -166,7 +223,7 @@ const styles = StyleSheet.create({
   aiContainer: {
     flexDirection: 'row',
     alignSelf: 'flex-start',
-    maxWidth: '92%',
+    maxWidth: '88%',
     marginBottom: spacing.md,
     gap: spacing.sm,
   },
@@ -194,9 +251,62 @@ const styles = StyleSheet.create({
     color: colors.light.text,
     lineHeight: 20,
   },
-  recommendationsList: {
+  recommendationsSection: {
     marginTop: spacing.xs,
-    gap: spacing.xs,
+    backgroundColor: '#F8FAFC',
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+    paddingHorizontal: 2,
+  },
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  sectionTitle: {
+    fontSize: fontSizes.xs - 1,
+    fontWeight: fontWeights.bold,
+    color: palette.emerald800,
+    letterSpacing: 0.6,
+  },
+  matchCountBadge: {
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: borderRadius.xs,
+  },
+  matchCountText: {
+    fontSize: fontSizes.xs - 2,
+    fontWeight: fontWeights.semibold,
+    color: palette.emerald700,
+  },
+  recommendationsList: {
+    gap: 2,
+  },
+  viewAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: spacing.xs + 2,
+    paddingVertical: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  viewAllText: {
+    fontSize: fontSizes.xs,
+    fontWeight: fontWeights.semibold,
+    color: palette.emerald800,
   },
   documentsContainer: {
     backgroundColor: palette.slate50,

@@ -433,12 +433,15 @@ def orchestrate_agentic_turn(
                 "procedural_memory": {"tools_executed": []},
             }
 
-            clean_fallback_message = (
-                "I am having trouble connecting to the welfare assistant right now. "
-                "Please try again in a moment."
-            )
+            if getattr(settings, "DEV_MODE", False) and err_info.get("message"):
+                fallback_message = err_info["message"]
+            else:
+                fallback_message = (
+                    "I am having trouble connecting to the welfare assistant right now. "
+                    "Please try again in a moment."
+                )
             return (
-                clean_fallback_message,
+                fallback_message,
                 [],
                 [],
                 {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
@@ -490,7 +493,14 @@ def orchestrate_agentic_turn(
                         if slug not in citations:
                             citations.append(slug)
                         if not any(src["slug"] == slug for src in sources):
-                            sources.append({"title": name, "slug": slug})
+                            sources.append({
+                                "title": name,
+                                "slug": slug,
+                                "summary": s.get("summary_benefit") or s.get("summary") or s.get("description"),
+                                "category": s.get("category"),
+                                "state": s.get("state"),
+                                "jurisdiction": s.get("jurisdiction"),
+                            })
 
                 function_response_parts.append({"functionResponse": {"name": fn_name, "response": result}})
 
@@ -511,7 +521,14 @@ def orchestrate_agentic_turn(
                         if slug not in citations:
                             citations.append(slug)
                         if not any(src["slug"] == slug for src in sources):
-                            sources.append({"title": name, "slug": slug})
+                            sources.append({
+                                "title": name,
+                                "slug": slug,
+                                "summary": s.get("summary"),
+                                "category": s.get("category"),
+                                "state": s.get("state"),
+                                "jurisdiction": s.get("jurisdiction"),
+                            })
 
                 function_response_parts.append({"functionResponse": {"name": fn_name, "response": result}})
 
@@ -531,7 +548,14 @@ def orchestrate_agentic_turn(
                     if slug not in citations:
                         citations.append(slug)
                     if not any(src["slug"] == slug for src in sources):
-                        sources.append({"title": name, "slug": slug})
+                        sources.append({
+                            "title": name,
+                            "slug": slug,
+                            "summary": result.get("summary_benefit") or result.get("summary") or result.get("description"),
+                            "category": result.get("category"),
+                            "state": result.get("state"),
+                            "jurisdiction": result.get("jurisdiction"),
+                        })
 
                 function_response_parts.append({"functionResponse": {"name": fn_name, "response": result}})
 
@@ -552,7 +576,14 @@ def orchestrate_agentic_turn(
                         if slug not in citations:
                             citations.append(slug)
                         if not any(src["slug"] == slug for src in sources):
-                            sources.append({"title": name, "slug": slug})
+                            sources.append({
+                                "title": name,
+                                "slug": slug,
+                                "summary": s.get("summary_benefit") or s.get("summary") or s.get("description"),
+                                "category": s.get("category"),
+                                "state": s.get("state"),
+                                "jurisdiction": s.get("jurisdiction"),
+                            })
 
                 function_response_parts.append({"functionResponse": {"name": fn_name, "response": result}})
 

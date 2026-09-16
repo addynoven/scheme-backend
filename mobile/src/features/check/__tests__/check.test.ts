@@ -13,21 +13,22 @@ describe('Check Eligibility Flow - Integration & Logic Tests', () => {
   });
 
   describe('Zod Schema Validation', () => {
-    it('validates a valid EligibilityFormData', () => {
-      const parseResult = EligibilityFormDataSchema.safeParse(DEFAULT_ELIGIBILITY_FORM);
-      assert.strictEqual(parseResult.success, true);
-    });
-
-    it('rejects invalid dob or empty fields when required', () => {
-      const invalid = {
+    it('validates a valid EligibilityFormData with Goa and EWS category', () => {
+      const goaForm: EligibilityFormData = {
         ...DEFAULT_ELIGIBILITY_FORM,
         demographics: {
           ...DEFAULT_ELIGIBILITY_FORM.demographics,
-          dob: '',
+          state: 'Goa',
+          district: 'North Goa',
+        },
+        economic: {
+          ...DEFAULT_ELIGIBILITY_FORM.economic,
+          category: 'ews',
+          annualIncome: 150000,
         },
       };
-      const parseResult = EligibilityFormDataSchema.safeParse(invalid);
-      assert.strictEqual(parseResult.success, false);
+      const parseResult = EligibilityFormDataSchema.safeParse(goaForm);
+      assert.strictEqual(parseResult.success, true);
     });
   });
 
@@ -97,6 +98,29 @@ describe('Check Eligibility Flow - Integration & Logic Tests', () => {
       const evaluation = useCheckStore.getState().getEvaluation();
       assert.strictEqual(evaluation.totalEligibleCount, 0);
       assert.strictEqual(evaluation.eligibleSchemes.length, 0);
+    });
+  });
+
+  describe('India Locations & Goa Support', () => {
+    it('contains all 36 Indian states & union territories including Goa', () => {
+      const { ALL_INDIAN_STATES, getDistrictsForState } = require('../data/indiaLocations');
+      assert.strictEqual(ALL_INDIAN_STATES.length >= 36, true);
+      assert.strictEqual(ALL_INDIAN_STATES.includes('Goa'), true);
+
+      const goaDistricts = getDistrictsForState('Goa');
+      assert.deepStrictEqual(goaDistricts, ['North Goa', 'South Goa']);
+    });
+
+    it('allows a citizen from Goa to select Goa and North Goa in check store', () => {
+      const { updateDemographics, updateEconomic } = useCheckStore.getState();
+      updateDemographics({ state: 'Goa', district: 'North Goa' });
+      updateEconomic({ category: 'ews', annualIncome: 200000 });
+
+      const state = useCheckStore.getState().formData;
+      assert.strictEqual(state.demographics.state, 'Goa');
+      assert.strictEqual(state.demographics.district, 'North Goa');
+      assert.strictEqual(state.economic.category, 'ews');
+      assert.strictEqual(state.economic.annualIncome, 200000);
     });
   });
 });

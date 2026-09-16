@@ -14,13 +14,16 @@ interface SchemeRecommendationCardProps {
 
 function getTagStyle(tag: string) {
   const lower = tag.toLowerCase();
+  if (lower.includes('verified')) {
+    return { bg: '#ECFDF5', text: '#065F46' }; // emerald
+  }
   if (lower.includes('all india') || lower.includes('state') || lower.includes('maharashtra') || lower.includes('central')) {
     return { bg: '#EFF6FF', text: '#1D4ED8' }; // blue
   }
   if (lower.includes('subsidy') || lower.includes('loan') || lower.includes('grant') || lower.includes('merit')) {
     return { bg: '#FEF3C7', text: '#B45309' }; // amber
   }
-  return { bg: '#ECFDF5', text: '#065F46' }; // emerald
+  return { bg: '#F1F5F9', text: '#475569' }; // slate
 }
 
 function getIconName(icon?: string): React.ComponentProps<typeof FontAwesome>['name'] {
@@ -42,6 +45,12 @@ export function SchemeRecommendationCard({
     onPress(scheme.id);
   };
 
+  const hasSummary = Boolean(
+    scheme.benefitDescription &&
+    scheme.benefitDescription !== 'Verified citizen welfare scheme' &&
+    scheme.benefitDescription.trim().length > 0
+  );
+
   return (
     <TouchableOpacity
       style={styles.card}
@@ -50,39 +59,47 @@ export function SchemeRecommendationCard({
       accessibilityRole="button"
       accessibilityLabel={`View details for ${scheme.title}`}
     >
-      {/* Top Header Row with Icon, Title/Ministry, and Chevron */}
+      {/* Top Header Row with Icon, Title, and Chevron */}
       <View style={styles.topRow}>
         <View style={styles.iconBox}>
-          <FontAwesome name={getIconName(scheme.icon)} size={16} color={palette.emerald800} />
+          <FontAwesome name={getIconName(scheme.icon)} size={13} color={palette.emerald800} />
         </View>
 
         <View style={styles.titleCol}>
-          <Text style={styles.titleText}>{scheme.title}</Text>
+          <Text style={styles.titleText} numberOfLines={2}>{scheme.title}</Text>
           <Text style={styles.ministryText} numberOfLines={1}>
             {scheme.ministry}
           </Text>
         </View>
 
-        <FontAwesome name="chevron-right" size={13} color={colors.light.textSubtle} style={styles.chevron} />
+        <FontAwesome name="chevron-right" size={11} color={colors.light.textSubtle} style={styles.chevron} />
       </View>
 
-      {/* Benefit Highlight */}
-      <View style={styles.benefitContainer}>
+      {/* Real Summary (No empty gray skeleton box) */}
+      {hasSummary ? (
+        <Text style={styles.summaryText} numberOfLines={2}>
+          {scheme.benefitDescription}
+        </Text>
+      ) : null}
+
+      {/* Benefit Amount if provided */}
+      {scheme.benefitAmount ? (
         <Text style={styles.benefitAmount}>{scheme.benefitAmount}</Text>
-        <Text style={styles.benefitDesc}>{scheme.benefitDescription}</Text>
-      </View>
+      ) : null}
 
-      {/* Tags with Frame 4 color-coding */}
-      <View style={styles.tagsContainer}>
-        {scheme.tags.map((tag) => {
-          const style = getTagStyle(tag);
-          return (
-            <View key={tag} style={[styles.tagPill, { backgroundColor: style.bg }]}>
-              <Text style={[styles.tagText, { color: style.text }]}>{tag}</Text>
-            </View>
-          );
-        })}
-      </View>
+      {/* Compact Tags */}
+      {scheme.tags && scheme.tags.length > 0 ? (
+        <View style={styles.tagsContainer}>
+          {scheme.tags.map((tag) => {
+            const style = getTagStyle(tag);
+            return (
+              <View key={tag} style={[styles.tagPill, { backgroundColor: style.bg }]}>
+                <Text style={[styles.tagText, { color: style.text }]}>{tag}</Text>
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
     </TouchableOpacity>
   );
 }
@@ -90,78 +107,70 @@ export function SchemeRecommendationCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.light.surfaceElevated,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm + 2,
     borderWidth: 1,
     borderColor: colors.light.border,
-    marginVertical: spacing.xs,
+    marginVertical: 3,
   },
   topRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: spacing.xs + 2,
+    alignItems: 'center',
     gap: spacing.sm,
   },
   iconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: borderRadius.md,
+    width: 28,
+    height: 28,
+    borderRadius: 7,
     backgroundColor: '#ECFDF5',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#D1FAE5',
-    marginTop: 2,
   },
   titleCol: {
     flex: 1,
   },
   titleText: {
-    fontSize: fontSizes.base - 1,
+    fontSize: fontSizes.sm,
     fontWeight: fontWeights.bold,
     color: colors.light.text,
-    lineHeight: 20,
-    marginBottom: 2,
+    lineHeight: 18,
   },
   ministryText: {
-    fontSize: fontSizes.xs,
+    fontSize: fontSizes.xs - 1,
     color: colors.light.textMuted,
     fontWeight: fontWeights.medium,
+    marginTop: 1,
   },
   chevron: {
+    marginLeft: spacing.xs,
+  },
+  summaryText: {
+    fontSize: fontSizes.xs,
+    color: palette.slate600,
+    lineHeight: 16,
     marginTop: 6,
   },
-  benefitContainer: {
-    backgroundColor: palette.slate50,
-    padding: spacing.sm,
-    borderRadius: borderRadius.sm,
-    marginBottom: spacing.sm,
-    borderLeftWidth: 3,
-    borderLeftColor: palette.emerald600,
-  },
   benefitAmount: {
-    fontSize: fontSizes.sm + 1,
+    fontSize: fontSizes.xs,
     fontWeight: fontWeights.bold,
     color: palette.emerald700,
-    marginBottom: 2,
-  },
-  benefitDesc: {
-    fontSize: fontSizes.xs,
-    color: colors.light.textMuted,
-    lineHeight: 16,
+    marginTop: 4,
   },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.xs,
+    gap: 4,
+    marginTop: 6,
   },
   tagPill: {
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 3,
-    borderRadius: borderRadius.full,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: borderRadius.xs,
   },
   tagText: {
-    fontSize: fontSizes.xs - 1,
+    fontSize: fontSizes.xs - 2,
     fontWeight: fontWeights.semibold,
   },
 });

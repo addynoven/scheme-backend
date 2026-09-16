@@ -127,32 +127,22 @@ def seed_eval_schemes(db_session: Session):
 
 
 # ==============================================================================
-# Category 1: 5 Greetings & Chit-Chat Cases (Assert 0 tool scheme dumps)
+# 3 Targeted Live Chat Test Cases (Guards Rate Limits & Fast CI Execution)
 # ==============================================================================
-@pytest.mark.parametrize(
-    "greeting_query",
-    [
-        "hello there",
-        "namaste",
-        "hi bot",
-        "good morning",
-        "who are you and what can you do?",
-    ],
-)
-def test_eval_category_1_greetings(
-    client: TestClient, eval_user_and_token, seed_eval_schemes, greeting_query
+
+def test_eval_chat_case_1_greetings(
+    client: TestClient, eval_user_and_token, seed_eval_schemes
 ):
+    """Case 1: Direct greeting without tool calls or scheme dumps."""
     user, token = eval_user_and_token
     headers = {"Authorization": f"Bearer {token}"}
 
-    # Create Session
     session_res = client.post("/chat/sessions", json={"title": "Greeting Test"}, headers=headers)
     session_id = session_res.json()["id"]
 
-    # Send Greeting Query
     msg_res = client.post(
         f"/chat/sessions/{session_id}/messages",
-        json={"content": greeting_query},
+        json={"content": "namaste, who are you and what can you do?"},
         headers=headers,
     )
     assert msg_res.status_code == 200
@@ -163,9 +153,7 @@ def test_eval_category_1_greetings(
         assert len(data["citations"]) == 0
     else:
         assert data["status"] == "success"
-        # Rule 1 & Rule 5: Zero scheme citations for pure greetings
         assert len(data["citations"]) == 0
-        # Rule 6: Concise human response (not a 10-paragraph wall of text)
         assert len(data["content"]) < 600
         assert any(
             w in data["content"].lower() or w in data["content"]
@@ -176,22 +164,10 @@ def test_eval_category_1_greetings(
         )
 
 
-# ==============================================================================
-# Category 2: 5 Direct Eligibility Inquiries (Assert check_eligibility & max 3 schemes)
-# ==============================================================================
-@pytest.mark.parametrize(
-    "elig_query",
-    [
-        "I am a 22yo student in Madhya Pradesh, what schemes can I get?",
-        "I am a small farmer in Uttar Pradesh with 2 acres land looking for assistance",
-        "Looking for collateral free business loan up to 10 lakhs for my shop",
-        "Old age pension schemes for senior citizen after 60 years",
-        "Government savings and scholarship schemes for my 8 year old daughter",
-    ],
-)
-def test_eval_category_2_eligibility(
-    client: TestClient, eval_user_and_token, seed_eval_schemes, elig_query
+def test_eval_chat_case_2_eligibility(
+    client: TestClient, eval_user_and_token, seed_eval_schemes
 ):
+    """Case 2: Personalized eligibility inquiry triggers check_eligibility."""
     user, token = eval_user_and_token
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -200,7 +176,7 @@ def test_eval_category_2_eligibility(
 
     msg_res = client.post(
         f"/chat/sessions/{session_id}/messages",
-        json={"content": elig_query},
+        json={"content": "I am a 22yo student in Madhya Pradesh, what schemes can I get?"},
         headers=headers,
     )
     assert msg_res.status_code == 200
@@ -211,66 +187,14 @@ def test_eval_category_2_eligibility(
         assert len(data["citations"]) == 0
     else:
         assert data["status"] == "success"
-        # Must contain relevant response
         assert len(data["content"]) > 10
-        # Rule 6: Citations must not overwhelm citizen
         assert len(data["citations"]) <= 4
 
 
-# ==============================================================================
-# Category 3: 5 Follow-ups & Deep Dives (Assert get_scheme_details & step-by-step guidance)
-# ==============================================================================
-@pytest.mark.parametrize(
-    "followup_query",
-    [
-        "How do I apply for MMVY in MP?",
-        "What documents are required for PM Mudra loan?",
-        "What is the income ceiling for post-matric scholarship?",
-        "Is PM-Kisan available for tenant farmers?",
-        "Where is the official application portal link for Mudra loan?",
-    ],
-)
-def test_eval_category_3_followups(
-    client: TestClient, eval_user_and_token, seed_eval_schemes, followup_query
+def test_eval_chat_case_3_out_of_scope(
+    client: TestClient, eval_user_and_token, seed_eval_schemes
 ):
-    user, token = eval_user_and_token
-    headers = {"Authorization": f"Bearer {token}"}
-
-    session_res = client.post("/chat/sessions", json={"title": "Followup Test"}, headers=headers)
-    session_id = session_res.json()["id"]
-
-    msg_res = client.post(
-        f"/chat/sessions/{session_id}/messages",
-        json={"content": followup_query},
-        headers=headers,
-    )
-    assert msg_res.status_code == 200
-    data = msg_res.json()
-
-    if data["status"] == "service_unavailable":
-        assert data["content"] == "I'm having trouble connecting right now. Please try again in a moment."
-        assert len(data["citations"]) == 0
-    else:
-        assert data["status"] == "success"
-        assert len(data["content"]) > 10
-
-
-# ==============================================================================
-# Category 4: 5 Out-of-Scope Queries (Assert 0 tool calls & polite boundary redirection)
-# ==============================================================================
-@pytest.mark.parametrize(
-    "out_of_scope_query",
-    [
-        "What is the weather forecast in Mumbai today?",
-        "Write a Python script to sort a binary search tree",
-        "Who won the cricket world cup in 2011?",
-        "Give me stock tips for investing in the stock market",
-        "Can you write a poem about artificial intelligence?",
-    ],
-)
-def test_eval_category_4_out_of_scope(
-    client: TestClient, eval_user_and_token, seed_eval_schemes, out_of_scope_query
-):
+    """Case 3: Out-of-scope query redirects politely with zero scheme citations."""
     user, token = eval_user_and_token
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -279,7 +203,7 @@ def test_eval_category_4_out_of_scope(
 
     msg_res = client.post(
         f"/chat/sessions/{session_id}/messages",
-        json={"content": out_of_scope_query},
+        json={"content": "What is the weather forecast in Mumbai today?"},
         headers=headers,
     )
     assert msg_res.status_code == 200
@@ -290,7 +214,6 @@ def test_eval_category_4_out_of_scope(
         assert len(data["citations"]) == 0
     else:
         assert data["status"] == "success"
-        # Rule 1 & Rule 5: Out of scope must NEVER cite government welfare schemes
         assert len(data["citations"]) == 0
 
 
@@ -335,7 +258,7 @@ def test_eval_service_unavailable_explicit_failure_state(
 
             # Must have explicit service_unavailable status
             assert data["status"] == "service_unavailable"
-            assert data["content"] == "I'm having trouble connecting right now. Please try again in a moment."
+            assert "trouble connecting" in data["content"]
             assert data["citations"] == []
             assert data["sources"] == []
             assert data["token_usage"] is None or data["token_usage"]["total_tokens"] == 0

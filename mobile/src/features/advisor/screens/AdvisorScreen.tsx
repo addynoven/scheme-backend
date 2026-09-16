@@ -166,6 +166,7 @@ export function AdvisorScreen() {
                 onSchemePress={handleSchemePress}
                 onVaultPress={handleVaultPress}
                 onFollowUpPress={handleFollowUpSelect}
+                onViewAllPress={handleMoreTopics}
               />
             )}
             ListFooterComponent={

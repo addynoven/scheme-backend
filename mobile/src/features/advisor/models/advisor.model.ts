@@ -69,6 +69,10 @@ export type ChatSession = z.infer<typeof ChatSessionSchema>;
 export interface BackendSource {
   title: string;
   slug: string;
+  summary?: string;
+  category?: string;
+  state?: string;
+  jurisdiction?: string;
 }
 
 export interface BackendChatMessageResponse {

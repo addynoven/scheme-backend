@@ -10,7 +10,7 @@ export const OccupationTypeSchema = z.enum([
 ]);
 export type OccupationType = z.infer<typeof OccupationTypeSchema>;
 
-export const SocialCategorySchema = z.enum(['general', 'obc', 'sc', 'st']);
+export const SocialCategorySchema = z.enum(['general', 'obc', 'sc', 'st', 'ews']);
 export type SocialCategory = z.infer<typeof SocialCategorySchema>;
 
 export const GenderTypeSchema = z.enum(['male', 'female', 'other']);
