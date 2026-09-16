@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     # Security & JWT
     SECRET_KEY: str = (
-        "development_secret_key_change_in_production_super_secure_key_123456"
+        "insecure_development_secret_key_must_override_in_production"
     )
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days matching Better Auth
@@ -21,10 +21,10 @@ class Settings(BaseSettings):
     # Storage Configuration (Cloudinary vs S3/MinIO)
     STORAGE_PROVIDER: str = "cloudinary"  # "cloudinary" | "s3"
 
-    # Cloudinary Object Storage
-    CLOUDINARY_CLOUD_NAME: str | None = "dzao8h1ay"
-    CLOUDINARY_API_KEY: str | None = "818269883432412"
-    CLOUDINARY_API_SECRET: str | None = "TWQzFg_c4N28mPs3g07qlC29HT8"
+    # Cloudinary Object Storage (Must be configured via environment variables)
+    CLOUDINARY_CLOUD_NAME: str | None = None
+    CLOUDINARY_API_KEY: str | None = None
+    CLOUDINARY_API_SECRET: str | None = None
     CLOUDINARY_URL: str | None = None
 
     # S3 / MinIO Object Storage
@@ -85,11 +85,14 @@ class Settings(BaseSettings):
     def validate_production_secrets(self) -> None:
         """Halt startup if DEV_MODE is False but insecure default development keys are configured."""
         if not self.DEV_MODE and not self.TESTING:
-            default_secret = "development_secret_key_change_in_production_super_secure_key_123456"
-            if self.SECRET_KEY == default_secret:
+            insecure_defaults = (
+                "insecure_development_secret_key_must_override_in_production",
+                "development_secret_key_change_in_production_super_secure_key_123456",
+            )
+            if self.SECRET_KEY in insecure_defaults or len(self.SECRET_KEY) < 32:
                 raise RuntimeError(
-                    "CRITICAL SECURITY CONFIG ERROR: Default SECRET_KEY used in production mode (DEV_MODE=False). "
-                    "You MUST set a strong, unique SECRET_KEY in your environment!"
+                    "CRITICAL SECURITY CONFIG ERROR: Default or weak SECRET_KEY used in production mode (DEV_MODE=False). "
+                    "You MUST set a strong, unique SECRET_KEY (minimum 32 characters) in your environment!"
                 )
             if self.STORAGE_PROVIDER == "s3" and (self.S3_ACCESS_KEY == "minioadmin" or self.S3_SECRET_KEY == "minioadmin"):
                 raise RuntimeError(

@@ -27,18 +27,13 @@ if not app_logger.handlers:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if not settings.TESTING:
-        # Ensure schema migrations (self-healing column checks)
+        # Verify database connectivity
         db = SessionLocal()
         try:
             from sqlalchemy import text
-            from app.database import Base, engine
-
-            Base.metadata.create_all(bind=engine, checkfirst=True)
-            db.execute(text("ALTER TABLE chat_sessions ADD COLUMN IF NOT EXISTS session_uid VARCHAR(100);"))
-            db.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_chat_sessions_session_uid ON chat_sessions(session_uid);"))
-            db.commit()
-        except Exception:
-            db.rollback()
+            db.execute(text("SELECT 1"))
+        except Exception as e:
+            app_logger.warning(f"Database connectivity check failed during startup: {e}")
         finally:
             db.close()
 
@@ -162,7 +157,7 @@ app = FastAPI(
     lifespan=lifespan,
     contact={
         "name": "Scheme Navigator Engineering Team",
-        "url": "https://github.com/side-project/scheme-backend",
+        "url": "https://github.com/addynoven/scheme-backend",
     },
     license_info={
         "name": "MIT License",
@@ -185,8 +180,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
 
 # Register centralized exception handlers
@@ -199,12 +194,25 @@ from app.core.deps import get_db
 
 
 @app.get(
-    "/health",
+    "/health/live",
+    tags=["Health"],
+    summary="Liveness probe for process supervision",
+    response_description="Process liveness status",
+)
+def liveness_check():
+    return {
+        "status": "alive",
+        "version": "2.0.0",
+    }
+
+
+@app.get(
+    "/health/ready",
     tags=["Health"],
     summary="Check active system readiness & component health",
     response_description="Operational health status across DB, S3 Storage, and Bitmask Engine",
 )
-def health_check(db: Session = Depends(get_db)):
+def readiness_check(db: Session = Depends(get_db)):
     from sqlalchemy import text
     from fastapi import HTTPException, status
     from app.core.storage import storage_service
@@ -265,6 +273,16 @@ def health_check(db: Session = Depends(get_db)):
         "version": "2.0.0",
         "checks": checks,
     }
+
+
+@app.get(
+    "/health",
+    tags=["Health"],
+    summary="Backward-compatible readiness health check",
+    response_description="Alias to /health/ready",
+)
+def health_check(db: Session = Depends(get_db)):
+    return readiness_check(db=db)
 
 
 app.include_router(auth_router)

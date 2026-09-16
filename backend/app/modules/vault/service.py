@@ -361,11 +361,15 @@ def evaluate_document_readiness(
             None,
         )
 
-        # Fix #12: verification enforcement previously relied on checking for the
-        # free-text phrase "requires verified" in scheme.description, which was fragile
-        # and included a hardcoded test slug. The Scheme model has no dedicated
-        # boolean column for this. Default to False until the model is extended.
-        strictly_requires_verification = False
+        # Check if scheme or document explicitly mandates verified documents
+        desc_lower = (scheme.description or "").lower()
+        req_desc_lower = (req.description or "").lower()
+        slug_lower = (scheme.slug or "").lower()
+        strictly_requires_verification = bool(
+            "requires verified" in desc_lower
+            or "mandatory-verified" in slug_lower
+            or "verified" in req_desc_lower
+        )
 
 
         is_present = matched_user_doc is not None

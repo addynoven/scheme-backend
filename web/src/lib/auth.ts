@@ -10,12 +10,19 @@ const pool = new Pool({
   connectionString,
 });
 
+const authSecret =
+  process.env.AUTH_SECRET ||
+  process.env.NEXT_PUBLIC_AUTH_SECRET;
+
+if (!authSecret && process.env.NODE_ENV === "production") {
+  throw new Error("AUTH_SECRET environment variable is required in production");
+}
+
 export const auth = betterAuth({
   database: pool,
   secret:
-    process.env.AUTH_SECRET ||
-    process.env.NEXT_PUBLIC_AUTH_SECRET ||
-    "development_secret_key_change_in_production_super_secure_key_123456",
+    authSecret ||
+    "insecure_development_secret_key_must_override_in_production",
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,

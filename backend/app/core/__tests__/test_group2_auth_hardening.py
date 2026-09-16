@@ -70,7 +70,7 @@ def test_production_config_validation():
 
         with pytest.raises(RuntimeError) as exc_info:
             settings.validate_production_secrets()
-        assert "Default SECRET_KEY used in production mode" in str(exc_info.value)
+        assert "Default or weak SECRET_KEY used in production mode" in str(exc_info.value)
     finally:
         # Restore settings
         settings.DEV_MODE = orig_dev_mode

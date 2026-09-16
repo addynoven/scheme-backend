@@ -340,7 +340,7 @@ git commit -m "feat: describe the change"
 
 ## License
 
-No license file is currently declared in the repository. Without an explicit license, the code should not be assumed to be available for unrestricted reuse.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Author
 

@@ -21,3 +21,22 @@ def test_health_check_returns_degraded_on_storage_failure(client: TestClient):
         data = res.json()
         assert "storage" in data["detail"]["checks"]
         assert "unhealthy" in data["detail"]["checks"]["storage"]
+
+
+def test_health_live_probe_returns_200_instantly(client: TestClient):
+    res = client.get("/health/live")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "alive"
+    assert data["version"] == "2.0.0"
+
+
+def test_health_ready_probe(client: TestClient):
+    res = client.get("/health/ready")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "ok"
+    assert data["version"] == "2.0.0"
+    assert data["checks"]["database"] == "healthy"
+    assert data["checks"]["storage"] == "healthy"
+
