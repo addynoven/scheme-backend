@@ -298,9 +298,9 @@ def call_groq_api(
                 completion_tokens = getattr(usage, "completion_tokens", 0) if usage else 0
                 total_tokens = getattr(usage, "total_tokens", 0) if usage else (prompt_tokens + completion_tokens)
 
-                logger.info(
-                    f"⚡ [Groq AI] Model {model} succeeded in {duration_ms}ms "
-                    f"(prompt_tokens={prompt_tokens}, completion_tokens={completion_tokens}, parts={len(parts)})"
+                logger.warning(
+                    f"⚡ [Groq AI Call] Model '{model}' succeeded in {duration_ms}ms "
+                    f"(tokens: prompt={prompt_tokens}, completion={completion_tokens}, parts={len(parts)})"
                 )
 
                 return {
@@ -430,7 +430,7 @@ def call_groq_for_langgraph(
                 "total_tokens": getattr(usage, "total_tokens", 0) if usage else 0,
             }
 
-            logger.info(f"⚡ [LangGraph Groq] Succeeded in {duration_ms}ms with model {model}")
+            logger.warning(f"⚡ [LangGraph Groq Call] Succeeded in {duration_ms}ms with model '{model}'")
             return ai_message, usage_dict, model
 
         except Exception as e:

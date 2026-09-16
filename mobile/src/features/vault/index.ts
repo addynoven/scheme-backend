@@ -7,7 +7,6 @@ export * from './components/ReadinessMeter';
 export * from './components/RequiredDocsList';
 export * from './components/VaultDocumentCard';
 export * from './components/UploadDocSheet';
-export * from './components/ExtractVerifyModal';
 export * from './components/DocumentSavedModal';
 export * from './screens/VaultHomeScreen';
 export * from './screens/SchemeReadinessScreen';

@@ -13,6 +13,16 @@ from app.modules.schemes.router import router as schemes_router
 from app.modules.vault.router import router as vault_router
 from app.core.config import settings
 
+import logging
+import sys
+
+app_logger = logging.getLogger("app")
+app_logger.setLevel(logging.INFO)
+if not app_logger.handlers:
+    _handler = logging.StreamHandler(sys.stdout)
+    _handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
+    app_logger.addHandler(_handler)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

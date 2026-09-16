@@ -1,6 +1,6 @@
 import uuid
 from typing import Any
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import EntityNotFoundError, SchemeNotFoundError
@@ -186,21 +186,52 @@ def upload_user_document(
     if user:
         citizen_uid = user.citizen_uid
 
-    doc = UserDocument(
-        user_id=user_id,
-        household_member_id=household_member_id,
-        citizen_uid=citizen_uid,
-        document_type=document_type.strip(),
-        document_number_masked=document_number_masked,
-        file_key=object_key,
-        file_name=clean_file_name,
-        file_size_bytes=len(file_bytes),
-        mime_type=validated_mime,
-        is_verified=False,
+    # Upsert: check if a document of the same type already exists for this user / member
+    stmt = select(UserDocument).where(
+        UserDocument.user_id == user_id,
+        func.lower(UserDocument.document_type) == document_type.strip().lower(),
     )
-    db.add(doc)
+    if household_member_id is not None:
+        stmt = stmt.where(UserDocument.household_member_id == household_member_id)
+    else:
+        stmt = stmt.where(UserDocument.household_member_id.is_(None))
+
+    existing_doc = db.scalar(stmt)
+    old_file_key = None
+
+    if existing_doc:
+        old_file_key = existing_doc.file_key
+        doc = existing_doc
+        doc.citizen_uid = citizen_uid
+        doc.file_key = object_key
+        doc.file_name = clean_file_name
+        doc.file_size_bytes = len(file_bytes)
+        doc.mime_type = validated_mime
+        doc.is_verified = False
+        if document_number_masked:
+            doc.document_number_masked = document_number_masked
+    else:
+        doc = UserDocument(
+            user_id=user_id,
+            household_member_id=household_member_id,
+            citizen_uid=citizen_uid,
+            document_type=document_type.strip(),
+            document_number_masked=document_number_masked,
+            file_key=object_key,
+            file_name=clean_file_name,
+            file_size_bytes=len(file_bytes),
+            mime_type=validated_mime,
+            is_verified=False,
+        )
+        db.add(doc)
+
     try:
         db.commit()
+        if old_file_key and old_file_key != object_key:
+            try:
+                storage_service.delete_object(old_file_key)
+            except Exception:
+                pass
     except Exception:
         db.rollback()
         try:
@@ -557,22 +588,52 @@ def confirm_direct_upload(
     citizen_uid = user.citizen_uid if user else None
     clean_file_name = re.sub(r'[^a-zA-Z0-9_\-\.]', '_', payload.file_name).strip() or "document"
 
-    doc = UserDocument(
-        user_id=user_id,
-        household_member_id=payload.household_member_id,
-        citizen_uid=citizen_uid,
-        document_type=payload.document_type.strip(),
-        document_number_masked=payload.document_number_masked,
-        file_key=payload.public_id,
-        file_name=clean_file_name,
-        file_size_bytes=payload.file_size_bytes,
-        mime_type=payload.mime_type,
-        is_verified=False,
+    stmt = select(UserDocument).where(
+        UserDocument.user_id == user_id,
+        func.lower(UserDocument.document_type) == payload.document_type.strip().lower(),
     )
-    db.add(doc)
+    if payload.household_member_id is not None:
+        stmt = stmt.where(UserDocument.household_member_id == payload.household_member_id)
+    else:
+        stmt = stmt.where(UserDocument.household_member_id.is_(None))
+
+    existing_doc = db.scalar(stmt)
+    old_file_key = None
+
+    if existing_doc:
+        old_file_key = existing_doc.file_key
+        doc = existing_doc
+        doc.citizen_uid = citizen_uid
+        doc.file_key = payload.public_id
+        doc.file_name = clean_file_name
+        doc.file_size_bytes = payload.file_size_bytes
+        doc.mime_type = payload.mime_type
+        doc.is_verified = False
+        if payload.document_number_masked:
+            doc.document_number_masked = payload.document_number_masked
+    else:
+        doc = UserDocument(
+            user_id=user_id,
+            household_member_id=payload.household_member_id,
+            citizen_uid=citizen_uid,
+            document_type=payload.document_type.strip(),
+            document_number_masked=payload.document_number_masked,
+            file_key=payload.public_id,
+            file_name=clean_file_name,
+            file_size_bytes=payload.file_size_bytes,
+            mime_type=payload.mime_type,
+            is_verified=False,
+        )
+        db.add(doc)
+
     try:
         db.commit()
         db.refresh(doc)
+        if old_file_key and old_file_key != payload.public_id:
+            try:
+                storage_service.delete_object(old_file_key)
+            except Exception:
+                pass
     except Exception:
         db.rollback()
         raise

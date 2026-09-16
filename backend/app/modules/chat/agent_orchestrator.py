@@ -119,7 +119,11 @@ def _call_gemini_api(contents: list[dict[str, Any]], system_instruction: str) ->
             try:
                 with urllib.request.urlopen(req, timeout=12) as resp:
                     if resp.status == 200:
-                        return json.loads(resp.read().decode("utf-8"))
+                        parsed = json.loads(resp.read().decode("utf-8"))
+                        parsed["provider"] = "gemini"
+                        parsed["model"] = model
+                        logger.info(f"🤖 [Gemini API] Request succeeded with model '{model}'")
+                        return parsed
             except urllib.error.HTTPError as e:
                 if e.code in (401, 403):
                     logger.error(f"❌ [Gemini API] Auth error HTTP {e.code} for model {model}")
@@ -142,13 +146,20 @@ def _call_gemini_api(contents: list[dict[str, Any]], system_instruction: str) ->
                     logger.warning(f"⚠️ [Gemini Rate Limit (429)] Triggering immediate failover on model {model}...")
                     if getattr(settings, "GROQ_API_KEY", None):
                         from app.modules.chat.groq_provider import call_groq_api
+                        logger.warning("⚡ [Failover -> GROQ] Attempting failover to Groq AI...")
                         groq_res = call_groq_api(contents, system_instruction)
                         if groq_res:
+                            groq_model = groq_res.get("actual_model", groq_res.get("model", "groq"))
+                            logger.warning(
+                                f"⚡ [Failover to Groq Success] Groq handled request using model '{groq_model}'"
+                            )
                             return groq_res
+                        logger.warning("⚠️ [Failover -> GROQ Failed] Groq did not return response")
                     # Secondary fallback to local CLI AI (agy)
-                    logger.warning("⚠️ [Gemini 429 & Groq Unavailable] Falling back to Local CLI AI (agy)...")
+                    logger.warning("💻 [Failover -> AGY CLI] Falling back to Local CLI AI (agy)...")
                     agy_res = _call_agy_cli(contents, system_instruction)
                     if agy_res:
+                        logger.warning("💻 [Failover to AGY Success] Local CLI AI (agy) handled request")
                         agy_res["provider"] = "agy"
                         return agy_res
                     break
@@ -164,19 +175,20 @@ def _call_gemini_api(contents: list[dict[str, Any]], system_instruction: str) ->
 
     # Failover to Groq AI if Gemini was exhausted
     if getattr(settings, "GROQ_API_KEY", None):
-        logger.warning("⚠️ [Gemini Exhausted] Seamlessly failing over to Groq AI...")
+        logger.warning("⚡ [Gemini Exhausted -> GROQ] Seamlessly failing over to Groq AI...")
         from app.modules.chat.groq_provider import call_groq_api
         groq_res = call_groq_api(contents, system_instruction)
         if groq_res:
-            logger.info(f"✅ [Failover Success] Groq AI handled request successfully with {groq_res.get('actual_model', groq_res.get('model'))}.")
+            groq_model = groq_res.get("actual_model", groq_res.get("model", "groq"))
+            logger.warning(f"⚡ [Failover to Groq Success] Groq AI handled request successfully with model '{groq_model}'.")
             return groq_res
-        logger.warning("⚠️ [Failover Failed] Groq AI fallback was also exhausted.")
+        logger.warning("⚠️ [Failover -> GROQ Failed] Groq AI fallback was also exhausted.")
 
     # Secondary failover to Local CLI AI (agy) if Groq is also exhausted
-    logger.warning("⚠️ [Gemini & Groq Exhausted] Falling back to Local CLI AI (agy)...")
+    logger.warning("💻 [Gemini & Groq Exhausted -> AGY CLI] Falling back to Local CLI AI (agy)...")
     agy_res = _call_agy_cli(contents, system_instruction)
     if agy_res:
-        logger.info("✅ [Failover Success] Local CLI AI (agy) handled request successfully.")
+        logger.warning("💻 [Failover to AGY Success] Local CLI AI (agy) handled request successfully.")
         agy_res["provider"] = "agy"
         return agy_res
 
@@ -261,11 +273,12 @@ def _call_agy_cli(contents: list[dict[str, Any]], system_instruction: str) -> di
     if has_tool_result:
         full_prompt += "\n\nCRITICAL INSTRUCTION: Factual Tool Results are already provided above. Do NOT request another tool call. You MUST output action: 'text' to explain the results clearly to the citizen."
 
-    model_name = getattr(settings, "AGY_MODEL", "gemini-3.7-flash-low") or "gemini-3.7-flash-low"
-    logger.info(f"🤖 [agy CLI] Executing prompt using model: {model_name} (sandbox=True)")
+    model_name = getattr(settings, "AGY_MODEL", "gemini-3.6-flash") or "gemini-3.6-flash"
+    logger.warning(f"💻 [AGY CLI Local AI] Executing prompt using model: {model_name} (sandbox=True)")
     cmd = [
         agy_bin,
         "--model", model_name,
+        "--effort", "low",
         "--output-format", "json",
         "--json-schema", json.dumps(AGY_JSON_SCHEMA),
         "--sandbox",
@@ -275,7 +288,7 @@ def _call_agy_cli(contents: list[dict[str, Any]], system_instruction: str) -> di
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         if res.returncode != 0:
-            logger.warning(f"❌ [agy CLI] Process returned non-zero code {res.returncode}: {res.stderr}")
+            logger.warning(f"❌ [AGY CLI Local AI] Process returned non-zero code {res.returncode}: {res.stderr}")
             return None
 
         raw = json.loads(res.stdout)
@@ -285,13 +298,13 @@ def _call_agy_cli(contents: list[dict[str, Any]], system_instruction: str) -> di
             try:
                 structured = json.loads(resp_str)
             except Exception:
-                logger.warning(f"❌ [agy CLI] Failed to parse structured output from raw response: {res.stdout[:200]}")
+                logger.warning(f"❌ [AGY CLI Local AI] Failed to parse structured output from raw response: {res.stdout[:200]}")
                 return None
 
-        logger.info(f"✅ [agy CLI] Successfully received structured action: '{structured.get('action')}'")
+        logger.warning(f"💻 [AGY CLI Local AI] Successfully received action: '{structured.get('action')}'")
         action = structured.get("action")
         if action == "tool_call":
-            logger.info(f"🔧 [agy CLI] Model requested tool call: {structured.get('tool_name')} with args: {structured.get('tool_args')}")
+            logger.warning(f"🔧 [AGY CLI Local AI] Model requested tool call: {structured.get('tool_name')} with args: {structured.get('tool_args')}")
             parts = [
                 {
                     "functionCall": {
@@ -301,7 +314,7 @@ def _call_agy_cli(contents: list[dict[str, Any]], system_instruction: str) -> di
                 }
             ]
         else:
-            logger.info(f"💬 [agy CLI] Model returned direct text response ({len(structured.get('text', ''))} chars)")
+            logger.warning(f"💬 [AGY CLI Local AI] Model returned direct text response ({len(structured.get('text', ''))} chars)")
             parts = [{"text": structured.get("text", "")}]
 
         usage = raw.get("usage", {})
@@ -551,10 +564,21 @@ def orchestrate_agentic_turn(
         contents.append({"role": "user", "parts": function_response_parts})
 
     duration_ms = int((time.perf_counter() - start_time) * 1000)
-    logger.info(
-        f"Agent turn completed in {duration_ms}ms | Iterations: {iteration} | "
-        f"Tools: {tools_called_names} | Tokens: {token_usage['total_tokens']}"
-    )
+    if actual_provider == "groq":
+        logger.warning(
+            f"⚡ [Chat AI: GROQ] Answered via model '{actual_model}' in {duration_ms}ms | "
+            f"Iterations: {iteration} | Tools: {tools_called_names} | Tokens: {token_usage['total_tokens']}"
+        )
+    elif actual_provider == "agy":
+        logger.warning(
+            f"💻 [Chat AI: AGY CLI] Answered via Local CLI AI (agy) in {duration_ms}ms | "
+            f"Iterations: {iteration} | Tools: {tools_called_names} | Tokens: {token_usage['total_tokens']}"
+        )
+    else:
+        logger.warning(
+            f"🤖 [Chat AI: GEMINI] Answered via model '{actual_model}' in {duration_ms}ms | "
+            f"Iterations: {iteration} | Tools: {tools_called_names} | Tokens: {token_usage['total_tokens']}"
+        )
 
     if not final_response_text:
         final_response_text = "I am ready to assist you with government welfare programs. Please let me know what you need."

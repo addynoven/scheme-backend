@@ -1,41 +1,36 @@
 import { create } from 'zustand';
 import {
-  ExtractedFacts,
-  UploadMethod,
+  formatFileSize,
   VaultDevScreen,
   VaultDocument,
+  VaultDocumentCategory,
 } from '../models/vault.model';
 import { inferCategory, type BackendVaultDocument } from '../repositories/vault.api';
-
-// Default extraction form values shown while user edits. Not real data.
-const BLANK_EXTRACTION: ExtractedFacts = {
-  fullName: '',
-  dob: '',
-  gender: 'male',
-  state: '',
-  address: '',
-  documentNumber: '',
-};
 
 interface VaultState {
   documents: VaultDocument[];
   selectedSchemeId: string;
   activeDevScreen: VaultDevScreen;
   uploadModalVisible: boolean;
-  extractModalVisible: boolean;
   savedModalVisible: boolean;
-  currentExtraction: ExtractedFacts;
   lastSavedDocTitle: string;
-  targetCategory?: VaultDocument['category'];
+  targetDocTitle?: string;
+  targetCategory?: VaultDocumentCategory;
 
   // Actions
   setDevScreen: (screen: VaultDevScreen) => void;
   selectScheme: (schemeId: string) => void;
-  openUploadSheet: (title?: string, category?: VaultDocument['category']) => void;
+  openUploadSheet: (title?: string, category?: VaultDocumentCategory) => void;
   closeUploadSheet: () => void;
-  startExtraction: (method: UploadMethod, targetCategory?: VaultDocument['category']) => void;
-  updateExtraction: (fields: Partial<ExtractedFacts>) => void;
-  confirmExtractionAndSave: () => void;
+  saveDocumentDirect: (params: {
+    title: string;
+    category?: VaultDocumentCategory;
+    fileName?: string;
+    fileSize?: string;
+    mimeType?: string;
+    fileUri?: string;
+    downloadUrl?: string;
+  }) => void;
   closeSavedModal: () => void;
   addDocument: (doc: VaultDocument) => void;
   deleteDocument: (id: string) => void;
@@ -48,22 +43,18 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   selectedSchemeId: '',
   activeDevScreen: '1_open_vault',
   uploadModalVisible: false,
-  extractModalVisible: false,
   savedModalVisible: false,
-  currentExtraction: { ...BLANK_EXTRACTION },
   lastSavedDocTitle: '',
+  targetDocTitle: undefined,
+  targetCategory: undefined,
 
   setDevScreen: (screen: VaultDevScreen) => {
-    // Screen transitions must NEVER mutate documents.
     const baseModal = {
       uploadModalVisible: false,
-      extractModalVisible: false,
       savedModalVisible: false,
     };
     if (screen === '3_upload_document') {
       set({ activeDevScreen: screen, ...baseModal, uploadModalVisible: true });
-    } else if (screen === '4_extract_verify') {
-      set({ activeDevScreen: screen, ...baseModal, extractModalVisible: true });
     } else if (screen === '5_document_saved') {
       set({ activeDevScreen: screen, ...baseModal, savedModalVisible: true });
     } else {
@@ -75,11 +66,12 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     set({ selectedSchemeId: schemeId });
   },
 
-  openUploadSheet: (title?: string, category?: VaultDocument['category']) => {
+  openUploadSheet: (title?: string, category?: VaultDocumentCategory) => {
     set({
       uploadModalVisible: true,
+      targetDocTitle: title || '',
       lastSavedDocTitle: title || '',
-      targetCategory: category,
+      targetCategory: category || (title ? inferCategory(title) : undefined),
     });
   },
 
@@ -87,50 +79,57 @@ export const useVaultStore = create<VaultState>((set, get) => ({
     set({ uploadModalVisible: false });
   },
 
-  startExtraction: (_method: UploadMethod, targetCategory?: VaultDocument['category']) => {
-    set((state) => ({
-      uploadModalVisible: false,
-      extractModalVisible: true,
-      targetCategory: targetCategory || state.targetCategory,
-    }));
-  },
-
-  updateExtraction: (fields: Partial<ExtractedFacts>) => {
-    set((state) => ({
-      currentExtraction: { ...state.currentExtraction, ...fields },
-    }));
-  },
-
-  confirmExtractionAndSave: () => {
-    const extraction = get().currentExtraction;
-    const title = get().lastSavedDocTitle || 'Document';
-    // targetCategory is set when user taps "Upload" on a specific missing doc row.
-    // Fall back to inferCategory from the title string they confirmed.
-    const category: VaultDocument['category'] = get().targetCategory ?? inferCategory(title);
+  saveDocumentDirect: ({
+    title,
+    category,
+    fileName,
+    fileSize,
+    mimeType,
+    fileUri,
+    downloadUrl,
+  }) => {
+    const finalTitle = title.trim() || 'Document';
+    const finalCategory = category || inferCategory(finalTitle);
+    const finalFileName =
+      fileName || `${finalTitle.toLowerCase().replace(/[^a-z0-9]/g, '_')}.pdf`;
 
     const newDoc: VaultDocument = {
       id: `doc-${Date.now()}`,
-      title,
-      fileName: `${title.toLowerCase().replace(/\s+/g, '_')}.pdf`,
-      fileSize: '1.2 MB',
-      mimeType: 'application/pdf',
-      category,
+      title: finalTitle,
+      fileName: finalFileName,
+      fileSize: fileSize || '0 KB',
+      mimeType: mimeType || 'application/pdf',
+      category: finalCategory,
       uploadDate: 'Just now',
       isVerified: true,
-      extractedData: {
-        owner: extraction.fullName,
-        documentNumber: extraction.documentNumber || '',
-        state: extraction.state,
-      },
+      fileUri,
+      downloadUrl,
     };
 
-    set((state) => ({
-      extractModalVisible: false,
-      savedModalVisible: true,
-      lastSavedDocTitle: title,
-      targetCategory: undefined,
-      documents: [newDoc, ...state.documents],
-    }));
+    set((state) => {
+      const existingIdx = state.documents.findIndex(
+        (d) => d.title.trim().toLowerCase() === finalTitle.toLowerCase()
+      );
+      let updatedDocs: VaultDocument[];
+      if (existingIdx >= 0) {
+        updatedDocs = [...state.documents];
+        updatedDocs[existingIdx] = {
+          ...updatedDocs[existingIdx],
+          ...newDoc,
+          id: updatedDocs[existingIdx].id,
+        };
+      } else {
+        updatedDocs = [newDoc, ...state.documents];
+      }
+      return {
+        uploadModalVisible: false,
+        savedModalVisible: true,
+        lastSavedDocTitle: finalTitle,
+        targetDocTitle: undefined,
+        targetCategory: undefined,
+        documents: updatedDocs,
+      };
+    });
   },
 
   closeSavedModal: () => {
@@ -138,7 +137,21 @@ export const useVaultStore = create<VaultState>((set, get) => ({
   },
 
   addDocument: (doc: VaultDocument) => {
-    set((state) => ({ documents: [doc, ...state.documents] }));
+    set((state) => {
+      const existingIdx = state.documents.findIndex(
+        (d) => d.title.trim().toLowerCase() === doc.title.trim().toLowerCase()
+      );
+      if (existingIdx >= 0) {
+        const updated = [...state.documents];
+        updated[existingIdx] = {
+          ...updated[existingIdx],
+          ...doc,
+          id: updated[existingIdx].id,
+        };
+        return { documents: updated };
+      }
+      return { documents: [doc, ...state.documents] };
+    });
   },
 
   deleteDocument: (id: string) => {
@@ -151,11 +164,12 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       id: String(doc.id),
       title: doc.document_type,
       fileName: doc.file_name,
-      fileSize: `${(doc.file_size_bytes / (1024 * 1024)).toFixed(1)} MB`,
+      fileSize: formatFileSize(doc.file_size_bytes),
       mimeType: doc.mime_type,
       category: inferCategory(doc.document_type),
       uploadDate: 'Synced',
       isVerified: doc.is_verified,
+      downloadUrl: doc.download_url || undefined,
     }));
     set({ documents: mapped });
   },
@@ -166,10 +180,9 @@ export const useVaultStore = create<VaultState>((set, get) => ({
       selectedSchemeId: '',
       activeDevScreen: '1_open_vault',
       uploadModalVisible: false,
-      extractModalVisible: false,
       savedModalVisible: false,
-      currentExtraction: { ...BLANK_EXTRACTION },
       lastSavedDocTitle: '',
+      targetDocTitle: undefined,
       targetCategory: undefined,
     });
   },

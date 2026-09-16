@@ -27,7 +27,8 @@ export function useVaultDocumentsQuery(householdMemberId?: number) {
 /**
  * Hook to check scheme document readiness against citizen's uploaded documents.
  */
-export function useSchemeReadinessQuery(schemeId: number) {
+export function useSchemeReadinessQuery(schemeId: string | number) {
+  const isValid = Boolean(schemeId) && schemeId !== '0';
   return useQuery<BackendSchemeReadinessResponse, Error>({
     queryKey: vaultKeys.readiness(schemeId),
     queryFn: async () => {
@@ -37,8 +38,36 @@ export function useSchemeReadinessQuery(schemeId: number) {
       }
       return result.data;
     },
-    enabled: schemeId > 0,
+    enabled: isValid,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Mutation hook for standard upload to FastAPI backend.
+ */
+export function useUploadDocumentMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      uri: string;
+      fileName: string;
+      mimeType: string;
+      documentType: string;
+      documentNumberMasked?: string;
+      householdMemberId?: number;
+    }) => {
+      const result = await vaultApi.uploadDocument(params);
+      if (!result.ok) {
+        throw result.error;
+      }
+      return result.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: vaultKeys.documents() });
+      queryClient.invalidateQueries({ queryKey: vaultKeys.all });
+    },
   });
 }
 

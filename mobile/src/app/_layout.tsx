@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import { View, Image, StatusBar } from 'react-native';
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -13,6 +13,9 @@ import { ErrorBoundary } from '@/core/errors';
 import { QueryProvider } from '@/core/query';
 import { Toast } from '@/core/components';
 import { colors } from '@/core/theme';
+import { authSessionExpired } from '@/core/events/authEvents';
+import { authStorage } from '@/features/auth';
+import { secureStorage } from '@/core/storage/secureStorage';
 
 export const unstable_settings = {
   initialRouteName: 'index',
@@ -66,6 +69,18 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav({ onLayout }: { onLayout?: () => void }) {
+  const router = useRouter();
+
+  // Listen for 401 session-expired events from httpClient
+  useEffect(() => {
+    const unsubscribe = authSessionExpired.subscribe(async () => {
+      await secureStorage.remove('auth_token');
+      authStorage.clearSession();
+      router.replace('/auth');
+    });
+    return unsubscribe;
+  }, [router]);
+
   const customLightTheme = {
     ...DefaultTheme,
     colors: {

@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  Alert,
   Image,
   RefreshControl,
   ScrollView,
@@ -12,11 +13,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
 import { useVaultStore } from '../store/vault.store';
-import { useVaultDocumentsQuery } from '../hooks/useVaultQuery';
+import {
+  useDeleteDocumentMutation,
+  useUploadDocumentMutation,
+  useVaultDocumentsQuery,
+} from '../hooks/useVaultQuery';
 import { VaultDocumentCard } from '../components/VaultDocumentCard';
 import { UploadDocSheet } from '../components/UploadDocSheet';
-import { ExtractVerifyModal } from '../components/ExtractVerifyModal';
 import { DocumentSavedModal } from '../components/DocumentSavedModal';
+import { DocumentUploadPayload, formatFileSize } from '../models/vault.model';
 import { palette } from '@/core/theme/colors';
 import { spacing } from '@/core/theme/spacing';
 import { toastService } from '@/core/components/Toast';
@@ -35,14 +40,13 @@ export const VaultHomeScreen: React.FC<VaultHomeScreenProps> = ({ onGoToReadines
   const {
     documents,
     uploadModalVisible,
-    extractModalVisible,
     savedModalVisible,
-    currentExtraction,
     lastSavedDocTitle,
+    targetDocTitle,
+    targetCategory,
     openUploadSheet,
     closeUploadSheet,
-    startExtraction,
-    confirmExtractionAndSave,
+    saveDocumentDirect,
     closeSavedModal,
     deleteDocument,
     syncServerDocuments,
@@ -55,6 +59,61 @@ export const VaultHomeScreen: React.FC<VaultHomeScreenProps> = ({ onGoToReadines
       syncServerDocuments(serverDocs);
     }
   }, [serverDocs, syncServerDocuments]);
+
+  const uploadDocMutation = useUploadDocumentMutation();
+  const deleteDocMutation = useDeleteDocumentMutation();
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleDeleteDocument = async (id: string) => {
+    try {
+      deleteDocument(id);
+      const numId = parseInt(id, 10);
+      if (!isNaN(numId) && numId > 0) {
+        await deleteDocMutation.mutateAsync(numId);
+      }
+      toastService.show('Document deleted permanently', 'info');
+    } catch (error) {
+      console.warn('Failed to delete document:', error);
+      refetch();
+      toastService.show('Failed to delete document from server', 'error');
+    }
+  };
+
+  const handleUpload = async (params: DocumentUploadPayload) => {
+    try {
+      setIsUploading(true);
+      let downloadUrl: string | undefined = undefined;
+      if (params.fileUri) {
+        const uploadedDoc = await uploadDocMutation.mutateAsync({
+          uri: params.fileUri,
+          fileName:
+            params.fileName ||
+            `${params.title.toLowerCase().replace(/[^a-z0-9]/g, '_')}.jpg`,
+          mimeType: params.mimeType || 'image/jpeg',
+          documentType: params.title,
+        });
+        downloadUrl = uploadedDoc?.download_url || undefined;
+      }
+      saveDocumentDirect({
+        title: params.title,
+        category: params.category,
+        fileName: params.fileName,
+        fileSize: formatFileSize(params.fileSize),
+        mimeType: params.mimeType,
+        fileUri: params.fileUri,
+        downloadUrl,
+      });
+      toastService.show(`${params.title} uploaded successfully!`, 'success');
+    } catch (error) {
+      console.warn('Document upload error:', error);
+      Alert.alert(
+        'Upload Failed',
+        'Could not upload document to secure vault. Please check your network and try again.'
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleSavedData = () => {
     toastService.show('Saved Profile Data: 12 facts verified from documents', 'info');
@@ -244,8 +303,7 @@ export const VaultHomeScreen: React.FC<VaultHomeScreenProps> = ({ onGoToReadines
               <VaultDocumentCard
                 key={doc.id}
                 document={doc}
-                onDelete={deleteDocument}
-                onReplace={() => openUploadSheet()}
+                onDelete={handleDeleteDocument}
               />
             ))
           )}
@@ -256,15 +314,10 @@ export const VaultHomeScreen: React.FC<VaultHomeScreenProps> = ({ onGoToReadines
       <UploadDocSheet
         visible={uploadModalVisible}
         onClose={closeUploadSheet}
-        onSelectMethod={(method) => startExtraction(method)}
-      />
-
-      {/* Extract & Verify Fullscreen Modal */}
-      <ExtractVerifyModal
-        visible={extractModalVisible}
-        onClose={() => useVaultStore.setState({ extractModalVisible: false })}
-        initialFacts={currentExtraction}
-        onConfirm={confirmExtractionAndSave}
+        defaultTitle={targetDocTitle}
+        defaultCategory={targetCategory}
+        isUploading={isUploading}
+        onUpload={handleUpload}
       />
 
       {/* Document Saved Confetti Modal */}

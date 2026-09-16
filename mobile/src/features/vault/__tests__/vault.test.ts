@@ -2,7 +2,6 @@ import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { inferCategory, mapBackendReadiness, type BackendSchemeReadinessResponse } from '../repositories/vault.api';
 import { useVaultStore } from '../store/vault.store';
-import { ExtractedFactsSchema } from '../models/vault.model';
 
 describe('Vault Module Tests', () => {
 
@@ -171,10 +170,11 @@ describe('Vault Module Tests', () => {
       assert.strictEqual(docs.find((d) => d.title === 'Ration Card')?.category, 'other');
     });
 
-    it('confirmExtractionAndSave adds document with inferred category', () => {
-      useVaultStore.setState({ lastSavedDocTitle: 'Income Certificate', targetCategory: undefined });
-      useVaultStore.getState().updateExtraction({ fullName: 'Test User', state: 'Maharashtra' });
-      useVaultStore.getState().confirmExtractionAndSave();
+    it('saveDocumentDirect adds document with specified category', () => {
+      useVaultStore.getState().saveDocumentDirect({
+        title: 'Income Certificate',
+        category: 'income',
+      });
       const docs = useVaultStore.getState().documents;
       assert.strictEqual(docs.length, 1);
       assert.strictEqual(docs[0].title, 'Income Certificate');
@@ -182,10 +182,12 @@ describe('Vault Module Tests', () => {
       assert.strictEqual(useVaultStore.getState().savedModalVisible, true);
     });
 
-    it('confirmExtractionAndSave respects targetCategory over inferred category', () => {
-      useVaultStore.setState({ lastSavedDocTitle: 'My Document', targetCategory: 'land' });
-      useVaultStore.getState().confirmExtractionAndSave();
+    it('saveDocumentDirect infers category when omitted', () => {
+      useVaultStore.getState().saveDocumentDirect({
+        title: 'Land Ownership Record',
+      });
       const docs = useVaultStore.getState().documents;
+      assert.strictEqual(docs.length, 1);
       assert.strictEqual(docs[0].category, 'land');
     });
 
@@ -210,32 +212,6 @@ describe('Vault Module Tests', () => {
     it('closeSavedModal transitions to 6_updated_readiness', () => {
       useVaultStore.getState().closeSavedModal();
       assert.strictEqual(useVaultStore.getState().activeDevScreen, '6_updated_readiness');
-    });
-  });
-
-  // ── ExtractedFactsSchema ───────────────────────────────────────────────────
-
-  describe('ExtractedFactsSchema', () => {
-    it('accepts valid facts', () => {
-      const result = ExtractedFactsSchema.safeParse({
-        fullName: 'Rohit Kumar',
-        dob: '15/08/1990',
-        gender: 'male',
-        state: 'Maharashtra',
-        address: 'Pune, Maharashtra - 411001',
-      });
-      assert.strictEqual(result.success, true);
-    });
-
-    it('rejects empty required fields', () => {
-      const result = ExtractedFactsSchema.safeParse({
-        fullName: '',
-        dob: '',
-        gender: 'unknown',
-        state: '',
-        address: '',
-      });
-      assert.strictEqual(result.success, false);
     });
   });
 });

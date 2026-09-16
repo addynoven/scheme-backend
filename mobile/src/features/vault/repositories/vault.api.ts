@@ -229,9 +229,9 @@ export class VaultApiRepository {
   }
 
   /**
-   * Checks the readiness status of a citizen for a given scheme ID.
+   * Checks the readiness status of a citizen for a given scheme ID or slug.
    */
-  async getSchemeReadiness(schemeId: number): Promise<Result<BackendSchemeReadinessResponse, AppError>> {
+  async getSchemeReadiness(schemeId: string | number): Promise<Result<BackendSchemeReadinessResponse, AppError>> {
     return apiClient.get<BackendSchemeReadinessResponse>(`/vault/readiness/schemes/${schemeId}`);
   }
 

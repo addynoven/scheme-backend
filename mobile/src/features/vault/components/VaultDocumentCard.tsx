@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Linking,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { Image } from 'expo-image';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { VaultDocument } from '../models/vault.model';
-import { palette } from '@/core/theme/colors';
 import { spacing } from '@/core/theme/spacing';
-import { toastService } from '@/core/components/Toast';
 
 interface VaultDocumentCardProps {
   document: VaultDocument;
@@ -15,85 +22,205 @@ interface VaultDocumentCardProps {
 export const VaultDocumentCard: React.FC<VaultDocumentCardProps> = ({
   document,
   onDelete,
-  onReplace,
 }) => {
-  const [menuVisible, setMenuVisible] = useState(false);
+  const [previewVisible, setPreviewVisible] = useState(false);
 
-  const handleView = () => {
-    setMenuVisible(false);
-    toastService.show(`Viewing ${document.fileName}`, 'info');
+  const previewUri = document.downloadUrl || document.fileUri;
+  const isImage =
+    document.mimeType?.startsWith('image/') ||
+    /\.(jpe?g|png|webp|gif)$/i.test(document.fileName || '') ||
+    (previewUri ? /\.(jpe?g|png|webp|gif)/i.test(previewUri) : false);
+  const isPdf =
+    document.mimeType?.includes('pdf') ||
+    /\.pdf$/i.test(document.fileName || '');
+
+  const confirmDelete = () => {
+    Alert.alert(
+      'Delete Document',
+      `Are you sure you want to delete "${document.title}" permanently?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            setPreviewVisible(false);
+            if (onDelete) onDelete(document.id);
+          },
+        },
+      ]
+    );
   };
 
-  const handleReplace = () => {
-    setMenuVisible(false);
-    if (onReplace) onReplace(document);
-  };
-
-  const handleDelete = () => {
-    setMenuVisible(false);
-    if (onDelete) onDelete(document.id);
-    toastService.show(`${document.title} deleted`, 'info');
+  const handleOpenExternal = async () => {
+    if (!previewUri) {
+      Alert.alert('Unavailable', 'Document link is not available.');
+      return;
+    }
+    try {
+      const canOpen = await Linking.canOpenURL(previewUri);
+      if (canOpen) {
+        await Linking.openURL(previewUri);
+      } else {
+        Alert.alert('Error', 'Cannot open document URL.');
+      }
+    } catch {
+      Alert.alert('Error', 'Could not open document viewer.');
+    }
   };
 
   return (
-    <View style={styles.card}>
-      <View style={styles.leftCol}>
-        <View style={styles.iconBox}>
-          <FontAwesome name="file-pdf-o" size={20} color="#EF4444" />
+    <>
+      <TouchableOpacity
+        style={styles.card}
+        activeOpacity={0.7}
+        onPress={() => setPreviewVisible(true)}
+        onLongPress={confirmDelete}
+        delayLongPress={500}
+        accessibilityRole="button"
+        accessibilityLabel={`Document ${document.title}. Tap to view, hold to delete.`}
+      >
+        <View style={styles.leftCol}>
+          <View
+            style={[
+              styles.iconBox,
+              isImage
+                ? styles.iconBoxImage
+                : isPdf
+                ? styles.iconBoxPdf
+                : styles.iconBoxDefault,
+            ]}
+          >
+            <FontAwesome
+              name={isImage ? 'file-image-o' : isPdf ? 'file-pdf-o' : 'file-text-o'}
+              size={20}
+              color={isImage ? '#2563EB' : isPdf ? '#EF4444' : '#059669'}
+            />
+          </View>
+
+          <View style={styles.infoCol}>
+            <Text style={styles.title} numberOfLines={1}>
+              {document.title}
+            </Text>
+            <Text style={styles.subtext} numberOfLines={1}>
+              {document.fileName} • {document.fileSize}
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.infoCol}>
-          <Text style={styles.title}>{document.title}</Text>
-          <Text style={styles.subtext}>
-            {document.fileName} • {document.fileSize}
-          </Text>
+        <View style={styles.rightCol}>
+          {document.isVerified && (
+            <View style={styles.verifiedBadge}>
+              <FontAwesome name="check" size={10} color="#15803D" style={{ marginRight: 3 }} />
+              <Text style={styles.verifiedText}>Verified</Text>
+            </View>
+          )}
+
+          <FontAwesome name="angle-right" size={18} color="#94A3B8" style={{ marginLeft: 4 }} />
         </View>
-      </View>
+      </TouchableOpacity>
 
-      <View style={styles.rightCol}>
-        {document.isVerified && (
-          <View style={styles.verifiedBadge}>
-            <FontAwesome name="check" size={10} color="#15803D" style={{ marginRight: 3 }} />
-            <Text style={styles.verifiedText}>Verified</Text>
+      {/* Document Preview Modal */}
+      <Modal
+        visible={previewVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {/* Header */}
+            <View style={styles.modalHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalTitle} numberOfLines={1}>
+                  {document.title}
+                </Text>
+                <Text style={styles.modalSubtitle} numberOfLines={1}>
+                  {document.fileName} • {document.fileSize}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.closeBtn}
+                onPress={() => setPreviewVisible(false)}
+                accessibilityLabel="Close preview"
+              >
+                <FontAwesome name="times" size={18} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Document Body */}
+            <View style={styles.previewContainer}>
+              {isImage && previewUri ? (
+                <Image
+                  source={{ uri: previewUri }}
+                  style={styles.imagePreview}
+                  contentFit="contain"
+                  transition={200}
+                />
+              ) : isPdf ? (
+                <View style={styles.pdfContainer}>
+                  <View style={styles.pdfIconCircle}>
+                    <FontAwesome name="file-pdf-o" size={48} color="#EF4444" />
+                  </View>
+                  <Text style={styles.pdfNoticeTitle}>PDF Document</Text>
+                  <Text style={styles.pdfNoticeSub}>
+                    {document.fileName}
+                  </Text>
+                  {previewUri && (
+                    <TouchableOpacity
+                      style={styles.openExternalBtn}
+                      onPress={handleOpenExternal}
+                      activeOpacity={0.8}
+                    >
+                      <FontAwesome name="external-link" size={14} color="#FFFFFF" style={{ marginRight: 8 }} />
+                      <Text style={styles.openExternalBtnText}>Open Document</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : (
+                <View style={styles.pdfContainer}>
+                  <View style={[styles.pdfIconCircle, { backgroundColor: '#F1F5F9' }]}>
+                    <FontAwesome name="file-text-o" size={48} color="#64748B" />
+                  </View>
+                  <Text style={styles.pdfNoticeTitle}>{document.title}</Text>
+                  <Text style={styles.pdfNoticeSub}>{document.fileName}</Text>
+                  {previewUri && (
+                    <TouchableOpacity
+                      style={styles.openExternalBtn}
+                      onPress={handleOpenExternal}
+                      activeOpacity={0.8}
+                    >
+                      <FontAwesome name="external-link" size={14} color="#FFFFFF" style={{ marginRight: 8 }} />
+                      <Text style={styles.openExternalBtnText}>Open Document</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </View>
+
+            {/* Footer Actions */}
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.deleteBtn}
+                onPress={confirmDelete}
+                activeOpacity={0.8}
+              >
+                <FontAwesome name="trash-o" size={15} color="#DC2626" style={{ marginRight: 6 }} />
+                <Text style={styles.deleteBtnText}>Delete Document</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.dismissBtn}
+                onPress={() => setPreviewVisible(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.dismissBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        )}
-
-        <TouchableOpacity
-          style={styles.moreBtn}
-          onPress={() => setMenuVisible(true)}
-          accessibilityLabel="Document options"
-        >
-          <FontAwesome name="ellipsis-v" size={14} color="#64748B" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Options Popup Modal */}
-      <Modal visible={menuVisible} transparent animationType="fade">
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setMenuVisible(false)}
-        >
-          <View style={styles.menuBox}>
-            <Text style={styles.menuTitle}>{document.title}</Text>
-            <TouchableOpacity style={styles.menuItem} onPress={handleView}>
-              <FontAwesome name="eye" size={14} color="#334155" style={styles.menuIcon} />
-              <Text style={styles.menuItemText}>View Document</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem} onPress={handleReplace}>
-              <FontAwesome name="refresh" size={14} color="#334155" style={styles.menuIcon} />
-              <Text style={styles.menuItemText}>Replace File</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={[styles.menuItem, styles.menuItemDelete]} onPress={handleDelete}>
-              <FontAwesome name="trash" size={14} color="#DC2626" style={styles.menuIcon} />
-              <Text style={styles.menuDeleteText}>Delete</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
-    </View>
+    </>
   );
 };
 
@@ -113,15 +240,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    marginRight: spacing.sm,
   },
   iconBox: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
     borderRadius: 10,
-    backgroundColor: '#FEE2E2',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.sm,
+  },
+  iconBoxPdf: {
+    backgroundColor: '#FEE2E2',
+  },
+  iconBoxImage: {
+    backgroundColor: '#DBEAFE',
+  },
+  iconBoxDefault: {
+    backgroundColor: '#DCFCE7',
   },
   infoCol: {
     flex: 1,
@@ -134,7 +270,7 @@ const styles = StyleSheet.create({
   subtext: {
     fontSize: 11,
     color: '#64748B',
-    marginTop: 1,
+    marginTop: 2,
   },
   rightCol: {
     flexDirection: 'row',
@@ -154,63 +290,140 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#15803D',
   },
-  moreBtn: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.xl,
-  },
-  menuBox: {
-    width: '80%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
     padding: spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 8,
   },
-  menuTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#94A3B8',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.sm,
-    paddingBottom: spacing.xs,
+  modalContent: {
+    width: '100%',
+    maxHeight: '85%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 4,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
-  menuItem: {
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  modalSubtitle: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: spacing.sm,
+  },
+  previewContainer: {
+    height: 340,
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.sm,
+  },
+  imagePreview: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+  },
+  pdfContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  pdfIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  pdfNoticeTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 4,
+  },
+  pdfNoticeSub: {
+    fontSize: 12,
+    color: '#64748B',
+    marginBottom: spacing.lg,
+    textAlign: 'center',
+  },
+  openExternalBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
+    backgroundColor: '#059669',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 10,
   },
-  menuIcon: {
-    width: 22,
-  },
-  menuItemText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#334155',
-  },
-  menuItemDelete: {
-    borderTopWidth: 1,
-    borderTopColor: '#FEE2E2',
-    marginTop: 4,
-    paddingTop: spacing.sm,
-  },
-  menuDeleteText: {
+  openExternalBtnText: {
     fontSize: 13,
     fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    backgroundColor: '#FFFFFF',
+    gap: spacing.sm,
+  },
+  deleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: '#FEE2E2',
+    flex: 1,
+  },
+  deleteBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
     color: '#DC2626',
+  },
+  dismissBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 10,
+    backgroundColor: '#F1F5F9',
+  },
+  dismissBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
   },
 });

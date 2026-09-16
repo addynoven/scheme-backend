@@ -142,7 +142,7 @@ def agent_node(state: AgentState, config: RunnableConfig | None = None) -> dict[
 
         # Seamless failover to Groq AI on rate-limit (429) or error
         if getattr(settings, "GROQ_API_KEY", None):
-            logger.info("⚡ [LangGraph Failover] Failing over seamlessly to Groq AI...")
+            logger.warning("⚡ [LangGraph Failover -> GROQ] Failing over seamlessly to Groq AI...")
             from app.modules.chat.groq_provider import call_groq_for_langgraph
             groq_res = call_groq_for_langgraph(messages)
             if groq_res:
@@ -152,14 +152,15 @@ def agent_node(state: AgentState, config: RunnableConfig | None = None) -> dict[
                     "completion_tokens": token_usage.get("completion_tokens", 0) + usage_dict.get("completion_tokens", 0),
                     "total_tokens": token_usage.get("total_tokens", 0) + usage_dict.get("total_tokens", 0),
                 }
-                logger.info(f"✅ [LangGraph Failover Success] Handled by Groq model {groq_model}.")
+                logger.warning(f"⚡ [LangGraph Failover Success] Handled by Groq model '{groq_model}'.")
                 return {"messages": [ai_msg], "token_usage": new_token_usage}
 
         # Secondary failover to Local CLI AI (agy) if Groq also unavailable or failed
-        logger.info("⚡ [LangGraph Failover] Falling back to local CLI AI (agy)...")
+        logger.warning("💻 [LangGraph Failover -> AGY CLI] Falling back to local CLI AI (agy)...")
         from app.modules.chat.agent_orchestrator import _call_agy_cli, SYSTEM_INSTRUCTION
         api_res = _call_agy_cli(messages, SYSTEM_INSTRUCTION)
         if api_res:
+            logger.warning("💻 [LangGraph Failover Success] Handled by local CLI AI (agy)")
             parts = api_res.get("candidates", [{}])[0].get("content", {}).get("parts", [])
             fc = [p["functionCall"] for p in parts if "functionCall" in p]
             if fc:

@@ -2,6 +2,7 @@ import { config } from '../config/config';
 import { AppError } from '../errors/error-handler';
 import { err, ok, type Result } from '../errors/result';
 import { secureStorage } from '../storage/secureStorage';
+import { authSessionExpired } from '../events/authEvents';
 
 export interface RequestOptions extends Omit<RequestInit, 'body'> {
   readonly body?: unknown;
@@ -90,6 +91,11 @@ export class HttpClient {
           typeof errorData === 'object' && errorData !== null && 'detail' in errorData
             ? String((errorData as { detail: unknown }).detail)
             : `HTTP ${response.status}: ${response.statusText}`;
+
+        // 401 = token expired/invalid — force re-login
+        if (response.status === 401 && !skipAuth) {
+          authSessionExpired.emit();
+        }
 
         return err(
           new AppError(errorMessage, {

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Modal,
   ScrollView,
@@ -17,12 +18,19 @@ import { ReadinessMeter } from '../components/ReadinessMeter';
 import { RequiredDocsList } from '../components/RequiredDocsList';
 import { VaultDocumentCard } from '../components/VaultDocumentCard';
 import { UploadDocSheet } from '../components/UploadDocSheet';
-import { ExtractVerifyModal } from '../components/ExtractVerifyModal';
 import { DocumentSavedModal } from '../components/DocumentSavedModal';
 import { mapBackendReadiness } from '../repositories/vault.api';
-import { useSchemeReadinessQuery } from '../hooks/useVaultQuery';
+import {
+  useDeleteDocumentMutation,
+  useSchemeReadinessQuery,
+  useUploadDocumentMutation,
+} from '../hooks/useVaultQuery';
 import { useInfiniteSchemesQuery } from '@/features/schemes/hooks/useSchemesQuery';
-import type { SchemeReadiness } from '../models/vault.model';
+import {
+  DocumentUploadPayload,
+  formatFileSize,
+  type SchemeReadiness,
+} from '../models/vault.model';
 import { spacing } from '@/core/theme/spacing';
 import { toastService } from '@/core/components/Toast';
 
@@ -85,15 +93,14 @@ export const SchemeReadinessScreen: React.FC<SchemeReadinessScreenProps> = ({ on
   const {
     documents,
     uploadModalVisible,
-    extractModalVisible,
     savedModalVisible,
-    currentExtraction,
     lastSavedDocTitle,
+    targetDocTitle,
+    targetCategory,
     selectScheme,
     openUploadSheet,
     closeUploadSheet,
-    startExtraction,
-    confirmExtractionAndSave,
+    saveDocumentDirect,
     closeSavedModal,
     deleteDocument,
   } = useVaultStore();
@@ -103,26 +110,73 @@ export const SchemeReadinessScreen: React.FC<SchemeReadinessScreenProps> = ({ on
     return availableSchemes[0] ?? { id: '', name: 'Select a Scheme', ministry: '' };
   }, [selectedSchemeMeta, availableSchemes]);
 
-
-  // Parse the scheme ID to numeric — backend readiness API requires a number
-  const numericSchemeId = useMemo(() => {
-    const parsed = parseInt(currentScheme.id, 10);
-    return !isNaN(parsed) && parsed > 0 ? parsed : 0;
-  }, [currentScheme.id]);
-
-  // Real backend readiness — disabled until a valid numeric scheme ID is selected
+  // Query backend readiness directly by scheme ID or slug
   const { data: backendReadiness, isLoading: isLoadingReadiness } =
-    useSchemeReadinessQuery(numericSchemeId);
+    useSchemeReadinessQuery(currentScheme.id);
 
   // Map backend response to UI model; fall back to empty state while loading
   const readiness: SchemeReadiness = useMemo(() => {
-    if (backendReadiness && numericSchemeId > 0) {
+    if (backendReadiness && currentScheme.id) {
       return mapBackendReadiness(backendReadiness, currentScheme.ministry);
     }
     return { ...EMPTY_READINESS, schemeName: currentScheme.name, ministry: currentScheme.ministry };
-  }, [backendReadiness, numericSchemeId, currentScheme]);
+  }, [backendReadiness, currentScheme]);
 
   const is100 = readiness.percentage >= 100 || readiness.isReady;
+
+  const uploadDocMutation = useUploadDocumentMutation();
+  const deleteDocMutation = useDeleteDocumentMutation();
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleDeleteDocument = async (id: string) => {
+    try {
+      deleteDocument(id);
+      const numId = parseInt(id, 10);
+      if (!isNaN(numId) && numId > 0) {
+        await deleteDocMutation.mutateAsync(numId);
+      }
+      toastService.show('Document deleted permanently', 'info');
+    } catch (error) {
+      console.warn('Failed to delete document:', error);
+      toastService.show('Failed to delete document from server', 'error');
+    }
+  };
+
+  const handleUpload = async (params: DocumentUploadPayload) => {
+    try {
+      setIsUploading(true);
+      let downloadUrl: string | undefined = undefined;
+      if (params.fileUri) {
+        const uploadedDoc = await uploadDocMutation.mutateAsync({
+          uri: params.fileUri,
+          fileName:
+            params.fileName ||
+            `${params.title.toLowerCase().replace(/[^a-z0-9]/g, '_')}.jpg`,
+          mimeType: params.mimeType || 'image/jpeg',
+          documentType: params.title,
+        });
+        downloadUrl = uploadedDoc?.download_url || undefined;
+      }
+      saveDocumentDirect({
+        title: params.title,
+        category: params.category,
+        fileName: params.fileName,
+        fileSize: formatFileSize(params.fileSize),
+        mimeType: params.mimeType,
+        fileUri: params.fileUri,
+        downloadUrl,
+      });
+      toastService.show(`${params.title} uploaded successfully!`, 'success');
+    } catch (error) {
+      console.warn('Document upload error:', error);
+      Alert.alert(
+        'Upload Failed',
+        'Could not upload document to secure vault. Please check your network and try again.'
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleApplyNow = () => {
     toastService.show(`Redirecting to ${currentScheme.name} official portal...`, 'info');
@@ -183,7 +237,7 @@ export const SchemeReadinessScreen: React.FC<SchemeReadinessScreenProps> = ({ on
         </View>
 
         {/* Readiness Meter Gauge — shows spinner while backend is fetching */}
-        {isLoadingReadiness && numericSchemeId > 0 ? (
+        {isLoadingReadiness && !!currentScheme.id ? (
           <View style={styles.readinessLoadingBox}>
             <ActivityIndicator size="small" color="#047857" />
             <Text style={styles.readinessLoadingText}>Checking your documents...</Text>
@@ -244,8 +298,7 @@ export const SchemeReadinessScreen: React.FC<SchemeReadinessScreenProps> = ({ on
             <VaultDocumentCard
               key={doc.id}
               document={doc}
-              onDelete={deleteDocument}
-              onReplace={() => openUploadSheet()}
+              onDelete={handleDeleteDocument}
             />
           ))}
         </View>
@@ -387,15 +440,10 @@ export const SchemeReadinessScreen: React.FC<SchemeReadinessScreenProps> = ({ on
       <UploadDocSheet
         visible={uploadModalVisible}
         onClose={closeUploadSheet}
-        onSelectMethod={(method) => startExtraction(method)}
-      />
-
-      {/* Extract & Verify Fullscreen Modal */}
-      <ExtractVerifyModal
-        visible={extractModalVisible}
-        onClose={() => useVaultStore.setState({ extractModalVisible: false })}
-        initialFacts={currentExtraction}
-        onConfirm={confirmExtractionAndSave}
+        defaultTitle={targetDocTitle}
+        defaultCategory={targetCategory}
+        isUploading={isUploading}
+        onUpload={handleUpload}
       />
 
       {/* Document Saved Confetti Modal */}
